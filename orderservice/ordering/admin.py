@@ -1,10 +1,7 @@
-from ordering.models import Scene, Order, Configuration,TramOrder
+from ordering.models import Scene, Order, Configuration
 from django.contrib import admin
       
-class TramOrderAdmin(admin.ModelAdmin):
-    fields = ['order_id', 'order_date']
-    list_display = ('order_id', 'order_date')
-    
+   
          
 
 #THESE DON"T WORK LIKE YOU"D EXPECT
@@ -24,18 +21,18 @@ class SceneAdmin(admin.ModelAdmin):
               #'destDS',
               'completion_date',
               'note',
-              'tram_order',
+              'tram_order_id',
+              'ee_unit_id',
               'product_distro_location',
               'product_dload_url',
-              'source_distro_location',
-              'source_download_url',
+              'cksum_distro_location',
+              'cksum_download_url',
               'processing_location',
               'log_file_contents']
     list_display = ('name',
                     'status',
                     'completion_date',
                     'order',
-                    'tram_order',
                     #'sourceDS',
                     #'destDS')
                    )
@@ -43,11 +40,10 @@ class SceneAdmin(admin.ModelAdmin):
                    'completion_date',
                    'processing_location',
                    'order',
-                   'tram_order',
                    #'sourceDS',
                    #'destDS')
                   )
-    search_fields = ['name', 'status', 'processing_location','order__orderid','tram_order__order_id']
+    search_fields = ['name', 'status', 'processing_location','order__orderid']
     
    
     #readonly_fields = ('order_date', 'completion_date')
@@ -57,10 +53,10 @@ class SceneAdmin(admin.ModelAdmin):
     
 
 class OrderAdmin(admin.ModelAdmin):
-    fields = ['orderid', 'email','status','chain','order_date','completion_date','note', 'product_options']
-    list_display = ('orderid', 'email','status', 'chain', 'order_date', 'completion_date', 'product_options')
-    list_filter = ('orderid', 'email','status','chain','order_date','completion_date')
-    search_fields = ['orderid', 'email', 'status','chain']
+    fields = ['orderid', 'order_source', 'email','status', 'ee_order_id', 'chain','order_date','completion_date','note', 'product_options', ]
+    list_display = ('orderid', 'order_source', 'email','status', 'ee_order_id', 'chain', 'order_date', 'completion_date', 'product_options')
+    list_filter = ('orderid', 'order_source', 'email','status', 'ee_order_id', 'chain','order_date','completion_date')
+    search_fields = ['orderid', 'order_source', 'email', 'ee_order_id', 'status','chain']
     
     inlines = [SceneInline,]
     #filter_horizontal = ('scenes',)
@@ -81,6 +77,6 @@ class ConfigurationAdmin(admin.ModelAdmin):
 admin.site.register(Scene,SceneAdmin)
 admin.site.register(Order,OrderAdmin)
 admin.site.register(Configuration, ConfigurationAdmin)
-admin.site.register(TramOrder, TramOrderAdmin)
+
 
 

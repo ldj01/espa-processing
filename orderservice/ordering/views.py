@@ -2,22 +2,24 @@
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-from ordering.models import Scene,Order,TramOrder,Configuration#,SceneOrder
+from django.contrib.syndication.views import Feed
+from django.contrib.syndication.views import FeedDoesNotExist
+from django.shortcuts import get_object_or_404,get_list_or_404
+from django.utils.feedgenerator import Rss201rev2Feed
 from django.template import Context, loader, RequestContext
 from django import forms
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth import logout
-import re
+
+from ordering.models import Scene,Order,Configuration#,SceneOrder
 from ordering.helper import *
+import lta
 from espa.espa import *
-from django.contrib.syndication.views import Feed
-from django.contrib.syndication.views import FeedDoesNotExist
-from django.shortcuts import get_object_or_404,get_list_or_404
-from django.utils.feedgenerator import Rss201rev2Feed
+
+import re
 import json
-
-
+from datetime import datetime
 
 
 #default landing page for the ordering application
@@ -76,8 +78,9 @@ def neworder(request):
         note = None
         if request.POST.has_key('note'):
             note = request.POST['note']
-            
-        #Form passed' validation.... 
+        #################################################    
+        #Form passed' validation.... now check the scenes
+        #################################################
         scenelist = set()     
         orderfile = request.FILES['file']
         lines = orderfile.read().split('\n')
@@ -86,22 +89,25 @@ def neworder(request):
         errors['scenes'] = list()
         for line in lines:
             line = line.strip()
-            if line.startswith('LT5') or line.startswith('LE7'):            
-                                
-                if line.endswith('.tar.gz'):
-                    line = line[0:line.index('.tar.gz')]
-                
-                if len(line) != 21:
-                    errors['scenes'].append('%s is not a valid scene' % line)
-                    continue
-                      
+            if line.find('.tar.gz') != -1:
+                line = line[0:line.index('.tar.gz')]
+            #errors['scenes'].append('%s not found in Landsat inventory' % line)
+            if len(line) >= 15 and (line.startswith("LT") or line.startswith("LE")):
                 scenelist.add(line)
-                                
-        if len(scenelist) < 1:
-            errors['scenes'].append("No valid scenes were found in the order.")
-                
+
+        lta_service = lta.LtaServices()
+
+        print ("Scenelist")
+        print scenelist
+        
+        verified_scenes = lta_service.verify_scenes(list(scenelist))
+
+        for sc,valid in verified_scenes.iteritems():
+            if valid == 'false':
+                errors['scenes'].append("%s not found in Landsat inventory" % sc)
+        
         if len(errors['scenes']) > 0:
-            c = RequestContext(request,{'form':form,'errors':errors})
+            c = RequestContext(request,{'form':OrderForm(),'errors':errors})
             t = loader.get_template('neworder.html')
             return HttpResponse(t.render(c))
         else:
@@ -113,6 +119,11 @@ def neworder(request):
                 'include_sr':False,
                 'include_sr_browse':False,
                 'include_sr_ndvi':False,
+                'include_sr_ndmi':False,
+                'include_sr_nbr':False,
+                'include_sr_nbr2':False,
+                'include_sr_savi':False,
+                'include_sr_evi':False,
                 'include_solr_index':False,
                 'include_cfmask':False
                 }
@@ -131,6 +142,7 @@ def neworder(request):
             order.status = 'ordered'
             order.order_date = datetime.now()
             order.product_options = option_string
+            order.order_source = 'espa'
             order.save()
                 
             for s in set(scenelist):
@@ -205,7 +217,7 @@ def orderdetails(request, orderid, output_format=None):
         scenes = Scene.objects.filter(order__orderid=orderid,status='Complete')
         output = ''
         for scene in scenes:
-            line = ("%s,%s,%s\n") % (scene.name,scene.download_url,scene.source_l1t_download_url)
+            line = ("%s,%s,%s\n") % (scene.name,scene.download_url,scene.cksum_download_url)
             output = output + line
         return HttpResponse(output, mimetype='text/plain')
         
@@ -245,6 +257,11 @@ class OrderForm(forms.Form):
     include_sr = forms.BooleanField(initial=True)
     include_sr_browse = forms.BooleanField(initial=False)
     include_sr_ndvi = forms.BooleanField(initial=False)
+    include_sr_ndmi = forms.BooleanField(initial=False)
+    include_sr_nbr = forms.BooleanField(initial=False)
+    include_sr_nbr2 = forms.BooleanField(initial=False)
+    include_sr_savi = forms.BooleanField(initial=False)
+    include_sr_evi = forms.BooleanField(initial=False)
     include_solr_index = forms.BooleanField(initial=False)
     include_cfmask = forms.BooleanField(initial=False)
         
