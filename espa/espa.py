@@ -1,8 +1,17 @@
+"""Integration script for ESPA project.
+
+This is a standalone driver script that can produce any CDR or ECV
+available from the LSRD project.
+
+Author:  "David V. Hill"
+License: "NASA Open Source Agreement 1.3"
+
+"""
+
 #!/usr/local/bin/python
 
-__author__ = "David V. Hill"
 
-import gc, time, commands, os, sys, socket
+import time, commands, os, sys, socket
 import numpy as np
 from osgeo import gdal
 from optparse import OptionParser
@@ -15,18 +24,12 @@ import datetime
 
 #TODO: 
 #      
-#      
-#      
-#      Test this script with hadoop
 #      Create new collection creation script to extract the browse & index
 #      and put them where they belong
 #      
 
-#==============================================================
-# recursively removes zeros off the supplied string and returns
-# the cleansed value
-#==============================================================
 def stripZeros(value):
+    """Removes all leading zeros from a string"""
     
     while value.startswith('0'):
         value = value[1:len(value)]
@@ -37,30 +40,35 @@ def stripZeros(value):
 #Cooresponding path for this scene
 #==============================================================
 def getPath(scene_name):
+    """Returns the path of a given scene"""
     return stripZeros(scene_name[3:6])
 
 #==============================================================
 #Corresponding row for this scene
 #==============================================================
 def getRow(scene_name):
+    """Returns the row of a given scene"""
     return stripZeros(scene_name[6:9])
 
 #==============================================================
 #Scene collection year
 #==============================================================
 def getYear(scene_name):
+    """Returns the year of a given scene"""
     return scene_name[9:13]
 
 #==============================================================
 #Scene collection julian date
 #==============================================================
 def getDoy(scene_name):
+    """Returns the day of year for a given scene"""
     return scene_name[13:16]
 
 #==============================================================
 #return scene sensor
 #==============================================================
 def getSensor(scene_name):
+    """Returns the sensor of a given scene"""
     if scene_name[0:3] =='LT5' or scene_name[0:3] == 'LT4':
         return 'tm'
     elif scene_name[0:3] == 'LE7':
@@ -70,30 +78,47 @@ def getSensor(scene_name):
 #return scene sensor code
 #==============================================================
 def getSensorCode(scene_name):
+    """Returns the raw sensor code of a given scene"""
     return scene_name[0:3]
 
 #==============================================================
 #returns the station this scene was acquired from
 #==============================================================
 def getStation(scene_name):
+    """Returns the ground stations and version for a given scene"""
     return scene_name[16:21]
 
 #==============================================================
 #return xy coordinates for the given line from gdalinfo
 #==============================================================
 def getXY(value):
-    '''Returns the xy coordinates for the given line from gdalinfo'''
+    """Returns the xy coordinates for the given line from gdalinfo"""
     parts = value.split('(')    
     p = parts[1].split(')')
     p = p[0].split(',')
     return (p[1].strip(),p[0].strip())
 
+#==============================================================
+#returns the name of the sr file we are working on
+#==============================================================
+def get_sr_filename(scene):
+    """Return name of current sr product file"""
+    return "lndsr.%s.hdf" % scene
+
+#==============================================================
+#returns the name of the cfmask file we are working on
+#==============================================================
+def get_cfmask_filename(scene):
+    """Return name of current cfmask product file"""
+    return "fmask.%s.hdf" % scene
 
 #==============================================================
 #parse gdal coordinates from gdalinfo
 #==============================================================
 def parseGdalInfo(gdalFile, debug=False):
-
+    """Runs gdalinfo against a file and returns
+    the x,y results"""
+    
     cmd = "gdalinfo %s |grep \(" % (gdalFile)
     
     status,output = commands.getstatusoutput(cmd)
@@ -123,63 +148,63 @@ def parseGdalInfo(gdalFile, debug=False):
 #return scene metadata as a dictionary
 #==============================================================
 def getMetaData(work_dir, debug=False):
-        #find the metadata file
-        mtl_file = ''
-        items = os.listdir(work_dir)
-        for i in items:
-            if not i.startswith('lnd') and (i.find('_MTL') > 0) and not (i.find('old') > 0):
-                mtl_file = i
-                print ("Located MTL file:%s" % mtl_file)
-                break
+    #find the metadata file
+    mtl_file = ''
+    items = os.listdir(work_dir)
+    for i in items:
+        if not i.startswith('lnd') and (i.find('_MTL') > 0) and not (i.find('old') > 0):
+            mtl_file = i
+            print ("Located MTL file:%s" % mtl_file)
+            break
 
-        if mtl_file == '':
-            print("Could not locate the landsat MTL file in %s" % work_dir)
-            return None
+    if mtl_file == '':
+        print("Could not locate the landsat MTL file in %s" % work_dir)
+        return None
          
-        current_dir = os.getcwd()
-        os.chdir(work_dir)
-        f = open(mtl_file, 'r')
-        data = f.readlines()
-        f.close()
+    current_dir = os.getcwd()
+    os.chdir(work_dir)
+    f = open(mtl_file, 'r')
+    data = f.readlines()
+    f.close()
     
-        #this will fix the problem ledaps has with binary characters at the end
-        #of some of the gls metadata files
-        length = len(data)
-        buff = StringIO()
+    #this will fix the problem ledaps has with binary characters at the end
+    #of some of the gls metadata files
+    length = len(data)
+    buff = StringIO()
     
-        count = 1
-        for d in data:
-            if count < length:
-                buff.write(d)
-                count = count + 1
+    count = 1
+    for d in data:
+        if count < length:
+            buff.write(d)
+            count = count + 1
     
-        #fix the stupid error where the metadata txt file is named TIF
-        mtl_file = mtl_file.replace('.TIF', '.txt')
+    #fix the stupid error where the metadata txt file is named TIF
+    mtl_file = mtl_file.replace('.TIF', '.txt')
             
-        f = open(mtl_file, 'w+')
-        fixedmeta = buff.getvalue()
-        f.write(fixedmeta)
-        f.flush()
-        f.close()
-        buff.close()
-        os.chdir(current_dir)
+    f = open(mtl_file, 'w+')
+    fixedmeta = buff.getvalue()
+    f.write(fixedmeta)
+    f.flush()
+    f.close()
+    buff.close()
+    os.chdir(current_dir)
         
-        #now we are going to read all the metadata into the context{} as
-        #a dictionary.  Needed later for generating the solr index et. al.
-        metadata = {}
+    #now we are going to read all the metadata into the context{} as
+    #a dictionary.  Needed later for generating the solr index et. al.
+    metadata = {}
 
-        fixedmeta = fixedmeta.split('\n')
-        for line in fixedmeta:
-            line = line.strip()
-            #print ('Meta line:%s' % line)
-            if not line.startswith('END') and not line.startswith('GROUP'):
-                parts = line.split('=')
-                if len(parts) == 2:
-                    metadata[parts[0].strip()] = parts[1].strip().replace('"', '')
+    fixedmeta = fixedmeta.split('\n')
+    for line in fixedmeta:
+        line = line.strip()
+        #print ('Meta line:%s' % line)
+        if not line.startswith('END') and not line.startswith('GROUP'):
+            parts = line.split('=')
+            if len(parts) == 2:
+                metadata[parts[0].strip()] = parts[1].strip().replace('"', '')
 
-        metadata['mtl_file'] = mtl_file
+    metadata['mtl_file'] = mtl_file
          
-        return metadata
+    return metadata
 
 #==============================================================
 #expands an HDF to Geotiff bands
@@ -502,7 +527,7 @@ def make_cfmask(workdir):
         
         status,output = commands.getstatusoutput("cd %s;cfmask --verbose --metadata=%s" % (workdir, metafile))
         status = status >> 8
-        if status != 1:
+        if status != 0:
             print ("Error producing cfmask for %s with status %s" % (metafile, status))
             print ("CFMask output:%s" % output)
             print ("End of CFMask output")
@@ -531,7 +556,7 @@ def package_product(product_dir, output_dir, product_filename):
                                   
     
     print ("Packaging completed product to %s.tar.gz") % (product_file_full_path)
-    cmd = ("tar -cvf %s.tar *") % (product_file_full_path)
+    cmd = ("tar -cf %s.tar *") % (product_file_full_path)
     status, output = commands.getstatusoutput(cmd)
     os.chdir(orig_cwd)
     if status != 0:
@@ -978,7 +1003,8 @@ if __name__ == '__main__':
          or options.toa_flag
          or options.cfmask_flag):
         cmd = ("cd %s; do_ledaps.py --metafile %s") % (workdir, metadata['mtl_file'])
-        print ("LEDAPS COMMAND:%s" % cmd)
+        if options.debug is not None:
+            print ("LEDAPS COMMAND:%s" % cmd)
         print ("Running LEDAPS against %s with metafile %s") % (scene,metadata['mtl_file'])
         status,output = commands.getstatusoutput(cmd)
         if status != 0:
@@ -1012,8 +1038,7 @@ if __name__ == '__main__':
         if options.sr_evi_flag:
             index_string = index_string + " --evi"
 
-        lndsr_file = [x for x in os.listdir(workdir) if x.startswith('lndsr') and x.endswith('.hdf')]
-        cmd = ("cd %s; do_spectral_indices.py %s -i %s") % (workdir, index_string, lndsr_file[0])
+        cmd = ("cd %s; do_spectral_indices.py %s -i %s") % (workdir, index_string, get_sr_filename(scene))
         print ("SPECTRAL INDICES COMMAND:%s" % cmd)
         print ("Running Spectral Indices")
         status,output = commands.getstatusoutput(cmd)
@@ -1042,9 +1067,7 @@ if __name__ == '__main__':
     #SEPERATELY
     if options.sr_flag and not options.cfmask_flag:
         print ("Running Append CFMask")
-        lndsr_file = [x for x in os.listdir(workdir) if x.startswith('lndsr') and x.endswith('.hdf')]
-        cfmask_file = [x for x in os.listdir(workdir) if x.startswith('fmask') and x.endswith('.hdf')]
-        cmd = ("cd %s; do_append_cfmask.py --sr_infile %s --cfmask_infile %s" % (workdir, lndsr_file[0], cfmask_file[0]))
+        cmd = ("cd %s; do_append_cfmask.py --sr_infile %s --cfmask_infile %s" % (workdir, get_sr_filename(scene), get_cfmask_filename(scene)))
         status,output = commands.getstatusoutput(cmd)
         if status != 0:
             print ("Error appending cfmask to sr output... exiting")
