@@ -25,9 +25,9 @@ except Exception, err:
 
 def validate_email(email):
     '''Compares incoming email address against regular expression to make sure its at
-least formatted like an email'''
+       least formatted like an email'''
     pattern = '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$'
-    return re.match(pattern, email)
+    return re.match(pattern, email.strip())
 
 def get_default_options():
     '''returns a default set of options that can be set for espa orders'''

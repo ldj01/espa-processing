@@ -56,7 +56,7 @@ def neworder(request):
     #files to be uploaded
     elif request.method == 'POST':
         errors = {}
-        if not request.POST.has_key('email'):
+        if not request.POST.has_key('email') or len(request.POST['email']) < 1:
             errors['email'] = "Please provide a valid email address"
         elif not core.validate_email(request.POST['email']):
             errors['email'] = "%s is not a valid email address" % request.POST['email']
