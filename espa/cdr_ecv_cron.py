@@ -88,7 +88,7 @@ def runScenes():
             #define the executable to execute the hadoop job
             #had to define the timeouts to a ridiculous number os the jobs don't get killed before they are done.... currently set 
             #to 172800000, which is 2 days
-            hadoop_run_command = hadoop_executable + ' jar %s/bin/hadoop/contrib/streaming/hadoop-streaming-0.20.203.0.jar' % home_dir
+            hadoop_run_command = hadoop_executable + ' jar %s/bin/hadoop/contrib/streaming/hadoop-streaming*.jar' % home_dir
             hadoop_run_command = hadoop_run_command + ' -D mapred.task.timeout=172800000'
             hadoop_run_command = hadoop_run_command + ' -D mapred.reduce.tasks=0'
             hadoop_run_command = hadoop_run_command + ' -D mapred.job.queue.name=ondemand'
