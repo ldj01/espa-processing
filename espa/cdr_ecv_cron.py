@@ -93,10 +93,10 @@ def runScenes():
             hadoop_run_command = hadoop_run_command + ' -D mapred.reduce.tasks=0'
             hadoop_run_command = hadoop_run_command + ' -D mapred.job.queue.name=ondemand'
             hadoop_run_command = hadoop_run_command + ' -D mapred.job.name="' + ordername + '"'
-            hadoop_run_command = hadoop_run_command + ' -file %s/espa-site/espa/mapper.py ' % home_dir
-            hadoop_run_command = hadoop_run_command + ' -file %s/espa-site/espa/espa.py ' % home_dir
-            hadoop_run_command = hadoop_run_command + ' -file %s/espa-site/espa/frange.py ' % home_dir
-            hadoop_run_command = hadoop_run_command + ' -mapper %s/espa-site/espa/mapper.py ' % home_dir
+            hadoop_run_command = hadoop_run_command + ' -file %s/espa-site/espa/ ' % home_dir
+            #hadoop_run_command = hadoop_run_command + ' -file %s/espa-site/espa/cdr_ecv.py ' % home_dir
+            #hadoop_run_command = hadoop_run_command + ' -file %s/espa-site/espa/commonfrange.py ' % home_dir
+            hadoop_run_command = hadoop_run_command + ' -mapper %s/espa-site/espa/cdr_ecv_mapper.py ' % home_dir
             hadoop_run_command = hadoop_run_command + ' -cmdenv ESPA_WORK_DIR=$ESPA_WORK_DIR'
             hadoop_run_command = hadoop_run_command + ' -cmdenv HOME=$HOME'
             hadoop_run_command = hadoop_run_command + ' -cmdenv USER=$USER'
