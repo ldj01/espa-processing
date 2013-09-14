@@ -200,7 +200,7 @@ if __name__ == '__main__':
                         cksum_file_location = data['destination_cksum_file']
                         logger(sceneid, "cksum_file_location:%s" % cksum_file_location)
                         
-                        server.markSceneComplete(sceneid,orderid,processing_location,completed_scene_location,cksum_file_location,"")
+                        server.markSceneComplete(sceneid, orderid, processing_location, completed_scene_location, cksum_file_location, "")
                         logger(sceneid, "Mark scene complete...")
                     else:
                         raise Exception("Did not receive a distribution location or cksum file location for:%s.  Status line was:%s\n.  Log:%s" % (sceneid,status_line, output))
