@@ -215,12 +215,12 @@ if __name__ == '__main__':
                 
             if options.has_key('reproject') and options['reproject'] == True:
                 target_proj = str(options['target_projection']).lower()
-                
+            
                 if target_proj == "sinu":
                     proj = build_sinu_proj_string(float(options['central_meridian']),
                                            float(options['false_easting']),
                                            float(options['false_northing']))
-                    cmd += ' --projection %s ' % proj
+                    cmd += " --projection '%s' " % proj
                     
                 elif target_proj == "aea":
                     proj = build_albers_proj_string(float(options['std_parallel_1']),
@@ -230,14 +230,14 @@ if __name__ == '__main__':
                                                     float(options['false_easting']),
                                                     float(options['false_northing']),
                                                     options['datum'])
-                    cmd += ' --projection %s ' % proj
+                    cmd += " --projection '%s' " % proj
                     
                 elif target_proj == "utm":
                     proj = build_utm_proj_string(int(options['utm_zone']),
                                                  options['utm_north_south'])
-                    cmd += ' --projection %s ' % proj
+                    cmd += " --projection '%s' " % proj
                 elif target_proj == "lonlat":
-                    cmd += ' --projection %s ' % build_geographic_proj_string()
+                    cmd += " --projection '%s' " % build_geographic_proj_string()
                 else:
                     logger(sceneid, "Unknown projection requested:%s" % target_proj)
             
