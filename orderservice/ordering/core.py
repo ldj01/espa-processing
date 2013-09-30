@@ -522,13 +522,3 @@ def load_ee_orders():
                 helperlogger(log_msg)
                 log_msg = "Error detail: lta return message:%s  lta return status code:%s" % (msg, status)
                 helperlogger(log_msg)
-   
-    
-
-                
-            
-    
-
-    
-
-
