@@ -16,6 +16,11 @@ Details for: {{ order.orderid }}
 {% csrf_token %}
 <div id="wrapper">
 
+{% if system_message %}
+    {% include "system_message.html" %}
+{% endif %}
+
+
 {% if scenes %}
 <h4>Details for: {{ order.orderid }}</h4>
 

@@ -15,6 +15,11 @@
 {% block content %}
 <!--<form action="/status/" method="post"> {% csrf_token %}-->
 <div id="wrapper">
+
+{% if system_message %}
+    {% include "system_message.html" %}
+{% endif %}
+
     
     <h4>Show Orders</h4>
     <p>

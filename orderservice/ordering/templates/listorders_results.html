@@ -18,6 +18,11 @@
 {% csrf_token %}
 <div id="wrapper">
 
+{% if system_message %}
+    {% include "system_message.html" %}
+{% endif %}
+
+
 {% if orders %}
 <h4>
 <a href="/status/{{email}}/rss/"><img border="0" alt="RSS Status Feed" title="Completed Scene RSS Feed" src="http://landsat.usgs.gov/espa/images/feed-icon-28x28.png"></img></a>
