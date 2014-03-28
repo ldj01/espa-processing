@@ -62,10 +62,10 @@ def neworder(request):
     ####################################################################################################################
     #Includes the system message in the request context if one is defined
     ####################################################################################################################
-    def include_system_message(request_context):
-        msg = Configuration().getValue('system_message')
-        if len(msg) > 0 and msg != '' and msg != 'nothing':
-            c['system_message'] = msg
+    #def include_system_message(request_context):
+    #    msg = Configuration().getValue('system_message')
+    #    if len(msg) > 0 and msg != '' and msg != 'nothing':
+    #        c['system_message'] = msg
     
     
         
