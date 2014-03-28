@@ -35,7 +35,7 @@ def get_option_style(request):
 
 def include_system_message():
     msg = Configuration().getValue('system_message')
-    if msg == True:
+    if msg == 'True':
         return True
     else:
         return False
