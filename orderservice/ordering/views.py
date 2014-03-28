@@ -50,7 +50,9 @@ def index(request):
     c = Context({
         'my_message': 'LSDS Science R&D Processing',
     })
-            
+    
+    c['system_message'] = include_system_message()
+        
     return HttpResponse(t.render(c))
                        
 ########################################################################################################################
