@@ -39,7 +39,7 @@ def display_system_message(context):
         context['display_system_message'] = True
         context['system_message_title'] = Configuration().getValue('system_message_title')
         context['system_message_1'] = Configuration().getValue('system_message_1')
-        context['system_message_2'] = Configuraiton().getValue('system_message_2')
+        context['system_message_2'] = Configuration().getValue('system_message_2')
         context['system_message_3'] = Configuration().getValue('system_message_3')
     else:
         context['display_system_message'] = False
