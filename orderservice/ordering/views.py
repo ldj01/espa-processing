@@ -156,6 +156,8 @@ def listorders(request, email=None, output_format=None):
     t = loader.get_template('listorders_results.html')
     mimetype = 'text/html'   
     c = RequestContext(request)
+    c['email'] = email
+    c['orders'] = orders
     
     display_system_message(c)
   
