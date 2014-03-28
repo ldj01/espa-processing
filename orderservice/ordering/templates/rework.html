@@ -188,7 +188,7 @@
     <form action="/new/" method="post" id="request_form" name="request_form" enctype="multipart/form-data"> {% csrf_token %}
     
     <div id="wrapper">
-    {% if system_message %}
+    {% if display_system_message %}
         {% include "system_message.html" %}
     {% endif %}
     
