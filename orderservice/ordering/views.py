@@ -156,9 +156,9 @@ def listorders(request, email=None, output_format=None):
     t = loader.get_template('listorders_results.html')
     mimetype = 'text/html'   
     c = RequestContext(request)
-    c['system_message'] = include_system_message()
-    c['email'] = email
-    c['orders'] = orders
+    
+    display_system_message(c)
+  
     return HttpResponse(t.render(c), mimetype=mimetype)
 
 
@@ -172,7 +172,6 @@ def orderdetails(request, orderid, output_format=None):
     t = loader.get_template('orderdetails.html')
     mimetype = 'text/html'   
     c = RequestContext(request)
-
 
     display_system_message(c)
 
