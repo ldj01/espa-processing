@@ -32,6 +32,14 @@ def get_option_style(request):
         user = request.user
         return "display:none" if (user.username != 'espa_admin' and user.username != 'espa_internal') else ""
 
+
+def include_system_message():
+    msg = Configuration().getValue('system_message')
+    if msg == True:
+        return True
+    else:
+        return False
+
 ########################################################################################################################
 #default landing page for the ordering application
 #@login_required(login_url='/login/')
@@ -70,7 +78,9 @@ def neworder(request):
                            )
         #t = loader.get_template('neworder.html')
         t = loader.get_template('rework.html')
-        include_system_message(c)
+        
+        c['system_message'] = include_system_message()
+       
         return HttpResponse(t.render(c))
         
     elif request.method == 'POST':
@@ -125,6 +135,7 @@ def listorders(request, email=None, output_format=None):
     if email is None or not core.validate_email(email):
         form = ListOrdersForm()
         c = RequestContext(request,{'form': form})
+        c['system_message'] = include_system_message()
         t = loader.get_template('listorders.html')
         return HttpResponse(t.render(c))
 
@@ -133,6 +144,7 @@ def listorders(request, email=None, output_format=None):
     t = loader.get_template('listorders_results.html')
     mimetype = 'text/html'   
     c = RequestContext(request)
+    c['system_message'] = include_system_message()
     c['email'] = email
     c['orders'] = orders
     return HttpResponse(t.render(c), mimetype=mimetype)
@@ -148,6 +160,8 @@ def orderdetails(request, orderid, output_format=None):
     t = loader.get_template('orderdetails.html')
     mimetype = 'text/html'   
     c = RequestContext(request)
+
+    c['system_message'] = include_system_message()
 
     order,scenes = core.get_order_details(orderid)
     c['order'] = order
