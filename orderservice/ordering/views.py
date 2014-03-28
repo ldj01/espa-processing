@@ -38,12 +38,12 @@ def get_option_style(request):
 ########################################################################################################################
 def index(request):
       
-    #t = loader.get_template('index.html')
-    #c = Context({
-    #    'my_message': 'LSDS Science R&D Processing',
-    #})
+    t = loader.get_template('index.html')
+    c = Context({
+        'my_message': 'LSDS Science R&D Processing',
+    })
             
-    return HttpResponse("you hit it")
+    return HttpResponse(t.render(c))
                        
 ########################################################################################################################
 #Request handler for /neworder.  Handles getting new orders into the system
