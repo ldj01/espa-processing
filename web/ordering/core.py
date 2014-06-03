@@ -8,9 +8,10 @@ from email.mime.text import MIMEText
 from smtplib import *
 from models import Scene
 from models import Order
-from models import DoesNotExist
 from models import Configuration
 from django.contrib.auth.models import User
+from django.conf import settings
+
 import json
 import datetime
 import lta
@@ -59,65 +60,6 @@ def validate_email(email):
     '''
     pattern = '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$'
     return re.match(pattern, email.strip())
-
-
-# Runs a query against the database to list all orders for a given email
-def list_all_orders(email):
-    '''lists out all orders for a given user'''
-    return Order.objects.filter(email=email).order_by('-order_date')
-
-
-#  Runs a database query to return all the scenes + status for a given order
-def get_order_details(orderid):
-    '''Returns the full order and all attached scenes'''
-    order = Order.objects.get(orderid=orderid)
-    scenes = Scene.objects.filter(order__orderid=orderid)
-    return order, scenes
-
-
-# Captures a new order and gets it into the database
-def enter_new_order(username,
-                    order_source,
-                    scene_list,
-                    option_string,
-                    note=''):
-    '''Places a new espa order in the database
-    
-    Keyword args:
-    username -- Username of user placing this order
-    order_source -- Should always be 'espa'
-    scene_list -- A list containing scene ids
-    option_string -- Dictionary of options for the order
-    note -- Optional user supplied note
-
-    Return:
-    The fully populated Order object    
-    '''
-    
-    # find the user
-    user = User.objects.get(username = username)
-    
-    # create the order
-    order = Order()
-    order.orderid = generate_order_id(email)
-    order.user = user
-    order.note = note
-    order.status = 'ordered'
-    order.order_date = datetime.datetime.now()
-    order.product_options = option_string
-    order.order_source = order_source
-    order.save()
-
-    # save the scenes for the order
-    for s in set(scene_list):
-        scene = Scene()
-        scene.name = s
-        scene.order = order
-        scene.order_date = datetime.datetime.now()
-        scene.status = 'submitted'
-        scene.save()
-
-    return order
 
 
 def send_email(recipient, subject, body):
@@ -199,7 +141,7 @@ Your scenes
     #s.quit()
 
 
-def getSceneInputPath(sceneid):
+def get_scene_input_path(sceneid):
     '''Returns the location on the online cache where a scene
     does/should reside
 
@@ -229,7 +171,9 @@ def scenecache_is_alive(url='http://edclpdsftp.cr.usgs.gov:50000/RPC2'):
     try:
         return urllib2.urlopen(url, data="").getcode() == 200
     except Exception, e:
-        print e
+        if settings.DEBUG:        
+            print("Scene cache could not be contacted")
+            print(e)
         return False
 
 
@@ -272,80 +216,146 @@ def scenes_are_nlaps(scenelist):
 
 
 def get_scenes_to_process():
-    #sanity checks
+    # sanity checks
 
-    #load up any orders from ee that are waiting for us.
+    # load up any orders from ee that are waiting for us.
+    if settings.DEBUG:
+        print("Load ee orders")
     load_ee_orders()
 
-    #are there even any scenes to handle?
+    # are there even any scenes to handle?
     statuses = ['submitted', 'onorder', 'oncache']
+    
     if Scene.objects.filter(status__in=statuses).count() <= 0:
         return []
 
-    #is cache online?
+    # is cache online?
     if not scenecache_is_alive():
         print("Could not contact the scene cache...")
         raise Exception("Could not contact the scene cache...")
 
-    #the cache is online and there are scenes to process...
+    # the cache is online and there are scenes to process...
 
-    #get all the scenes that are in submitted status
-    submitted = Scene.objects.filter(status='submitted')[:500]
+    # get all the scenes that are in submitted status in the order in which
+    # they were placed... limit to 500 at once
+
+    submitted = Scene.objects.filter(status='submitted')\
+    .order_by('order__order_date')[:500]
 
     if submitted:
-
+        if settings.DEBUG:
+            print("Found %i submitted scenes" % len(submitted))
+        
         #check to see which ones are sitting on cache
         submitted_list = [s.name for s in submitted]
 
-         #check to see if they are NLAPS scenes first!!!
+         # find all the submitted scenes that are nlaps and reject them
         nlaps_scenes = scenes_are_nlaps(submitted_list)
 
-        for s in submitted:
-            if s.name in nlaps_scenes:
-                s.status = 'unavailable'
-                s.note = 'TMA data cannot be processed'
-                s.save()
+        if settings.DEBUG:
+            print("Found %i nlaps scenes" % len(nlaps_scenes))
+        
+        # bulk update the nlaps scenes
+        if len(nlaps_scenes) > 0:
+            Scene.objects.filter(status='submitted', name__in=nlaps_scenes)\
+            .update(status='unavailable', note='TMA data cannot be processed')
+        
+        # find all the submitted scenes that are available in the tm/etm
+        # dirs on the online cache
+        oncache_scenes = scenes_on_cache(submitted_list)
+        
+        if settings.DEBUG:
+            print("Found %i oncache scenes" % len(nlaps_scenes))
 
-        oncache = scenes_on_cache(submitted_list)
+        # bulk update the oncache scene status
+        if len(oncache_scenes) > 0:
+            Scene.objects.filter(status='submitted', name__in=oncache_scenes)\
+            .update(status='oncache')
+            
+        # placeholder list for all the scenes that are not nlaps but are 
+        # not oncache
+        need_to_order = set(submitted_list) - set(nlaps_scenes) 
+        
+        need_to_order = set(need_to_order) - set(oncache_scenes)
 
-        for s in submitted:
-            if s.name in oncache:
-                s.status = 'oncache'
-                s.save()
+        if settings.DEBUG:
+            print("Found %i scenes to order" % len(need_to_order))
 
-        #find the submitted scenes that need to be ordered
-        need_to_order = []
-        for s in submitted:
-            if s.status == 'submitted':
-                need_to_order.append(s)
+        # Need to run another query because the calls to order_scenes require
+        # the user contactid.  We don't want to make 500 separate calls to the 
+        # EE service so this will allow us to group all the scenes by 
+        # the order and thus the contactid
+        
+        # this resultset is only a dict of orderids, not a normal queryset
+        # result
+        orders  = Scene.objects.filter(status='submitted', 
+                                       name__in=need_to_order)\
+                                       .values('order').distinct()
+        
+        order_wrapper = lta.OrderWrapperServiceClient()        
 
-        #order these scenes from Tram now
-        if len(need_to_order) > 0:
+        # look through the Orders that are part of this 500 scene set
+        # and place one order with lta for each one that has scenes that 
+        # need to be ordered
+        #
+        # The response that comes back is a dictionary with 
+        # the lta_order_id key and a list of scene names in a key 'ordered'
+        # Two other lists may exist as well, 'invalid' and 'available'
+        # The lta_order_id and 'ordered' lists are either both present or 
+        # missing if nothing was ordered.
+        # The other two lists may or may not exist as well depending on if 
+        # there are any scenes in those statuses
+        for o in orders:
+            eo = Order.objects.get(id=o.get('order'))
+            
+            contactid = eo.user.userprofile.contactid
 
-            tram_order_id = lta.LtaServices().order_scenes(need_to_order)
-            #something went wrong
-            if tram_order_id == -1:
-                raise Exception("Could not order scenes from TRAM!")
+            eo_scenes = eo.scene_set.filter(status='submitted').values('name')            
+            
+            eo_scene_list = [s.get('name') for s in eo_scenes]
 
-            for to in need_to_order:
-                to.tram_order_id = tram_order_id
-                to.status = 'onorder'
-                to.save()
+            if settings.DEBUG:            
+                print("Ordering  %i scenes" % len(eo_scene_list))
+                print eo_scene_list
+            
+            if len(eo_scene_list) > 0:
+                resp_dict = order_wrapper.order_scenes(eo_scene_list,
+                                                          contactid)        
+                
+                if settings.DEBUG:
+                    print("Resp dict")
+                    print(resp_dict)                
+                
+                if 'ordered' in resp_dict:
+                    eo.scene_set.filter(status='submitted',
+                                        name__in=resp_dict['ordered'])\
+                                       .update(status='onorder',
+                                       tram_order_id=resp_dict['lta_order_id'])
+                
+                if 'invalid' in resp_dict:
+                    eo.scene_set.filter(status='submitted',
+                                        name__in=resp_dict['invalid'])\
+                                        .update(status='unavailable',
+                                         note='Not found in landsat archive')
+                            
+                if 'available' in resp_dict:
+                    eo.scene_set.filter(status='submitted',
+                                        name__in=resp_dict['available'])\
+                                        .update(status='oncache')
+    # This completes handling all the scenes that were in submitted status
+    
+    # Now going to go through and check for scenes that were in onorder status
+    # and then go ahead and build the actual response for this method
 
-    #get all the scenes that are on order and check to see if they are on cache
-    ordered = Scene.objects.filter(status='onorder')
+    # Check all onorder scenes and update if they are oncache
+    ordered_scenes = Scene.objects.filter(status='onorder')
 
-    if ordered:
-        ordered_list = [s.name for s in ordered]
+    if ordered_scenes:
         #oncache2 = cache.has_scenes(ordered_list)
-        oncache2 = scenes_on_cache(ordered_list)
+        oncache2 = scenes_on_cache([s.name for s in ordered_scenes])
 
-        #change status to oncache for the ones that were found
-        for s in ordered:
-            if s.name in oncache2:
-                s.status = 'oncache'
-                s.save()
-
+        ordered_scenes.filter(name__in=oncache2).update(status='oncache')
+        
     #don't do anything with the ones that weren't oncache.
     #They remain on order.
     #
@@ -355,8 +365,14 @@ def get_scenes_to_process():
     #Pull the current oncache set from the db
     #and include it as the result
     results = []
-    available_scenes = Scene.objects.filter(status='oncache')[:500]
+    
+    # get 500 scenes ready to be processed in the order in which they were
+    # submitted
+    available_scenes = Scene.objects.filter(status='oncache')\
+    .order_by('order__order_date')[:500]
+
     if available_scenes:
+
         for a in available_scenes:
             order = a.order
             options = order.product_options
@@ -429,6 +445,7 @@ def update_status(name, orderid, processing_loc, status):
     helperlogger("Updating scene:%s order:%s from location:%s to %s\n"
                  % (name, orderid, processing_loc, status))
 
+
     try:
         s = Scene.objects.get(name=name, order__orderid=orderid)
         if s:
@@ -462,8 +479,8 @@ def set_scene_error(name, orderid, processing_loc, error):
         return True
     else:
         #something went wrong, don't clean up other disk.
-        print("Scene[%s] not found in Order[%s]"
-              % (name, orderid))
+        if settings.DEBUG:
+            print("Scene[%s] not found in Order[%s]"  % (name, orderid))
 
         return False
 
@@ -475,14 +492,16 @@ def set_scene_unavailable(name, orderid, processing_loc, error, note):
     if s:
         s.status = 'unavailable'
         s.processing_location = processing_loc
+        s.completion_date = datetime.datetime.now()
         s.log_file_contents = error
         s.note = note
         s.save()
 
         if o.order_source == 'ee':
             #update ee
-            ltasvc = lta.LtaServices()
-            ltasvc.update_order(o.ee_order_id, s.ee_unit_id, 'R')
+            client = lta.OrderUpdateServiceClient()
+            
+            client.update_order(o.ee_order_id, s.ee_unit_id, 'R')
 
         #if there are no more inprocess scenes,
         #mark the order complete and send email
@@ -536,8 +555,8 @@ def mark_scene_complete(name,
 
         if o.order_source == 'ee':
             #update ee
-            ltasvc = lta.LtaServices()
-            ltasvc.update_order(o.ee_order_id, s.ee_unit_id, 'C')
+            client = lta.OrderUpdateServiceClient()
+            client.update_order(o.ee_order_id, s.ee_unit_id, 'C')
 
         update_order_if_complete(o.orderid, s)
 
@@ -584,48 +603,51 @@ def load_ee_orders():
     ''' Loads all the available orders from lta into
     our database and updates their status
     '''
-    ltasvc = lta.LtaServices()
-
-    #This returns a dict that contains a list of dicts{}
-    #key:(order_num,email) = list({sceneid:, unit_num:})
-    orders = ltasvc.get_available_orders()
-
-    #use this to cache calls to EE Registration Service username lookups
-    local_cache = {}
     
-    #Capture in our db
+    order_delivery = lta.OrderDeliveryServiceClient()
+    
+    registration = lta.RegistrationServiceClient()
+    
+    order_update = lta.OrderUpdateServiceClient()
+
+    # This returns a dict that contains a list of dicts{}
+    # key:(order_num, email, contactid) = list({sceneid:, unit_num:})
+    orders = order_delivery.get_available_orders()
+
+    # use this to cache calls to EE Registration Service username lookups
+    local_cache = {}
+
+    # Capture in our db
     for eeorder, email, contactid in orders:
 
-        #create the orderid based on the info from the eeorder
-        order_id = Order().generate_ee_order_id(email, eeorder)
+        # create the orderid based on the info from the eeorder
+        order_id = Order.generate_ee_order_id(email, eeorder)
 
-        # paranoia... initialize this to None since its used in the loop.
+        # paranoia... initialize this to None since it's used in the loop.
         order = None
-        
-        #go look to see if it already exists in the db
+
+        # go look to see if it already exists in the db
         try:
             order = Order.objects.get(orderid=order_id)
-        except DoesNotExist:
-            
-            reg = lta.RegistrationServiceClient()
+        except Order.DoesNotExist:
 
             # retrieve the username from the EE registration service
             # cache this call
             if contactid in local_cache:
                 username = local_cache[contactid]
             else:
-                username = reg.get_username(contactid)
+                username = registration.get_username(contactid)
                 local_cache[contactid] = username
-            
-            #now look the user up in our db.  Create if it doesn't exist
+
+            # now look the user up in our db.  Create if it doesn't exist
             # we'll want to put some caching in place here too
             try:
                 user = User.objects.get(username=username)
-                
+
                 # make sure the email we have on file is current
                 if not user.email or user.email is not email:
-                 user.email = email
-                 user.save()
+                    user.email = email
+                    user.save()
             except User.DoesNotExist:
                 # Create a new user. Note that we can set password
                 # to anything, because it won't be checked; the password
@@ -637,24 +659,22 @@ def load_ee_orders():
                 user.save()
 
                 UserProfile(contactid=contactid, user=user).save()
-                
-             
-            # We have a user now.  Now build the new Order since it 
+
+            # We have a user now.  Now build the new Order since it
             # wasn't found.
-            #Didn't find it in the db... make the order now
             order = Order()
             order.orderid = order_id
             order.user = user
             order.order_type = 'level2_ondemand'
             order.status = 'ordered'
             order.note = 'EarthExplorer order id: %s' % eeorder
-            order.product_options = json.dumps(Order().get_default_ee_options)
+            order.product_options = json.dumps(Order.get_default_ee_options())
             order.ee_order_id = eeorder
             order.order_source = 'ee'
             order.order_date = datetime.datetime.now()
             order.save()
 
-        for s in orders[eeorder, email]:
+        for s in orders[eeorder, email, contactid]:
             #go look for the scene by ee_unit_id.  This will stop
             #duplicate key update collisions
 
@@ -664,8 +684,8 @@ def load_ee_orders():
                                           ee_unit_id=s['unit_num'])
 
                 if scene.status == 'complete':
-
-                    success, msg, status = ltasvc.update_order(eeorder,
+                    
+                    success, msg, status = order_update.update_order(eeorder,
                                                                s['unit_num'],
                                                                "C")
                     if not success:
@@ -681,8 +701,9 @@ def load_ee_orders():
                         status code:%s" % (msg, status)
 
                         helperlogger(log_msg)
+                        
                 elif scene.status == 'unavailable':
-                    success, msg, status = ltasvc.update_order(eeorder,
+                    success, msg, status = order_update.update_order(eeorder,
                                                                s['unit_num'],
                                                                "R")
 
@@ -699,7 +720,7 @@ def load_ee_orders():
                         status code:%s" % (msg, status)
 
                         helperlogger(log_msg)
-            except DoesNotExist:
+            except Scene.DoesNotExist:
                 scene = Scene()
                 scene.name = s['sceneid']
                 scene.ee_unit_id = s['unit_num']
@@ -708,8 +729,8 @@ def load_ee_orders():
                 scene.status = 'submitted'
                 scene.save()
 
-            #Update LTA
-            success, msg, status = ltasvc.update_order(eeorder,
+            # Update LTA
+            success, msg, status = order_update.update_order(eeorder,
                                                        s['unit_num'],
                                                        "I")
             if not success:

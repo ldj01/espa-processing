@@ -1,8 +1,8 @@
 from cStringIO import StringIO
 from django.conf import settings
 from suds.client import Client as SoapClient
+from ordering.models import Scene
 
-import re
 import urllib2
 import collections
 import xml.etree.ElementTree as xml
@@ -14,7 +14,7 @@ __author__ = "David V. Hill"
 class LTAService(object):
     ''' Abstract service client for all of LTA services '''
 
-    def __init__(self, environment="dev"):
+    def __init__(self):
         self.xml_header = "<?xml version ='1.0' encoding='UTF-8' ?>"
 
     def __repr__(self):
@@ -25,30 +25,13 @@ class LTAService(object):
         based on the environment
 
         Keyword args:
-        service_name Name of a service as defined in
-        settings.py SERVICE_LOCATOR dictionary
+        service_name Name of a service as defined in settings.py
+        SERVICE_LOCATOR dictionary
 
         Returns:
         A url to contact the desired service
         '''
         return settings.URL_FOR(service_name)
-
-    def sceneid_is_sane(self, sceneid):
-        ''' validates against a properly structure L7, L5 or L4 sceneid
-
-        Keyword args:
-        sceneid The scene name to check the structure of
-
-        Returns:
-        True if the value matches a sceneid structure
-        False if the value does not match a sceneid structure
-        '''
-
-        p = re.compile('L(E7|T4|T5)\d{3}\d{3}\d{4}\d{3}\w{3}\d{2}')
-        if p.match(sceneid):
-            return True
-        else:
-            return False
 
     def get_product_code(self, sceneid):
         ''' Returns the proper product code given the sensor code
@@ -62,7 +45,7 @@ class LTAService(object):
         string 'T271' for LE7 after day 151 of year 2003 (SLC OFF)
         '''
 
-        if not self.sceneid_is_sane(sceneid):
+        if not Scene.sceneid_is_sane(sceneid):
             return ''
 
         ''' returns the proper product code (e.g. T273) given a scene id '''
@@ -76,10 +59,12 @@ class LTAService(object):
 
 
 class RegistrationServiceClient(LTAService):
-    
-    def __init__(self):
-        client = SoapClient(self.get_url('registration'))
-        
+
+    def __init__(self, *args, **kwargs):
+        super(RegistrationServiceClient, self).__init__(*args, **kwargs)
+        self.url = self.get_url('registration')
+        self.client = SoapClient(self.url)
+
     def login_user(self, username, password):
         '''Authenticates a username/password against the EE Registration
         Service
@@ -92,7 +77,7 @@ class RegistrationServiceClient(LTAService):
         EE contactId if login is successful
         Exception if unsuccessful with reason
         '''
-       
+
         return repr(self.client.service.loginUser(username, password))
 
     def get_user_info(self, username, pw):
@@ -107,34 +92,33 @@ class RegistrationServiceClient(LTAService):
         Exception if the username/password is invalid
         None if there is no email on file.
         '''
-        
+
         # build a named tuple for the return value
         userinfo = collections.namedtuple('UserInfo',
-                                         'email',
-                                         'first_name',
-                                         'last_name')
-        
+                                          'email',
+                                          'first_name',
+                                          'last_name')
+
         info = self.client.service.getUserInfo(username, pw).contactAddress
 
         userinfo.email = info.email
         userinfo.first_name = info.firstName
-        userinfo.last_name = info.lastName        
-        
+        userinfo.last_name = info.lastName
+
         return userinfo
-        
-        
+
     def get_username(self, contactid):
         '''Retrieves the users EE username given their contactid
-        
+
         Keyword args:
         contactid -- The EE contactid
-        
+
         Return:
         The EE username
         '''
-        
+
         return self.client.service.getUserName(contactid)
-        
+
 
 #TODO: Fix the error checking around the calls to this service.
 class OrderWrapperServiceClient(LTAService):
@@ -148,6 +132,10 @@ class OrderWrapperServiceClient(LTAService):
     must be performed when placing orders, and only the LTA team really know
     what those calls are.  Their services are largely undocumented.
     '''
+
+    def __init__(self, *args, **kwargs):
+        super(OrderWrapperServiceClient, self).__init__(*args, **kwargs)
+        self.url = self.get_url("orderservice")
 
     def get_sensor_name(self, sceneid):
         ''' returns the EE sensor name (e.g. 'LANDSAT_ETM') given a scene id
@@ -163,6 +151,7 @@ class OrderWrapperServiceClient(LTAService):
         '''
 
         sensor = ''
+
         code = self.get_product_code(sceneid)
 
         if code == "T273":
@@ -197,8 +186,7 @@ class OrderWrapperServiceClient(LTAService):
         '''
 
         #build the service + operation url
-        url = self.get_url("orderservice")
-        request_url = "%s/%s" % (url, 'verifyScenes')
+        request_url = "%s/%s" % (self.url, 'verifyScenes')
 
         #build the request body
         sb = StringIO()
@@ -231,13 +219,20 @@ class OrderWrapperServiceClient(LTAService):
         if code == 200:
             response = h.read()
         else:
-            #Return the code and reason as an exception.  TODO: fix this.
-            print code
-
+            msg = StringIO()
+            msg.write("Error in lta.OrderWrapperServiceClient.verify_scenes\n")
+            msg.write("Non 200 response code from service\n")
+            msg.write("Response code was:%s" % code)
+            # Return the code and reason as an exception
+            raise Exception(msg.getvalue())            
+            
         h.close()
 
         #parse, transform and return response
         retval = dict()
+        response = response.replace('&', '&amp;')
+        response = response.replace('\n', '')
+        
         root = xml.fromstring(response)
         scenes = root.getchildren()
 
@@ -250,9 +245,6 @@ class OrderWrapperServiceClient(LTAService):
 
         return retval
 
-    ########################################################
-    #TODO: Use this once the order wrapper gets fixed by EE
-    ########################################################
     def order_scenes(self, scene_list, contact_id, priority=5):
         ''' Orders scenes through OrderWrapperService
 
@@ -264,14 +256,38 @@ class OrderWrapperServiceClient(LTAService):
                    orders.
 
         Returns:
-        ?
+        A dictionary containing the lta_order_id and up to three lists of scene
+        ids, organized by their status.  If there are no scenes in the 
+        ordered status, the ordered list and the lta_order_id will not be 
+        present.  If there are no scenes in either the invalid or available
+        status, then those respective lists will not be present.
+        
+        Example 1 (Scenes in each status):
+        {
+            'lta_order_id': 'abc123456',
+            'ordered': ['scene1', 'scene2', 'scene3'],
+            'invalid': ['scene4', 'scene5', 'scene6'],
+            'available': ['scene7', 'scene8', 'scene9']
+         }
+         
+        Example 2 (No scenes ordered):
+        {
+            'invalid': ['scene1', 'scene2', 'scene3'],
+            'available': ['scene4', 'scene5', 'scene6']
+        }
+
+        Example 3 (No scenes available):
+        {
+            'lta_order_id': 'abc123456',
+            'ordered': ['scene1', 'scene2', 'scene3'],
+            'invalid': ['scene4', 'scene5', 'scene6']
+        }
         '''
 
-        #build service url
-        url = self.get_url("orderservice")
-        request_url = "%s/%s" % (url, 'submitOrder')
+        # build service url
+        request_url = "%s/%s" % (self.url, 'submitOrder')
 
-        #build the request body
+        # build the request body
         sb = StringIO()
         sb.write(self.xml_header)
         sb.write("<orderParameters ")
@@ -283,7 +299,7 @@ class OrderWrapperServiceClient(LTAService):
         sb.write("<contactId>%s</contactId>" % contact_id)
         sb.write("<requestor>ESPA</requestor>")
 
-        #1111111 is a dummy value.
+        # 1111111 is a dummy value.
         sb.write("<externalReferenceNumber>%s</externalReferenceNumber>"
                  % 1111111)
         sb.write("<priority>%i</priority>" % priority)
@@ -296,13 +312,18 @@ class OrderWrapperServiceClient(LTAService):
         sb.write("</orderParameters>")
 
         request_body = sb.getvalue()
+        
+        if settings.DEBUG:
+            print("Request body")
+            print (request_body)
+            print("")
 
-        #set the required headers
+        # set the required headers
         headers = dict()
         headers['Content-Type'] = 'application/xml'
         headers['Content-Length'] = len(request_body)
 
-        #send the request and check response
+        # send the request and check response
         request = urllib2.Request(request_url, request_body, headers)
         h = urllib2.urlopen(request)
 
@@ -310,15 +331,112 @@ class OrderWrapperServiceClient(LTAService):
         if h.getcode() == 200:
             response = h.read()
         else:
-            #need to raise Exception here
-            print("Error ordering scenes from the orderwrapper, code was:%s"
-                  % h.getcode())
+            msg = StringIO()
+            msg.write("Error in lta.OrderWrapperServiceClient.order_scenes\n")
+            msg.write("Non 200 response code from service\n")
+            msg.write("Response code was:%s" % h.getcode())
+            # Return the code and reason as an exception
+            raise Exception(msg.getvalue())            
+            
         h.close()
 
-        print response
+        # parse the response
+        '''
+        Example response for scenes
 
+        <?xml version="1.0" encoding="UTF-8"?>
+        <orderStatus xmlns="http://earthexplorer.usgs.gov/schema/orderStatus"
+                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                     xsi:schemaLocation="http://earthexplorer.usgs.gov/schema/orderStatus http://edclxs151.cr.usgs.gov/OrderWrapperServicedevsys/orderStatus.xsd">
+            <scene>
+                <sceneId>LT51490212007234IKR00</sceneId>
+                <prodCode>T273</prodCode>
+                <sensor>LANDSAT_TM</sensor>
+                <status>ordered</status>
+                <orderNumber>0621405213419</orderNumber>
+            </scene>
+
+            <scene>
+                <sceneId>LE70290302013153EDC00</sceneId>
+                <prodCode>T271</prodCode>
+                <sensor>LANDSAT_ETM_SLC_OFF</sensor>
+                <status>available</status>
+                <downloadURL>http://edclpdsftp.cr.usgs.gov/lsatL1GT/29/30/2013/LE70290302013153EDC00.tar.gz?iid=LE70290302013153EDC00&did=80752&ver=</downloadURL>
+            </scene>
+
+            <scene>
+                <sceneId>LE70290302003142EDC00</sceneId>
+                <prodCode>T272</prodCode>
+                <sensor>LANDSAT_ETM_PLUS</sensor>
+                <status>invalid</status>
+            </scene>
+
+        </orderStatus>
+        '''
+    
+        if settings.DEBUG:
+            print(response)
+        
+        # since the xml is namespaced there is a namespace prefix for every
+        # element we are looking for.  Build those values to make the code 
+        # a little more sane
+        response_namespace = 'http://earthexplorer.usgs.gov/schema/orderStatus'
+        ns_prefix = ''.join(['{', response_namespace, '}'])
+        status_elem = ''.join([ns_prefix, 'status'])
+        sceneid_elem = ''.join([ns_prefix, 'sceneId'])
+        order_number_elem = ''.join([ns_prefix, 'orderNumber'])
+        # leave this here for now.  We aren't using it yet but will when EE
+        # straightens out their urls + internal dowloading capability        
+        #dload_url_elem = ''.join([ns_prefix, 'downloadURL'])
+        
+        # escape the ampersands and get rid of newlines if they exist
+        # was having problems with the sax escape() function
+        response = response.replace('&', '&amp;').replace('\n', '')
+
+        #this will get us the list of <scene></scene> elements
+        scene_elements = xml.fromstring(response).getchildren()
+        
+        # the dictionary we will return as the response
+        # contains the lta_order_id at the top (if anything is ordered)
+        # and possibly three lists of scenes, one for each status
+        # retval['available'] = list()
+        # retval['invalid'] = list()
+        # retval['ordered'] = list()
+        retval = dict()
+                    
+        for scene in scene_elements:
+            
+            name = scene.find(sceneid_elem).text           
+            status = scene.find(status_elem).text
+            
+            if status == 'available':
+                if not 'available' in retval:
+                    retval['available'] = [name]
+                else:
+                    retval['available'].append(name)
+            elif status == 'invalid':
+                if not 'invalid' in retval:
+                    retval['invalid'] = [name]
+                else:
+                    retval['invalid'].append(name)
+            elif status == 'ordered':
+                if not 'ordered' in retval:
+                    retval['ordered'] = [name]
+                else:
+                    retval['ordered'].append(name)
+                    
+                if not 'lta_order_id' in retval:
+                    retval['lta_order_id'] = scene.find(order_number_elem).text
+                                            
+        return retval
+        
 
 class OrderUpdateServiceClient(LTAService):
+
+    def __init__(self, *args, **kwargs):
+        super(OrderUpdateServiceClient, self).__init__(*args, **kwargs)
+        self.url = self.get_url('orderupdate')
+        self.client = SoapClient(self.url)
 
     #TODO - Migrate this call to the OrderWrapperService
     def get_order_status(self, order_number):
@@ -333,9 +451,8 @@ class OrderUpdateServiceClient(LTAService):
 
         retval = dict()
 
-        client = SoapClient(self.get_url("orderupdate"))
-        resp = client.factory.create("getOrderStatusResponse")
-        resp = client.service.getOrderStatus(order_number)
+        resp = self.client.factory.create("getOrderStatusResponse")
+        resp = self.client.service.getOrderStatus(order_number)
 
         if resp is None:
             return dict()
@@ -372,17 +489,17 @@ class OrderUpdateServiceClient(LTAService):
         returnval = collections.namedtuple('UpdateOrderResponse',
                                            ['success', 'message', 'status'])
 
-        client = SoapClient(self.get_url('orderupdate'))
-        resp = client.factory.create('StatusOrderReturn')
+        resp = self.client.factory.create('StatusOrderReturn')
 
         try:
             unit_number = int(unit_number)
             status = str(status)
-            resp = client.service.setOrderStatus(orderNumber=str(order_number),
-                                                 systemId='EXTERNAL',
-                                                 newStatus=status,
-                                                 unitRangeBegin=unit_number,
-                                                 unitRangeEnd=unit_number)
+            resp = self.client.service.setOrderStatus(
+                orderNumber=str(order_number),
+                systemId='EXTERNAL',
+                newStatus=status,
+                unitRangeBegin=unit_number,
+                unitRangeEnd=unit_number)
         except Exception, e:
             raise e
 
@@ -438,23 +555,27 @@ class OrderUpdateServiceClient(LTAService):
 class OrderDeliveryServiceClient(LTAService):
     '''EE SOAP Service client to find orders for ESPA which originated in EE'''
 
+    def __init__(self, *args, **kwargs):
+        super(OrderDeliveryServiceClient, self).__init__(*args, **kwargs)
+        self.url = self.get_url('orderdelivery')
+        self.client = SoapClient(self.url)
+
     def get_available_orders(self):
         ''' Returns all the orders that were submitted for ESPA through EE
 
         Returns:
         A dictionary of lists that contain dictionaries
 
-        response[ordernumber, email] = [
+        response[ordernumber, email, contactid] = [
             {'sceneid':orderingId, 'unit_num':unitNbr},
             {...}
         ]
         '''
         rtn = dict()
-        client = SoapClient(self.get_url("orderdelivery"))
-        resp = client.factory.create("getAvailableOrdersResponse")
+        resp = self.client.factory.create("getAvailableOrdersResponse")
 
         try:
-            resp = client.service.getAvailableOrders("ESPA")
+            resp = self.client.service.getAvailableOrders("ESPA")
         except Exception, e:
             raise e
 
@@ -473,20 +594,20 @@ class OrderDeliveryServiceClient(LTAService):
                        % (u.orderingId, u.orderNbr, u.unitNbr, u.productCode))
                 continue
 
-            #pp = processing_params
+            # get the processing parameters
             pp = u.processingParam
-            
+
             try:
                 email = pp[pp.index("<email>") + 7:pp.index("</email>")]
             except:
                 print ("Could not find an email address for \
                 order[%s] unit[%s]: rejecting" % (u.orderNbr, u.unitNbr))
 
-                #we didn't get an email... fail the order
+                # we didn't get an email... fail the order
                 resp = OrderUpdateServiceClient().update_order(u.orderNbr,
                                                                u.unitNbr,
                                                                "F")
-                #we didn't get a response from the service
+                # we didn't get a response from the service
                 if not resp.success:
                     raise Exception("Could not update order[%s] unit[%s] \
                     to status:'F'. Error message:%s Error status code:%s"
@@ -496,18 +617,19 @@ class OrderDeliveryServiceClient(LTAService):
                                        resp.status))
                 else:
                     continue
-                
+
             try:
-                contactid = pp[pp.index("<contactid>") + 11:pp.index("</contactid>")]
+                # get the contact id
+                cid = pp[pp.index("<contactid>") + 11:pp.index("</contactid>")]
             except:
                 print ("Could not find a contactid for \
                 order[%s] unit[%s]: rejecting" % (u.orderNbr, u.unitNbr))
 
-                #we didn't get an email... fail the order
+                # didn't get an email... fail the order
                 resp = OrderUpdateServiceClient().update_order(u.orderNbr,
                                                                u.unitNbr,
                                                                "F")
-                #we didn't get a response from the service
+                # didn't get a response from the service
                 if not resp.success:
                     raise Exception("Could not update order[%s] unit[%s] \
                     to status:'F'. Error message:%s Error status code:%s"
@@ -518,8 +640,8 @@ class OrderDeliveryServiceClient(LTAService):
                 else:
                     continue
 
-            #This is a dictionary that contains a list of dictionaries
-            key = (str(u.orderNbr), str(email), str(contactid))
+            # This is a dictionary that contains a list of dictionaries
+            key = (str(u.orderNbr), str(email), str(cid))
 
             if not key in rtn:
                 rtn[key] = list()
