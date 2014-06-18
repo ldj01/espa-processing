@@ -30,7 +30,7 @@ if not os.path.exists(ESPA_CONFIG_FILE):
     raise Exception("Espa config file not found at %s... exiting"
                     % ESPA_CONFIG_FILE)
 
-config = ConfigParser.SafeConfigParser()
+config = ConfigParser.RawConfigParser()
 with open(ESPA_CONFIG_FILE) as file_handle:
     config.readfp(file_handle)
 
@@ -65,7 +65,7 @@ if os.environ.get('ESPA_DEBUG', '').lower() == 'true':
     TEMPLATE_DEBUG = True
 
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -156,27 +156,22 @@ TEMPLATE_LOADERS = (
 )
 
 #ESPA Service URLS
-#TODO: update machine names to cnames... get these from the EE crew
 SERVICE_LOCATOR = {
     "dev": {
-        "orderservice": "http://edclxs151.cr.usgs.gov/OrderWrapperServicedevsys/resources",
-        "orderdelivery": "http://edclxs151.cr.usgs.gov/OrderDeliverydevsys/OrderDeliveryService?WSDL",
-        "orderupdate": "http://edclxs151.cr.usgs.gov/OrderStatusServicedevsys/OrderStatusService?wsdl",
-        "massloader": "http://edclxs151.cr.usgs.gov/MassLoaderdevsys/MassLoader?wsdl",
-        "registration": "http://edclxs151.cr.usgs.gov/RegistrationServicedevsys/RegistrationService?wsdl",
+        "orderservice": "http://eedev.cr.usgs.gov/OrderWrapperServicedevsys/resources",
+        "orderdelivery": "http://eedev.cr.usgs.gov/OrderDeliverydevsys/OrderDeliveryService?WSDL",
+        "orderupdate": "http://eedev.cr.usgs.gov/OrderStatusServicedevsys/OrderStatusService?wsdl",
+        "massloader": "http://eedev.cr.usgs.gov/MassLoaderdevsys/MassLoader?wsdl",
+        "registration": "http://eedev.cr.usgs.gov/RegistrationServicedevsys/RegistrationService?wsdl",
         "register_user": "https://eedev.cr.usgs.gov/devsys/register/",
         "forgot_login": "https://eedev.cr.usgs.gov/devsys/login/username"
     },
     "tst": {
         "orderservice": "http://eedevmast.cr.usgs.gov/OrderWrapperServicedevmast/resources",
-        "orderdelivery": "http://edclxs151.cr.usgs.gov/OrderDeliverydevmast/OrderDeliveryService?WSDL",
-        "orderupdate": "http://edclxs151.cr.usgs.gov/OrderStatusServicedevmast/OrderStatusService?wsdl",
-        #"massloader":"http://edclxs151.cr.usgs.gov/MassLoaderdevmast/MassLoader?wsdl",
-        #The tst env for MassLoader is wired to ops because Landsat
-        #doesn't usually fulfill test orders unless they are specifically
-        #asked to.
-        "massloader": "http://edclxs152.cr.usgs.gov/MassLoader/MassLoader?wsdl",
-        "registration": "http://edclxs151.cr.usgs.gov/RegistrationServicedevmast/RegistrationService?wsdl",
+        "orderdelivery": "http://eedevmast.cr.usgs.gov/OrderDeliverydevmast/OrderDeliveryService?WSDL",
+        "orderupdate": "http://eedevmast.cr.usgs.gov/OrderStatusServicedevmast/OrderStatusService?wsdl",
+        "massloader": "http://eedevmast.cr.usgs.gov/MassLoaderdevmast/MassLoader?wsdl",
+        "registration": "http://eedevmast.cr.usgs.gov/RegistrationServicedevmast/RegistrationService?wsdl",
         "register_user": "https://eedevmast.cr.usgs.gov/register",
         "forgot_login": "https://eedevmast.cr.usgs.gov/login/username"
     },

@@ -9,6 +9,7 @@ from smtplib import *
 from models import Scene
 from models import Order
 from models import Configuration
+from models import UserProfile
 from django.contrib.auth.models import User
 from django.conf import settings
 
@@ -78,7 +79,7 @@ def send_initial_email(order):
 
     status_base_url = Configuration().getValue('espa.status.url')
 
-    status_url = ('%s/%s') % (status_base_url, order.email)
+    status_url = ('%s/%s') % (status_base_url, order.user.email)
 
     header = ("""Thank you for your order ( %s ).  Your order has been received and is currently being processed.
 
@@ -307,8 +308,19 @@ def get_scenes_to_process():
         # there are any scenes in those statuses
         for o in orders:
             eo = Order.objects.get(id=o.get('order'))
-            
-            contactid = eo.user.userprofile.contactid
+
+            try:
+                contactid = None
+                contactid = eo.user.userprofile.contactid
+            except Exception, e:
+                print("Exception getting contactid for user:%s" \
+                % eo.user.username)
+                print(e)
+
+            if not contactid:
+                print("No contactid associated with order:%s... skipping" 
+                    % o.get('order'))
+                continue
 
             eo_scenes = eo.scene_set.filter(status='submitted').values('name')            
             
@@ -343,6 +355,28 @@ def get_scenes_to_process():
                                         name__in=resp_dict['available'])\
                                         .update(status='oncache')
     # This completes handling all the scenes that were in submitted status
+    # TODO -- Create new method handle_submitted_scenes() or something to that 
+    # effect.  get_scenes_to_process down to this comment should be included 
+    # in it.
+      
+    # The rest of this method down should actually be 'get_scenes_to_process()'
+      
+    # TODO -- renamed this module 'actions.py'
+    # TODO -- OO'ize the order handling into OrderHandler()
+    # TODO -- Encapsulate all models.py classes here... don't let them flow
+    # TODO --     up into the callers of this module.
+    # TODO -- OrderHandler().get_scenes_to_process()
+    # TODO -- OrderHandler().determine_disposition()
+    # TODO -- OrderHandler().cancel(Order())
+    # TODO -- OrderHandler().cancel(Order(), Scene())
+    # TODO -- OrderHandler().cleanup(Order())
+    # TODO -- OrderHandler().status(Order())
+    # TODO -- OrderHandler().status(Order(), Scene())
+      
+    # TODO -- Build HadoopHandler() as well.
+    # TODO -- HadoopHandler().cluster_status()
+    # TODO -- HadoopHandler().cancel_job(jobid)
+    
     
     # Now going to go through and check for scenes that were in onorder status
     # and then go ahead and build the actual response for this method
@@ -442,14 +476,14 @@ def helper_logger(msg):
 
 def update_status(name, orderid, processing_loc, status):
 
-    helperlogger("Updating scene:%s order:%s from location:%s to %s\n"
+    helper_logger("Updating scene:%s order:%s from location:%s to %s\n"
                  % (name, orderid, processing_loc, status))
 
 
     try:
         s = Scene.objects.get(name=name, order__orderid=orderid)
         if s:
-            helperlogger("Running update query for %s.  Setting status to:%s"
+            helper_logger("Running update query for %s.  Setting status to:%s"
                          % (s.name, status))
 
             s.status = status
@@ -459,12 +493,12 @@ def update_status(name, orderid, processing_loc, status):
             s = None
             return True
         else:
-            helperlogger("Scene[%s] not found in order[%s]"
+            helper_logger("Scene[%s] not found in order[%s]"
                          % (name, orderid))
 
             return False
     except Exception, e:
-        helperlogger("Exception in updateStatus:%s" % e)
+        helper_logger("Exception in updateStatus:%s" % e)
 
 
 #  Marks a scene in error and accepts the log file contents
@@ -596,7 +630,10 @@ def update_order_if_complete(orderid, scene):
 
         #only send the email if this was an espa order.
         if o.order_source == 'espa':
-            sendCompletionEmail(o.email, o.orderid, readyscenes=scene_names)
+            order_email = o.user.email
+            if not order_email:
+                order_email = o.email
+            send_completion_email(order_email, o.orderid, readyscenes=scene_names)
 
 
 def load_ee_orders():
@@ -648,6 +685,13 @@ def load_ee_orders():
                 if not user.email or user.email is not email:
                     user.email = email
                     user.save()
+                    
+                #try to retrieve the userprofile.  if it doesn't exist create
+                try:
+                    user.userprofile
+                except UserProfile.DoesNotExist:
+                    UserProfile(contactid=contactid, user=user).save()
+                    
             except User.DoesNotExist:
                 # Create a new user. Note that we can set password
                 # to anything, because it won't be checked; the password
@@ -694,13 +738,13 @@ def load_ee_orders():
                         scene name:%s order:%s" \
                         % (eeorder, s['unit_num'], scene.name, order.orderid)
 
-                        helperlogger(log_msg)
+                        helper_logger(log_msg)
 
                         log_msg = "Error detail: \
                         lta return message:%s  lta return \
                         status code:%s" % (msg, status)
 
-                        helperlogger(log_msg)
+                        helper_logger(log_msg)
                         
                 elif scene.status == 'unavailable':
                     success, msg, status = order_update.update_order(eeorder,
@@ -713,13 +757,13 @@ def load_ee_orders():
                         scene name:%s order:%s" \
                         % (eeorder, s['unit_num'], scene.name, order.orderid)
 
-                        helperlogger(log_msg)
+                        helper_logger(log_msg)
 
                         log_msg = "Error detail: \
                         lta return message:%s  lta return \
                         status code:%s" % (msg, status)
 
-                        helperlogger(log_msg)
+                        helper_logger(log_msg)
             except Scene.DoesNotExist:
                 scene = Scene()
                 scene.name = s['sceneid']
@@ -740,9 +784,9 @@ def load_ee_orders():
                                      scene.name,
                                      order.orderid)
 
-                helperlogger(log_msg)
+                helper_logger(log_msg)
 
                 log_msg = "Error detail: lta return message:%s  \
                 lta return status code:%s" % (msg, status)
 
-                helperlogger(log_msg)
+                helper_logger(log_msg)
