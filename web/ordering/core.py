@@ -633,7 +633,9 @@ def update_order_if_complete(orderid, scene):
             order_email = o.user.email
             if not order_email:
                 order_email = o.email
-            send_completion_email(order_email, o.orderid, readyscenes=scene_names)
+            send_completion_email(order_email,
+                                  o.orderid,
+                                  readyscenes=scene_names)
 
 
 def load_ee_orders():
