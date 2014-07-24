@@ -118,6 +118,45 @@ class AbstractView(View):
         return context
 
 
+class AjaxForm(AbstractView):
+    def get(self, request):
+        template = 'test.html'
+        c = self._get_request_context(request)
+        t = loader.get_template(template)
+        return HttpResponse(t.render(c))
+        
+
+class TestAjax(AbstractView):
+    
+    def render_to_json_response(self, context, **response_kwargs):
+        data = json.dumps(context)
+        response_kwargs['content_type'] = 'application/json'
+        return HttpResponse(data, **response_kwargs)
+    
+    def get(self, request):
+        
+        name = request.GET.get('name', '')
+                    
+        data = {'name':name, 'status':'GET request ok'}
+
+        return self.render_to_json_response(data)
+        
+    
+    def post(self, request):
+        
+        name = "No name provided"
+        if 'name' in request.POST:
+            name = request.POST['name']
+        
+        age = "No age provided"
+        if 'age' in request.POST:
+            age = request.POST['age']
+                
+        data = {'name':name, 'age':age, 'status':'POST request ok'}
+        
+        return self.render_to_json_response(data)
+
+
 class Index(AbstractView):
     template = 'index.html'
 
