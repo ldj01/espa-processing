@@ -36,7 +36,7 @@ from espa_logging import log
 
 # local objects and methods
 import util
-import settings
+from common import settings
 
 
 # ============================================================================
