@@ -20,8 +20,11 @@ import random
 
 
 # local objects and methods
-import settings
-
+# determine where settings is
+try:
+    import settings
+except ImportError:
+    from common import settings
 
 # ============================================================================
 def get_logfile(orderid, sceneid):
