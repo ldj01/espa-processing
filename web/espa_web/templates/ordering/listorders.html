@@ -1,0 +1,76 @@
+{% extends "ordering/base.html" %}
+
+{% block title %} Bulk Order Status {% endblock %}
+{% block header %}Bulk Order Status {% endblock %}
+{% block style %}
+
+	span.error {
+		color:red;
+	}
+
+    div.boxbody {
+        border:none;
+        width:500px;
+        margin:0 auto; 
+        padding-top:30px;   
+        padding-bottom:30px;
+        line-height:35px;
+        text-align:center;
+        border:1px solid #CDCDCD;
+        background-color:#DEDEDE;
+    }
+
+    div.boxbody h4 {
+        
+        margin-bottom:15px;
+    }
+
+{% endblock %}
+
+{% block nav %}{% include "ordering/bulk_ordering_nav.html" %}{% endblock %}
+
+{% block content %}
+
+<div id="wrapper">
+
+{% if display_system_message %}
+    {% include "ordering/system_message.html" %}
+{% endif %}
+
+    
+
+    <div class='boxbody'>
+
+    <h4>Please enter the email address used to submit the order</h4>
+        
+    {% if errors.email %}
+    <span class="error">{{errors.email}}</span><br/>
+    {% endif %}
+    
+    <label for="id_email">Email address:</label>
+    {{ form.email }}
+    
+        
+    
+	<!--<input type="submit" value="Submit"' />-->
+	<input type="button" value="Submit" onclick='switchUrl();' />
+   
+    </div>
+
+</div>
+
+<!--</form>-->
+
+<div class="footer"></div>
+
+<div class="spacer"></div>
+
+
+<script type='text/javascript'>
+ function switchUrl() {
+    var email_addr = document.getElementById('id_email');
+    window.location = window.location + email_addr.value;
+    return false;
+ }
+</script>
+{% endblock %}
