@@ -301,6 +301,13 @@ LOGGER_CONFIG = {
             'filename': '/tmp/espa_lpcs_cron.log',
             'mode': 'a'
         },
+        'espa.cron.orderdisp': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'formatter': 'espa.standard',
+            'filename': '/tmp/espa_order_disposition_cron.log',
+            'mode': 'a'
+        },
         'espa.processing': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
@@ -349,6 +356,12 @@ LOGGER_CONFIG = {
             'level': 'INFO',
             'propagate': False,
             'handlers': ['espa.cron.lpcs']
+        },
+        'espa.cron.orderdisp': {
+            # To be used by the order disposition cron
+            'level': 'INFO',
+            'propagate': False,
+            'handlers': ['espa.cron.orderdisp']
         },
         'espa.processing': {
             # To be used by the processing system
