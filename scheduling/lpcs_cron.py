@@ -32,7 +32,7 @@ from espa_constants import EXIT_SUCCESS
 
 # imports from espa/espa_common
 from espa_common import settings, utilities
-from espa_common.espa_logging import EspaLogging
+from espa_common.logger_factory import EspaLogging
 
 LOGGER_NAME = 'espa.cron.plot'
 
@@ -186,7 +186,7 @@ def process_plot_requests():
                  '-file', '%s/espa-site/processing/transfer.py' % home_dir,
                  '-file', '%s/espa-site/processing/util.py' % home_dir,
                  '-file', '%s/espa-site/processing/warp.py' % home_dir,
-                 '-file', ('%s/espa-site/espa_common/espa_logging.py'
+                 '-file', ('%s/espa-site/espa_common/logger_factory.py'
                            % home_dir),
                  '-file', '%s/espa-site/espa_common/sensor.py' % home_dir,
                  '-file', '%s/espa-site/espa_common/settings.py' % home_dir,
