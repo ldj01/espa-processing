@@ -45,7 +45,8 @@ def send_initial_email(order):
     scenes = Scene.objects.filter(order__id=order.id)
 
     for s in scenes:
-        m.append("%s\n" % s.name)
+        if s != 'plot':
+            m.append("%s\n" % s.name)
 
     email_msg = ''.join(m)
 
@@ -76,7 +77,8 @@ def send_completion_email(email, ordernum, readyscenes=[]):
     m.append("-------------------------------------------\n")
 
     for r in readyscenes:
-        m.append("%s\n" % r)
+        if r != 'plot':
+            m.append("%s\n" % r)
 
     email_msg = ''.join(m)
 
