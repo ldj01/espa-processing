@@ -950,6 +950,24 @@ def warp_image(parms, no_data_value=None,
 # END - warp_image
 
 
+def get_original_projection(img_filename):
+
+    ds = gdal.Open(img_filename)
+    if ds is None:
+        raise RuntimeError("GDAL failed to open (%s)" % img_filename)
+
+    ds_srs = osr.SpatialReference()
+    ds_srs.ImportFromWkt(ds.GetProjection())
+
+    proj4 = ds_srs.ExportToProj4()
+
+    del (ds_srs)
+    del (ds)
+
+    return proj4
+# END - get_original_projection
+
+
 # ============================================================================
 def warp_espa_data(parms, scene, xml_filename=None):
     '''
@@ -985,8 +1003,9 @@ def warp_espa_data(parms, scene, xml_filename=None):
             # Verify and create proj.4 projection string
             target_proj4_projection = convert_target_projection_to_proj4(parms)
         else:
-            # Default to the original
-            target_proj4_projection = get_original_projection()
+            # Default to the original using the first band
+            target_proj4_projection = \
+                get_original_projection(bands.band[0].get_file_name())
 
         parms['target_proj4_projection'] = target_proj4_projection
 
