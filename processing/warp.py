@@ -1004,8 +1004,9 @@ def warp_espa_data(parms, scene, xml_filename=None):
             target_proj4_projection = convert_target_projection_to_proj4(parms)
         else:
             # Default to the original using the first band
-            target_proj4_projection = \
-                get_original_projection(bands.band[0].get_file_name())
+            # Must have single quotes for gdalwarp to work
+            target_proj4_projection = "'%s'" \
+                % get_original_projection(bands.band[0].get_file_name())
 
         parms['target_proj4_projection'] = target_proj4_projection
 
