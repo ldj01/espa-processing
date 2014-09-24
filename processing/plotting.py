@@ -58,6 +58,7 @@ except:
 import parameters
 import transfer
 import staging
+import util
 import distribution as dist
 
 # Setup the default colors
