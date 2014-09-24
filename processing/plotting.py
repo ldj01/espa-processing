@@ -267,7 +267,7 @@ def validate_parameters(parms):
     # Default these
     if not parameters.test_for_parameter(options, 'source_host'):
         # Use the default output host name to find the plot input
-        options['source_host'] = util.get_output_hostname
+        options['source_host'] = util.get_output_hostname()
 
     if not parameters.test_for_parameter(options, 'source_username'):
         options['source_username'] = None
