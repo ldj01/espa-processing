@@ -1172,6 +1172,9 @@ def process(parms):
         os.chdir(current_directory)
 
     logger.info("Plot Processing Complete")
+
+    # Let the caller know where we put these on the destination system
+    return (destination_product_file, destination_cksum_file)
 # END - process
 
 
