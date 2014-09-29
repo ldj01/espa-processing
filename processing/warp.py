@@ -981,6 +981,16 @@ def warp_espa_data(parms, scene, xml_filename=None):
     validate_parameters(parms, scene)
     logger.debug(parms)
 
+    # ------------------------------------------------------------------------
+    # De-register the DOQ drivers since they may cause a problem with some of
+    # our generated imagery.  And we are only processing envi format today
+    # inside the processing code.
+    doq1 = gdal.GetDriverByName('DOQ1')
+    doq2 = gdal.GetDriverByName('DOQ2')
+    doq1.Deregister()
+    doq2.Deregister()
+    # ------------------------------------------------------------------------
+
     # Verify something was provided for the XML filename
     if xml_filename is None or xml_filename == '':
         raise ee.ESPAException(ee.ErrorCodes.warping, "Missing XML Filename")
