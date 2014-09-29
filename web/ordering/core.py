@@ -33,20 +33,25 @@ def send_initial_email(order):
     status_url = ('%s/%s') % (status_base_url, order.user.email)
 
     m = list()
-    m.append("Thank you for your order (%s).  " % order.orderid)
-    m.append("Your order has been received and is currently ")
+    m.append("Thank you for your order.\n\n")
+    m.append("%s has been received and is currently " % order.orderid)
     m.append("being processed.  ")
-    m.append("You will receive an email notification when all units on this ")
-    m.append("order have been completed.\n\n")
-    m.append("You can check the status of your order and download already ")
-    m.append("completed scenes directly from %s\n\n" % status_url)
-    m.append("Requested scenes:\n")
+    m.append("Another email will be sent when this order is complete.\n\n")
+    m.append("You may view the status of your order and download ")
+    m.append("completed products directly from %s\n\n" % status_url)
+    m.append("Requested products\n")
+    m.append("-------------------------------------------\n")
 
     scenes = Scene.objects.filter(order__id=order.id)
 
     for s in scenes:
-        if s != 'plot':
-            m.append("%s\n" % s.name)
+        
+        product_name = s.name
+        
+        if product_name == 'plot':
+            product_name = "Plotting & Statistics"
+            
+        m.append("%s\n" % product_name)
 
     email_msg = ''.join(m)
 
@@ -66,19 +71,22 @@ def send_completion_email(email, ordernum, readyscenes=[]):
 
     status_url = ('%s/%s') % (status_base_url, email)
     m = list()
-    m.append("Your order is now complete and can be downloaded ")
-    m.append("from %s.\n" % status_url)
+    m.append("%s is now complete and can be downloaded " % ordernum)
+    m.append("from %s.\n\n" % status_url)
     m.append("This order will remain available for 14 days.  ")
     m.append("Any data not downloaded will need to be reordered ")
-    m.append("after this time.\n")
+    m.append("after this time.\n\n")
     m.append("Please contact Customer Services at 1-800-252-4547 or ")
-    m.append("email custserv@usgs.gov with any questions.\n")
-    m.append("Your scenes\n")
+    m.append("email custserv@usgs.gov with any questions.\n\n")
+    m.append("Requested products\n")
     m.append("-------------------------------------------\n")
 
     for r in readyscenes:
-        if r != 'plot':
-            m.append("%s\n" % r)
+
+        if r == 'plot':
+            r = "Plotting & Statistics"
+            
+        m.append("%s\n" % r)
 
     email_msg = ''.join(m)
 
