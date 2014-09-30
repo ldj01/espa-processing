@@ -79,6 +79,7 @@ def build_argument_parser():
                                            warp.valid_projections,
                                            warp.valid_ns,
                                            warp.valid_pixel_size_units,
+                                           warp.valid_image_extents_units,
                                            warp.valid_resample_methods,
                                            warp.valid_datums)
 
