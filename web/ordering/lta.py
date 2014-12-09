@@ -505,8 +505,8 @@ class OrderWrapperServiceClient(LTAService):
 
             retval = {}
 
-            external_host = common_settings.EXTERNAL_CACHE_HOST
-            internal_hosts = common_settings.ESPA_CACHE_HOST_LIST
+            ehost = common_settings.EXTERNAL_CACHE_HOST
+            ihosts = common_settings.ESPA_CACHE_HOST_LIST
             
             for index, scene in enumerate(list(scene_elements)):
                 name = scene.find(sceneid_elem).text
@@ -522,9 +522,9 @@ class OrderWrapperServiceClient(LTAService):
                 if __dload_url is not None:
                     dload_url = __dload_url.text
                     
-                    if dload_url.find(external_host) != -1:
-                        dload_url.replace(external_host,
-                                          internal_hosts[index % 2])
+                    if dload_url.find(ehost) != -1:
+                        dload_url = dload_url.replace(ehost,
+                                                      ihosts[index % 2])
 
                 retval[name] = {'lta_code': prod_code,
                                 'sensor': sensor,
