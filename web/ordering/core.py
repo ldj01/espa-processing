@@ -293,8 +293,8 @@ def handle_onorder_landsat_products():
     select_related = 'order'
 
     products = Scene.objects.filter(**filters).select_related(select_related)
-    product_tram_ids = products.values_list('tram_order_id').distinct()
-    tram_ids = [p[0] for p in product_tram_ids]
+    product_tram_ids = products.values_list('tram_order_id')
+    tram_ids = list(set([p[0] for p in product_tram_ids]))
 
     rejected = []
     available = []
@@ -302,6 +302,12 @@ def handle_onorder_landsat_products():
     for tid in tram_ids:
         order_status = lta.get_order_status(tid)
 
+        # There are a variety of product statuses that come back from tram
+        # on this call.  I is inprocess, Q is queued for the backend system,
+        # D is duplicate, C is complete and R is rejected.  We are ignoring
+        # all the statuses except for R and C because we don't care.
+        # In the case of D (duplicates), when the first product completes, all
+        # duplicates will also be marked C
         for unit in order_status['units']:
             if unit['unit_status'] == 'R':
                 rejected.append(unit['sceneid'])
@@ -379,22 +385,7 @@ def handle_submitted_landsat_products():
         product_list = [p.name for p in products]
         
         results = lta.order_scenes(product_list, contact_id)
-        #results = lta.get_download_urls(product_list, contact_id)
-        oncache = []
-        orderable = []
-        unavailable = []
-
-        for product_id in results.keys():
-            if results[product_id]['status'] == 'available':
-                #its on cache
-                oncache.append(product_id)
-            elif results[product_id]['status'] == 'orderable':
-                #place order
-                orderable.append(product_id)
-            elif results[product_id]['status'] == 'invalid':
-                #not found in inventory
-                unavailable.append(product_id)
-
+               
         if 'available' in results and len(results['available']) > 0:
             #update db
             filter_args = {
@@ -403,7 +394,9 @@ def handle_submitted_landsat_products():
                 'sensor_type': 'landsat',
                 'order__user__userprofile__contactid': contact_id
             }
+            
             update_args = {'status': 'oncache'}
+            
             Scene.objects.filter(**filter_args).update(**update_args)
 
         if 'ordered' in results and len(results['ordered']) > 0:
@@ -423,6 +416,7 @@ def handle_submitted_landsat_products():
             #unit status
                                        
             invalid = [p for p in products if p.name in results['invalid']]
+            
             set_products_unavailable(invalid, 'Not found in landsat archive')
 
     #Here's the real logic for this handling submitted landsat products
