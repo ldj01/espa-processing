@@ -522,7 +522,7 @@ class OrderWrapperServiceClient(LTAService):
                 if __dload_url is not None:
                     dload_url = __dload_url.text
                     
-                    if dload_url.find() != -1:
+                    if dload_url.find(external_host) != -1:
                         dload_url.replace(external_host,
                                           internal_hosts[index % 2])
 
