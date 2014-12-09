@@ -65,7 +65,7 @@ MAX_DISTRIBUTION_ATTEMPTS = 5
 ESPA_CACHE_HOST_LIST = ['edclxs67p', 'edclxs140p']
 
 # The external name for the online cache.  Runs over 1Gb line.
-EXTERNAL_CACHE_HOST = 'edclpdsftp'
+EXTERNAL_CACHE_HOST = 'edclpdsftp.cr.usgs.gov'
 
 # Where to place the temporary scene processing log files
 LOGFILE_PATH = '/tmp'
