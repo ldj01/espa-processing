@@ -230,8 +230,7 @@ class OrderHandler(object):
 def set_product_unavailable(name, orderid, processing_loc, error, note):
 
     product = Scene.objects.get(name=name, order__orderid=orderid)
-    product = product.select_related('order')
-
+    
     product.status = 'unavailable'
     product.processing_location = processing_loc
     product.completion_date = datetime.datetime.now()
