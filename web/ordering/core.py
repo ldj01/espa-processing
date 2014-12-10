@@ -458,27 +458,34 @@ def handle_submitted_plot_products():
     filter_args = {'status': 'ordered', 'order_type': 'lpcs'}
     plot_orders = Order.objects.filter(**filter_args)
 
-    if len(plot_orders) > 0:
 
-        for order in plot_orders:
-            product_count = order.scene_set.count()
+    for order in plot_orders:
+        product_count = order.scene_set.count()
 
-            complete_status = ['complete', 'unavailable']
-            filter_args = {'status__in': complete_status}
-            complete_products = order.scene_set.filter(**filter_args).count()
+        filter_args = {'status__in': 'complete'}
+        complete_products = order.scene_set.filter(**filter_args).count()
+        
+        filter_args = {'status__in': 'unavailable'}
+        unavailable_products = order.scene_set.filter(**filter_args).count()
 
-            #if this is an lpcs order and there is only 1 product left that
-            #is not done, it must be the plot product.  Will verify this
-            #in next step.  Plotting cannot run unless everything else
-            #is done.
 
-            if product_count - complete_products == 1:
-                filter_args = {'status': 'submitted', 'sensor_type': 'plot'}
-                plot = order.scene_set.filter(**filter_args)
-                if len(plot) >= 1:
-                    for p in plot:
+        #if this is an lpcs order and there is only 1 product left that
+        #is not done, it must be the plot product.  Will verify this
+        #in next step.  Plotting cannot run unless everything else
+        #is done.
+
+        if product_count - (unavailable_products + complete_products) == 1:
+            filter_args = {'status': 'submitted', 'sensor_type': 'plot'}
+            plot = order.scene_set.filter(**filter_args)
+            if len(plot) >= 1:
+                for p in plot:
+                    if len(complete_products) == 0:
+                        p.status = 'unavailable'
+                        p.note = ('No input products were available for '
+                                  'plotting and statistics')
+                    else:
                         p.status = 'oncache'
-                        p.save()
+                    p.save()
 
 
 @transaction.atomic
