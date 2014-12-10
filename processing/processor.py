@@ -563,6 +563,10 @@ class CDRProcessor(CustomizationProcessor):
             specified products.
         '''
 
+        # Nothing to do if the user did not specify anything to build
+        if not self._build_products:
+            return
+
         logger = self._logger
 
         options = self._parms['options']
