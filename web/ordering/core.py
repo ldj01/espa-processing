@@ -461,10 +461,10 @@ def handle_submitted_plot_products():
     for order in plot_orders:
         product_count = order.scene_set.count()
 
-        filter_args = {'status__in': 'complete'}
+        filter_args = {'status': 'complete'}
         complete_products = order.scene_set.filter(**filter_args).count()
         
-        filter_args = {'status__in': 'unavailable'}
+        filter_args = {'status': 'unavailable'}
         unavailable_products = order.scene_set.filter(**filter_args).count()
 
 
@@ -478,7 +478,7 @@ def handle_submitted_plot_products():
             plot = order.scene_set.filter(**filter_args)
             if len(plot) >= 1:
                 for p in plot:
-                    if len(complete_products) == 0:
+                    if complete_products == 0:
                         p.status = 'unavailable'
                         p.note = ('No input products were available for '
                                   'plotting and statistics')
