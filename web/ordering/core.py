@@ -641,15 +641,15 @@ def set_product_error(name, orderid, processing_loc, error):
         elif resolution.status == 'unavailable':
             set_product_unavailable(product.name,
                                     product.order.orderid,
-                                    product.processing_loc,
-                                    product.error,
+                                    processing_loc,
+                                    error,
                                     resolution.reason)
         elif resolution.status == 'retry':
             try:
                 set_product_retry(product.name,
                                   product.order.orderid,
-                                  product.processing_loc,
-                                  product.error,
+                                  processing_loc,
+                                  error,
                                   resolution.reason,
                                   resolution.extra['retry_after'],
                                   resolution.extra['retry_limit'])
