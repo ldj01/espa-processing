@@ -38,8 +38,11 @@ class LPDAACService(object):
         result = False
 
         try:
-            url = self.get_download_url(product)
-            if url:
+            url = self.get_download_urls(product)
+            
+            if 'download_url' in url:
+                url = url[product]['download_url']
+            
                 response = None
 
                 try:
@@ -48,14 +51,14 @@ class LPDAACService(object):
                         result = True
                 except Exception, e:
                     print ("Exception checking inputs:%s" % e)
-                    return False
+                    return result
                 finally:
                     if response is not None:
                         response.close()
                         response = None
 
         except sensor.ProductNotImplemented:
-            pass
+            print('%s is not an implemented LPDAAC product' % product)
 
         return result
 
