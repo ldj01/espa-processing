@@ -33,9 +33,9 @@ class SceneAdmin(admin.ModelAdmin):
               'processing_location',
               'note',
               'log_file_contents',
-              'retry_after',
+              ('retry_after',
               'retry_limit',
-              'retry_count']
+              'retry_count')]
 
     #this should stop django from querying the Order in addition to the Scene
     list_select_related = ()
