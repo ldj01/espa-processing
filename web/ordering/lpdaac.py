@@ -81,6 +81,9 @@ class LPDAACService(object):
             if not url.lower().startswith("http"):
                 url = ''.join(['http://', url])
 
+            if not product.product_id in urls:
+                urls[product.product_id] = {}
+                
             urls[product.product_id]['download_url'] = url
 
         return urls
