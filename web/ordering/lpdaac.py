@@ -40,7 +40,7 @@ class LPDAACService(object):
         try:
             url = self.get_download_urls(product)
             
-            if 'download_url' in url:
+            if 'download_url' in url[product]:
                 url = url[product]['download_url']
             
                 response = None
