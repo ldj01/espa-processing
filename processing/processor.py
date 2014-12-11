@@ -1472,28 +1472,6 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
         super(LandsatOLIProcessor, self).__init__(parms)
 
     # -------------------------------------------
-    def sr_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate surface reflectance.
-            Evaluates the options requested by the user to define the command
-            line string to use, or returns None indicating nothing todo.
-        '''
-
-        options = self._parms['options']
-
-        cmd = None
-        # Check to see if Thermal or TOA is required
-        if (options['include_sr_toa']
-                or options['include_sr_thermal']
-                or options['include_cfmask']):
-
-            cmd = ['do_l8_sr.py', '--xml', self._xml_filename, '--write_toa']
-            cmd = ' '.join(cmd)
-
-        return cmd
-
-    # -------------------------------------------
     def cfmask_command_line(self):
         '''
         Description:
