@@ -81,7 +81,8 @@ class Errors(object):
 
         key = 'solar zenith angle out of range'
         status = 'unavailable'
-        reason = 'Night scenes cannot be processed to surface reflectance'
+        reason = ('This scene cannot be processed to surface reflectance '
+                  'due to the high solar zenith angle')
         return self.__find_error(error_message, key, status, reason)
 
     def missing_ledaps_aux_data(self, error_message):
