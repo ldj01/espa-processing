@@ -135,6 +135,8 @@ def input_exists(product):
 def verify_products(products):
     return LPDAACService().verify_products(products)
 
-
+def get_download_url(product):
+    return LPDAACService().get_download_url(product)
+    
 def get_download_urls(products):
     return LPDAACService().get_download_urls(products)
