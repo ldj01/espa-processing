@@ -35,17 +35,13 @@ class LPDAACService(object):
         Returns:
         True/False
         '''
-        
-        if isinstance(product, str) or isinstance(product, unicode):
-            product = sensor.instance(product)
-            
         result = False
 
         try:
             url = self.get_download_urls(product)
             
-            if 'download_url' in url[product.product_id]:
-                url = url[product.product_id]['download_url']
+            if 'download_url' in url:
+                url = url[product]['download_url']
             
                 response = None
 
@@ -66,9 +62,9 @@ class LPDAACService(object):
 
         return result
 
-    def get_download_urls(self, product):
+    def get_download_url(self, product):
 
-        urls = {}
+        url = {}
 
         #be nice and accept a string
         if isinstance(product, str) or isinstance(product, unicode):
@@ -76,19 +72,26 @@ class LPDAACService(object):
 
         #also be nice and accept a sensor.Modis object
         if isinstance(product, sensor.Modis):
-
+            
             path = self._build_modis_input_file_path(product)
-            url = ''.join([self.host, ":", str(self.port), path])
 
-            if not url.lower().startswith("http"):
-                url = ''.join(['http://', url])
+            product_url = ''.join([self.host, ":", str(self.port), path])
 
-            if not product.product_id in urls:
-                urls[product.product_id] = {}
-                
-            urls[product.product_id]['download_url'] = url
+            if not product_url.lower().startswith("http"):
+                product_url = ''.join(['http://', product_url])
 
-        return urls
+            url[product.product_id]['download_url'] = product_url
+
+        return url
+        
+    def get_download_urls(self, products):
+        
+        if not isinstance(products, list):
+            raise TypeError("get_download_urls requires a list of products")
+        
+        for product in products:
+            yield self.get_download_url(product)            
+            
 
     def _build_modis_input_file_path(self, product):
 
@@ -111,7 +114,7 @@ class LPDAACService(object):
 
         input_file_extension = settings.MODIS_INPUT_FILENAME_EXTENSION
 
-        input_file_name = "%s%s" % (product.product_id, input_file_extension)
+        input_file_name = "%s.%s" % (product.product_id, input_file_extension)
 
         path = os.path.join(base_path,
                             '.'.join([product.short_name.upper(),
