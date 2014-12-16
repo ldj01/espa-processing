@@ -230,7 +230,7 @@ class OrderHandler(object):
 def set_product_unavailable(name, orderid, processing_loc, error, note):
 
     product = Scene.objects.get(name=name, order__orderid=orderid)
-    
+
     product.status = 'unavailable'
     product.processing_location = processing_loc
     product.completion_date = datetime.datetime.now()
@@ -382,9 +382,9 @@ def handle_submitted_landsat_products():
 
         products = Scene.objects.filter(**filters)
         product_list = [p.name for p in products]
-        
+
         results = lta.order_scenes(product_list, contact_id)
-               
+
         if 'available' in results and len(results['available']) > 0:
             #update db
             filter_args = {
@@ -393,9 +393,9 @@ def handle_submitted_landsat_products():
                 'sensor_type': 'landsat',
                 'order__user__userprofile__contactid': contact_id
             }
-            
+
             update_args = {'status': 'oncache'}
-            
+
             Scene.objects.filter(**filter_args).update(**update_args)
 
         if 'ordered' in results and len(results['ordered']) > 0:
@@ -413,9 +413,9 @@ def handle_submitted_landsat_products():
         if 'invalid' in results and len(results['invalid']) > 0:
             #look to see if they are ee orders.  If true then update the
             #unit status
-                                       
+
             invalid = [p for p in products if p.name in results['invalid']]
-            
+
             set_products_unavailable(invalid, 'Not found in landsat archive')
 
     #Here's the real logic for this handling submitted landsat products
@@ -463,7 +463,7 @@ def handle_submitted_plot_products():
 
         filter_args = {'status': 'complete'}
         complete_products = order.scene_set.filter(**filter_args).count()
-        
+
         filter_args = {'status': 'unavailable'}
         unavailable_products = order.scene_set.filter(**filter_args).count()
 
@@ -484,6 +484,7 @@ def handle_submitted_plot_products():
                                   'plotting and statistics')
                     else:
                         p.status = 'oncache'
+                        p.note = ''
                     p.save()
 
 
@@ -537,14 +538,14 @@ def get_products_to_process(record_limit=500,
     #pull all the cids but cast to set() to eliminate dups then back to list
     #to support index based iteration
     cids = list(set([c[0] for c in u.values_list('userprofile__contactid')]))
-    
+
     results = []
 
     for cid in cids:
-        
+
         if record_limit is not None and len(results) + 1 >= record_limit:
             break
-        
+
         filters = {
             'order__user__userprofile__contactid': cid,
             'status': 'oncache'
@@ -563,7 +564,7 @@ def get_products_to_process(record_limit=500,
         #landsat = [s.name for s in scenes where s.sensor_type = 'landsat']
         landsat = [s.name for s in scenes if s.sensor_type == 'landsat']
         landsat_urls = lta.get_download_urls(landsat, cid)
-        
+
         modis = [s.name for s in scenes if s.sensor_type == 'modis']
         modis_urls = lpdaac.get_download_urls(modis)
 
@@ -579,23 +580,22 @@ def get_products_to_process(record_limit=500,
                     dload_url = landsat_urls[scene.name]['download_url']
                     if encode_urls:
                         dload_url = urllib.quote(dload_url, '')
-                        
+
             elif scene.sensor_type == 'modis':
                 if 'download_url' in modis_urls[scene.name]:
                     dload_url = modis_urls[scene.name]['download_url']
-                    
+
                     if encode_urls:
                         dload_url = urllib.quote(dload_url, '')
-                        
+
             result = {
                 'orderid': scene.order.orderid,
                 'product_type': scene.sensor_type,
                 'scene': scene.name,
                 'priority': scene.order.priority,
                 'options': json.loads(scene.order.product_options)
-                                     
             }
-            
+
             if dload_url is not None:
                 result['download_url'] = dload_url
 
@@ -840,7 +840,7 @@ def load_ee_orders():
         helper_logger(("enable_load_ee_orders is disabled,"
                        "skipping load_ee_orders()"))
         return
-        
+
     # This returns a dict that contains a list of dicts{}
     # key:(order_num, email, contactid) = list({sceneid:, unit_num:})
     orders = lta.get_available_orders()

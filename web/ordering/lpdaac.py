@@ -36,7 +36,7 @@ class LPDAACService(object):
         True/False
         '''
         
-        if isinstance(product, str):
+        if isinstance(product, str) or isinstance(product, unicode):
             product = sensor.instance(product)
             
         result = False
@@ -66,19 +66,17 @@ class LPDAACService(object):
 
         return result
 
-    def get_download_urls(self, products):
+    def get_download_urls(self, product):
 
         urls = {}
 
         #be nice and accept a string
-        if isinstance(products, str):
-            products = sensor.instance(products)
+        if isinstance(product, str) or isinstance(product, unicode):
+            product = sensor.instance(product)
 
         #also be nice and accept a sensor.Modis object
-        if isinstance(products, sensor.Modis):
-            products = [products]
+        if isinstance(product, sensor.Modis):
 
-        for product in products:
             path = self._build_modis_input_file_path(product)
             url = ''.join([self.host, ":", str(self.port), path])
 
@@ -94,7 +92,7 @@ class LPDAACService(object):
 
     def _build_modis_input_file_path(self, product):
 
-        if isinstance(product, str):
+        if isinstance(product, str) or isinstance(product, unicode):
             product = sensor.instance(product)
 
         if isinstance(product, sensor.Aqua):
