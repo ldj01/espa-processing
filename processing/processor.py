@@ -1555,7 +1555,7 @@ class ModisProcessor(CDRProcessor):
         '''
 
         product_id = self._parms['product_id']
-        options = self._parms['options']
+        download_url = self._parms['download_url']
 
         file_name = ''.join([product_id,
                              settings.MODIS_INPUT_FILENAME_EXTENSION])
@@ -1563,8 +1563,7 @@ class ModisProcessor(CDRProcessor):
 
         # Download the source data
         try:
-            transfer.download_file_url(options['download_url'],
-                                       destination_file)
+            transfer.download_file_url(download_url, destination_file)
         except Exception, e:
             raise ee.ESPAException(ee.ErrorCodes.staging_data, str(e)), \
                 None, sys.exc_info()[2]
