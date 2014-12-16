@@ -35,13 +35,18 @@ class LPDAACService(object):
         Returns:
         True/False
         '''
+        
+        if isinstance(product, str) or isinstance(product, unicode):
+            product = sensor.instance(product)
+            
         result = False
 
         try:
-            url = self.get_download_urls(product)
+            url = self.get_download_url(product)
             
-            if 'download_url' in url:
-                url = url[product]['download_url']
+            if 'download_url' in url[product.product_id]:
+                
+                url = url[product.product_id]['download_url']
             
                 response = None
 
