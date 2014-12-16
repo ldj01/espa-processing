@@ -109,6 +109,40 @@ class Order(models.Model):
     # populated when the order is placed through EE vs ESPA
     ee_order_id = models.CharField(max_length=13, blank=True)
 
+    def complete_unavailable_count(self):
+        scenes = Scene.objects.filter(order=self,
+                                      status__in=['unavailable','complete'])
+        return scenes.count()
+
+    def unavailable_count(self):
+        scenes = Scene.objects.filter(order=self, status='unavailable')
+        return scenes.count()
+                
+    def complete_count(self):
+        scenes = Scene.objects.filter(order=self, status='complete')
+        return scenes.count()
+        
+    def processing_count(self):
+        scenes = Scene.objects.filter(order=self, status='processing')
+        return scenes.count()
+        
+    def submitted_count(self):
+        scenes = Scene.objects.filter(order=self, status='submitted')
+        return scenes.count()
+
+    def oncache_count(self):
+        scenes = Scene.objects.filter(order=self, status='oncache')
+        return scenes.count()
+        
+    def onorder_count(self):
+        scenes = Scene.objects.filter(order=self, status='onorder')
+        return scenes.count()
+
+    def retry_count(self):
+        scenes = Scene.objects.filter(order=self, status='retry')
+        return scenes.count()
+
+
     @staticmethod
     def get_default_product_options():
         '''Factory method to return default product selection options
