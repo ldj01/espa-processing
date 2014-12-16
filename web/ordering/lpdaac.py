@@ -86,11 +86,15 @@ class LPDAACService(object):
         
     def get_download_urls(self, products):
         
+        urls = {}        
+        
         if not isinstance(products, list):
             raise TypeError("get_download_urls requires a list of products")
         
         for product in products:
-            yield self.get_download_url(product)            
+            urls.update(self.get_download_url(product))
+        
+        return urls
             
 
     def _build_modis_input_file_path(self, product):
