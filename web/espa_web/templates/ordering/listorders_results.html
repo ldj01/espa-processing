@@ -60,7 +60,7 @@
     <tr class="{% cycle 'oddrow' 'evenrow' %}">
     <td class='oid noborder'><a href="{% url 'generic_order_status_detail' order.orderid %}">{{ order.orderid }}</a></td>
     <td class='ocount noborder'>{{ order.scene_set.count }}</td>
-    <td class='pcount noborder'>{{ order.complete_unavailable_count }}</td>
+    <td class='pcount noborder'>{{ order.finished_count }}</td>
     <td class='status noborder'>{{ order.get_status_display }}</td>
     <td class='note noborder'> {{ order.note }}</td>
     </tr> 
