@@ -67,7 +67,7 @@ colgroup {
 td, th {
     display: table-cell;
     border:1px solid #d0d0d0;
-    background-color:transparent;
+    background:transparent;
 }
 
 caption {
