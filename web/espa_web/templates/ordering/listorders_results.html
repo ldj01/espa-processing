@@ -47,18 +47,18 @@ span.status-display {
     <tr class="header_row">
         <th class='header_row noborder'>Order ID</th>
         <th class='header_row noborder'>Products Ordered</th>
-        <th class='noborder'>Products Complete</th>
-        <th class='noborder'>Status</th>
-        <th class='noborder'>Note</th>
+        <th class='header_row noborder'>Products Complete</th>
+        <th class='header_row noborder'>Status</th>
+        <th class='header_row noborder'>Note</th>
     </tr>
 
 {% for order in orders %}
     <tr class="{% cycle 'oddrow' 'evenrow' %}">
-    <td class='noborder'><a href="{% url 'generic_order_status_detail' order.orderid %}">{{ order.orderid }}</a></td>
-    <td class='noborder'>{{ order.scene_set.count }}</td>
-    <td class='noborder'>{{ order.complete_unavailable_count }}</td>
-    <td class='noborder'>{{ order.get_status_display }}</td>
-    <td class='noborder'>{{ order.note }}</td>
+    <td class='"{% cycle 'oddrow' 'evenrow' %}" noborder'><a href="{% url 'generic_order_status_detail' order.orderid %}">{{ order.orderid }}</a></td>
+    <td class='"{% cycle 'oddrow' 'evenrow' %}" noborder'>{{ order.scene_set.count }}</td>
+    <td class='"{% cycle 'oddrow' 'evenrow' %}" noborder'>{{ order.complete_unavailable_count }}</td>
+    <td class='"{% cycle 'oddrow' 'evenrow' %}" noborder'>{{ order.get_status_display }}</td>
+    <td class='"{% cycle 'oddrow' 'evenrow' %}" noborder'>{{ order.note }}</td>
     </tr> 
 {% endfor %}
 </table>
