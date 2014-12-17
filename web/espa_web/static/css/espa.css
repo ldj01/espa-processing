@@ -30,8 +30,6 @@ tr {
 .evenrow {
     background-color:#DEDEDE;
     background:#DEDEDE;
-    bgcolor:#DEDEDE;
-    bgColor:#DEDEDE;
 }
 
 .oddrow {
@@ -44,7 +42,6 @@ tr {
     background:#577196;
     background-color:#577196;
     color:white;
-  
 }
 
 thead {
@@ -70,6 +67,7 @@ colgroup {
 td, th {
     display: table-cell;
     border:1px solid #d0d0d0;
+    background-color:transparent;
 }
 
 caption {
