@@ -109,13 +109,21 @@ class Order(models.Model):
     # populated when the order is placed through EE vs ESPA
     ee_order_id = models.CharField(max_length=13, blank=True)
 
-    def complete_unavailable_count(self):
+    def finished_count(self):
         scenes = Scene.objects.filter(order=self,
                                       status__in=['unavailable','complete'])
         return scenes.count()
+        
+    def inprocess_count(self):
+        return Scene.objects.filter(order=self).count() - self.finished_count()
 
     def unavailable_count(self):
         scenes = Scene.objects.filter(order=self, status='unavailable')
+        return scenes.count()
+        
+    def wait_on_data_count(self):
+        scenes = Scene.objects.filter(order=self, 
+                                      status__in=['retry', 'onorder'])
         return scenes.count()
                 
     def complete_count(self):
@@ -137,9 +145,17 @@ class Order(models.Model):
     def onorder_count(self):
         scenes = Scene.objects.filter(order=self, status='onorder')
         return scenes.count()
+        
+    def queued_count(self):
+        scenes = Scene.objects.filter(order=self, status='queued')
+        return scenes.count()
 
     def retry_count(self):
         scenes = Scene.objects.filter(order=self, status='retry')
+        return scenes.count()
+        
+    def error_count(self):
+        scenes = Scene.objects.filter(order=self, status='error')
         return scenes.count()
 
 

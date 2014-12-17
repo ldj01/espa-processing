@@ -12,18 +12,21 @@
 {% if display_system_message %}
     {% include "ordering/system_message.html" %}
 {% endif %}
+    <div style='margin:0 auto; text-align:center'>
 
-    <h4>Please enter the email address used to submit the order</h4>
+    <h4 style='padding:20px 0px;'>Please enter the email address used to submit the order</h4>
         
     {% if errors.email %}
     <span class="error">{{errors.email}}</span><br/>
     {% endif %}
+    
     
     <label for="id_email">Email address:</label>
     {{ form.email }}
         
 	<!--<input type="submit" value="Submit"' />-->
 	<input type="button" value="Submit" onclick='switchUrl();' />
+    </div>
        
 </div>
 

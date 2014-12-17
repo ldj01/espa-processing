@@ -3,7 +3,7 @@
 {% block title %} ESPA - Order Details {% endblock %}
 
 {% block header %}
-Details for: {{ order.orderid }}
+    Details for: {{ order.orderid }}
 {% endblock %}
 
 {% block nav %}{% include "ordering/bulk_ordering_nav.html" %}{% endblock %}
@@ -15,6 +15,50 @@ Details for: {{ order.orderid }}
     th.cksum, td.cksum {width:100px;}
     th.note, td.note {width:*;}
 
+    .list_label {
+        font-size:14px;
+        margin-top:10px;
+        margin-bottom:10px;
+        margin-left: 0px;
+        margin-right:10px;
+        font-weight: bold;
+    }
+
+    .details {
+        padding-left:35px;
+        padding-right:35px;
+        padding-top:0px;
+        padding-bottom:10px;
+      
+     }
+
+    .details p {
+        line-height:1.2em;
+    }
+
+    .requested_processing {
+        margin-bottom:15px;
+        overflow:hidden;
+    }
+
+    .product_stats {
+        background:#577196;
+        color:white;
+        font-weight:bold;
+        padding:3px 7px;
+        text-align:center;
+     }
+
+    .product_stats p {
+        margin:0px;
+    }
+
+    .product_stats span{
+        margin-right:90px;
+    }
+
+     
+    
 {% endblock %}
 {% block content %}
 
@@ -26,11 +70,95 @@ Details for: {{ order.orderid }}
 
 
 {% if scenes %}
-<h4>Details for: {{ order.orderid }}  ({{order.get_status_display}})</h4>
+
+<div class='product_stats'>
+    <p>
+    <span class='status_item'>Requested: {{ order.scene_set.count }} </span>
+    <span class='status_item'>Completed: {{ order.finished_count }}  </span>
+    <span class='status_item'>Open: {{ order.inprocess_count }}  </span>
+    <span class='status_item'>Waiting on Data: {{ order.wait_on_data_count }}  </span>
+    </p>
+</div>    
+  
+<div class='details'>
+
+<div style='display:inline-block'>
+ <p><span class='list_label'>Order:</span><span>{{ order.orderid }}</span></p>
+ <p><span class='list_label'>Status:</span><span>{{ order.get_status_display }}</span></p> 
+</div>
+
+<div style='display:inline-block;float:right'>
+ <p><span class='list_label'>Date Ordered:</span><span>{{ order.order_date }}</span></p>
+ <p><span class='list_label'>Date Completed:</span><span>{{ order.completion_date }}</span></p>
+</div>
+
+{% autoescape off %}
+<script>
+
+var source_products = {
+        'include_source_data': 'Original Input Products',
+        'include_source_metadata': 'Original Input Metadata',
+        'include_customized_source_data': 'Customized Input Products'
+};
+
+var products = {'include_sr': 'Surface Reflectance',
+                'include_sr_toa':'Top of Atmosphere',
+                'include_sr_thermal': 'Brightness Temperature',
+                'include_statistics': 'Plots & Statistics'};
+
+var indices = {'include_sr_evi': 'EVI', 'include_sr_msavi': 'MSAVI',
+               'include_sr_nbr': 'NBR', 'include_sr_nbr2': 'NBR2',
+               'include_sr_ndmi': 'NDMI', 'include_sr_ndvi': 'NDVI',
+               'include_sr_savi': 'SAVI'};
+
+var customization = {'reproject': 'Reproject',
+                     'resize': 'Resize',
+                     'image_extents': 'Image Extents'};
+
+var product_options = {{ order.product_options }};
+
+console.log(product_options);
+
+function buildOrderedOptionString() {
+    var return_list = [];
+    var groups = [source_products, products, indices, customization];    
+    for (g=0; g< groups.length; g++) {
+        for (item in groups[g]) {
+            var value = product_options[item];
+            
+            if (value == true) { 
+                return_list.push(groups[g][item]);
+            }
+        }
+    }
+   return return_list;
+}
+
+var items = buildOrderedOptionString();
+
+var output = "<div class='requested_processing'>";
+output += "<span class='list_label'>Requested Processing:</span><span>";
+
+for (i=0; i< items.length; i++) {
+    if (i > 0) {
+        output = output + ", " + items[i];
+    }
+    else {
+        output = output + items[i];
+    }
+}
+output = output + "</span></div>";
+
+document.writeln(output);
+
+</script>
+{% endautoescape %}
+
+
+</div>
 
 <div class="boxbody">
   <table>
-  
    <tr class='header_row'>
       <th class='product noborder'>Product</th>
       <th class='status noborder'>Status</th>
@@ -69,6 +197,7 @@ Details for: {{ order.orderid }}
 <h4>No scenes found for {{ order.orderid }}</h4>
 {% endif %}
 </div>
+
 <div class="footer"></div>
 
 <div class="spacer"></div>
