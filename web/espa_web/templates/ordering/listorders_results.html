@@ -56,7 +56,7 @@ span.status-display {
     <tr class="{% cycle 'oddrow' 'evenrow' %}">
     <td class='"{% cycle 'oddrow' 'evenrow' %}" noborder'><a href="{% url 'generic_order_status_detail' order.orderid %}">{{ order.orderid }}</a></td>
     <td class='"{% cycle 'oddrow' 'evenrow' %}" noborder'>{{ order.scene_set.count }}</td>
-    <td class='"{% cycle 'oddrow' 'evenrow' %}" noborder'>{{ order.complete_unavailable_count }}</td>
+    <td class='"{% cycle 'oddrow' 'evenrow' %}" noborder'>{{ order.finished_count }}</td>
     <td class='"{% cycle 'oddrow' 'evenrow' %}" noborder'>{{ order.get_status_display }}</td>
     <td class='"{% cycle 'oddrow' 'evenrow' %}" noborder'>{{ order.note }}</td>
     </tr> 
