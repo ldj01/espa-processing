@@ -13,22 +13,17 @@
 {% endblock %}
 
 
-{% block nav %}{% include "ordering/bulk_ordering_nav.html" %}{% endblock %}
-
 {% block style %}
-    span.order_name_display {
-        margin-left:30px;
-    }
 
-
-    th.oid, td.oid {width:250px;}
-    th.ocount,  td.ocount {width:75px;}
-    th.pcount, td.pcount {width:75px;}
-    th.status, td.status {width:100px;}
-    th.note, td.note {width:*;}
-
+span.status-display {
+   margin-left:10px
+}
 
 {% endblock %}
+
+{% block nav %}{% include "ordering/bulk_ordering_nav.html" %}{% endblock %}
+
+
 {% block content %}
 
 {% csrf_token %}
@@ -42,27 +37,27 @@
 {% if orders %}
 <h4>
 <a href="{% url 'status_feed' email %}"><img border="0" alt="RSS Status Feed" title="Completed Scene RSS Feed" src="{% static 'img/feed-icon-28x28.png' %}"></img></a>
-<span class='order_name_display'>Showing all orders for {{ email }} </span>
+&nbsp;&nbsp;Showing all orders for {{ email }}
 </h4>
 
 
 <div class='boxbody' >
-<table>
-    <tr class="header_row">
-        <th class='oid noborder'>Order ID</th>
-        <th class='ocount noborder'>Ordered</th>
-        <th class='pcount noborder'>Complete</th>
-        <th class='status noborder'>Status</th>
-        <th class='note noborder'>Note</th>
+<table class='noborder'>
+    <tr class="header_row" bgcolor="#577196;">
+        <th class='noborder'>Order ID</th>
+        <th class='noborder'>Products Ordered</th>
+        <th class='noborder'>Products Complete</th>
+        <th class='noborder'>Status</th>
+        <th class='noborder'>Note</th>
     </tr>
 
 {% for order in orders %}
-    <tr class="{% cycle 'oddrow' 'evenrow' %}">
-    <td class='oid noborder'><a href="{% url 'generic_order_status_detail' order.orderid %}">{{ order.orderid }}</a></td>
-    <td class='ocount noborder'>{{ order.scene_set.count }}</td>
-    <td class='pcount noborder'>{{ order.finished_count }}</td>
-    <td class='status noborder'>{{ order.get_status_display }}</td>
-    <td class='note noborder'> {{ order.note }}</td>
+    <tr class="{% cycle 'oddrow' 'evenrow' %}" bgcolor="{% cycle '#FFF' '#d0d0d0' %}">
+    <td class='noborder'><a href="{% url 'generic_order_status_detail' order.orderid %}">{{ order.orderid }}</a></td>
+    <td class='noborder'>{{ order.scene_set.count }}</td>
+    <td class='noborder'>{{ order.complete_unavailable_count }}</td>
+    <td class='noborder'>{{ order.get_status_display }}</td>
+    <td class='noborder'> {{ order.note }}</td>
     </tr> 
 {% endfor %}
 </table>

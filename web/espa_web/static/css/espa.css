@@ -27,11 +27,17 @@ tr {
     line-height:1.8em;
 }
 
-tr.evenrow {
+.evenrow {
     background-color:#DEDEDE;
+    background:#DEDEDE;
 }
 
-tr.header_row {
+.oddrow {
+    background-color:#FFFFFF;
+    background:#FFFFFF;
+}
+
+.header_row {
     border:2px solid #577196;
     background:#577196;
     background-color:#577196;
@@ -124,19 +130,6 @@ fieldset {
     border: none;
 }
 
-
-.espa-table {
-    width:100%;
-    border:2px solid #d0d0d0;
-}
-
-.espa-table-header {
-    font-weight: bolder;
-    text-align: left;
-    padding:5px 5px;
-    background:#577196;
-    color:white;
-}
 
 .espa_lightbox {
      display:none;
@@ -346,17 +339,18 @@ div.boxbody {
     border:none;
 }
 
+/**
 div.boxbody table {
     width:100%;
     padding:10px;
     border:2px solid #d0d0d0;
-
 }
 
 div.boxbody table td {
     padding:5px 10px;
   
 }
+*/
 
 
 #usgsfooter {
