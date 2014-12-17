@@ -17,9 +17,11 @@ ol ol, ul ol {
    margin-left: 15px; 
 }
 
-table   { display: table; 
-          width:100%;
-          border:2px solid #d0d0d0;
+table   { 
+
+    display: table; 
+    width:100%;
+    border:2px solid #d0d0d0;
 }
 
 tr {
