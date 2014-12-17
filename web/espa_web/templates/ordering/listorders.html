@@ -40,7 +40,7 @@
 <script type='text/javascript'>
  function switchUrl() {
     var email_addr = document.getElementById('id_email');
-    window.location = window.location + email_addr.value;
+    window.location = window.location + $.trim(email_addr.value);
     return false;
  }
 </script>
