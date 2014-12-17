@@ -32,11 +32,13 @@ tr {
 .evenrow {
     background-color:#DEDEDE;
     background:#DEDEDE;
+    border:none;
 }
 
 .oddrow {
     background-color:#FFFFFF;
     background:#FFFFFF;
+    border:none;
 }
 
 .header_row {
