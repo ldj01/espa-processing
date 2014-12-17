@@ -43,7 +43,7 @@ span.status-display {
 
 <div class='boxbody' >
 <table class='noborder'>
-    <tr class="header_row" bgcolor="#577196;">
+    <tr class="header_row">
         <th class='noborder'>Order ID</th>
         <th class='noborder'>Products Ordered</th>
         <th class='noborder'>Products Complete</th>
@@ -52,7 +52,7 @@ span.status-display {
     </tr>
 
 {% for order in orders %}
-    <tr class="{% cycle 'oddrow' 'evenrow' %}" bgcolor="{% cycle '#FFF' '#d0d0d0' %}">
+    <tr class="{% cycle 'oddrow' 'evenrow' %}" bgColor="{% cycle '#FFF' '#d0d0d0' %}">
     <td class='noborder'><a href="{% url 'generic_order_status_detail' order.orderid %}">{{ order.orderid }}</a></td>
     <td class='noborder'>{{ order.scene_set.count }}</td>
     <td class='noborder'>{{ order.complete_unavailable_count }}</td>

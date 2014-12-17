@@ -30,6 +30,8 @@ tr {
 .evenrow {
     background-color:#DEDEDE;
     background:#DEDEDE;
+    bgcolor:#DEDEDE;
+    bgColor:#DEDEDE;
 }
 
 .oddrow {
