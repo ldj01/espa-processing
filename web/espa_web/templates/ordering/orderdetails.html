@@ -113,7 +113,7 @@
 </td>
 </tr>
 <tr class='noborder'>
-<td class='noborder' colspan=2 id='requested_products'></td>
+<td class='noborder' id='requested_products'></td>
 </tr>
 </tbody>
 </table>
@@ -239,7 +239,8 @@ $(document).ready(function(){
     }
     output = output + "</span>";
 
-    $('#requested_products').html(output);
+    //$('#requested_products').html(output);
+    $('#requested_products').append(output);
 });
 
 
