@@ -94,16 +94,25 @@
   
 <div class='details'>
 
-<div class='left-block'>
- <p><span class='list_label'>Order:</span><span>{{ order.orderid }}</span></p>
- <p><span class='list_label'>Status:</span><span>{{ order.get_status_display }}</span></p> 
-</div>
-
-<div class='right-block'>
- <p><span class='list_label'>Date Ordered:</span><span>{{ order.order_date }}</span></p>
- <p><span class='list_label'>Date Completed:</span><span>{{ order.completion_date }}</span></p>
-</div>
-
+<table class='noborder'>
+<tr class='noborder'>
+<td class='noborder'>
+<span class='list_label'>Order:</span><span>{{ order.orderid }}</span>
+</td>
+<td class='noborder'>
+<span class='list_label'>Date Ordered:</span><span>{{ order.order_date }}</span>
+</td>
+</tr>
+<tr class='noborder'>
+<td class='noborder'>
+<span class='list_label'>Status:</span><span>{{ order.get_status_display }}</span>
+</td>
+<td class='noborder'>
+<span class='list_label'>Date Completed:</span><span>{{ order.completion_date }}</span>
+</td>
+</tr>
+<tr class='noborder'>
+<td class='noborder' colspan=2>
 {% autoescape off %}
 <script>
 
@@ -148,8 +157,7 @@ function buildOrderedOptionString() {
 
 var items = buildOrderedOptionString();
 
-var output = "<div class='requested_processing'>";
-output += "<span class='list_label'>Requested Processing:</span><span>";
+var output = "<span class='list_label'>Requested Processing:</span><span>";
 
 for (i=0; i< items.length; i++) {
     if (i > 0) {
@@ -159,13 +167,15 @@ for (i=0; i< items.length; i++) {
         output = output + items[i];
     }
 }
-output = output + "</span></div>";
+output = output + "</span>";
 
 document.writeln(output);
 
 </script>
 {% endautoescape %}
-
+</td>
+</tr>
+</table>
 
 </div>
 
