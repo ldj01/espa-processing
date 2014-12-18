@@ -330,15 +330,15 @@ $(document).ready(function(){
                 if (value == true) {
                     if (item == 'reproject') {
                         return_item = groups[g][item] + 
-                                      "( " + buildProjectionString() + " )";
+                                      " (" + buildProjectionString() + ")";
                     }
                     else if (item == 'resize') {
                         return_item = groups[g][item] + 
-                                      "( " + buildResizeString() + " )";
+                                      " (" + buildResizeString() + ")";
                     }
                     else if (item == 'image_extents') {
                         return_item = groups[g][item] + 
-                                      "( " + buildExtentsString() + " )";
+                                      " (" + buildExtentsString() + ")";
                     }
                     else {
                         return_item = groups[g][item];
