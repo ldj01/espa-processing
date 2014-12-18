@@ -19,6 +19,12 @@ span.status-display {
    margin-left:10px
 }
 
+.orderid {width:250px;}
+.pordered {width:80px;}
+.pcomplete {width:80px;}
+.pstatus {width:75px;}
+.pnote {}
+
 {% endblock %}
 
 {% block nav %}{% include "ordering/bulk_ordering_nav.html" %}{% endblock %}
@@ -57,11 +63,11 @@ span.status-display {
 
 <table>
     <tr class="header_row">
-        <th class='header_row noborder'>Order ID</th>
-        <th class='header_row noborder'>Products Ordered</th>
-        <th class='header_row noborder'>Products Complete</th>
-        <th class='header_row noborder'>Status</th>
-        <th class='header_row noborder'>Note</th>
+        <th class='header_row noborder orderid'>Order ID</th>
+        <th class='header_row noborder pordered'>Products Ordered</th>
+        <th class='header_row noborder pcomplete'>Products Complete</th>
+        <th class='header_row noborder pstatus'>Status</th>
+        <th class='header_row noborder pnote'>Note</th>
     </tr>
 
 {% for order in orders %}
