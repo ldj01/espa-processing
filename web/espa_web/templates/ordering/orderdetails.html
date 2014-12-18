@@ -95,6 +95,7 @@
 <div class='details'>
 
 <table class='noborder'>
+<tbody>
 <tr class='noborder'>
 <td class='noborder'>
 <span class='list_label'>Order:</span><span>{{ order.orderid }}</span>
@@ -114,12 +115,14 @@
 <tr class='noborder'>
 <td class='noborder' colspan=2 id='requested_products'></td>
 </tr>
+</tbody>
 </table>
 
 </div>
 
 <div class="boxbody">
   <table>
+  <tbody>
    <tr class='header_row'>
       <th class='header_row product noborder'>Product</th>
       <th class='header_row status noborder'>Status</th>
@@ -163,6 +166,7 @@
     </tr>
     {% endif %}
   {% endfor %}
+  </tbody>
   </table>
 </div>
 {% else %}
