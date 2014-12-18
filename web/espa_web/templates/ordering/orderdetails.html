@@ -209,7 +209,8 @@ $(document).ready(function(){
 
     var customization = {'reproject': 'reproject',
                          'resize': 'resize',
-                         'image_extents': 'image extents'};
+                         'image_extents': 'image extents', 
+                         'output_format': 'output format'};
 
     var product_options = {{ order.product_options }};
 
@@ -237,6 +238,25 @@ $(document).ready(function(){
         $('#waiting_prods').append(waiting);
     }
 
+
+    function buildOutputFormatString() {
+        var s = '';
+
+        switch(product_options['output_format']) {
+            case "gtiff":
+                s = "geotiff";
+                break;
+            case "envi":
+                s = "envi";
+                break;
+            case "hdf-eos2":
+                s = "hdf-eos2";
+                break;
+            default:
+               break;
+        }
+        return s;
+    }
 
     function buildProjectionString() {
 
@@ -343,8 +363,12 @@ $(document).ready(function(){
                     else {
                         return_item = groups[g][item];
                     } 
-                    return_list.push(return_item);
                 }
+                else if (item == 'output_format') {
+                    return_item = "Output Format is " + 
+                                  buildOutputFormatString();
+                }
+                if (return_item.length > 0) { return_list.push(return_item); }
             }
         }
        return return_list;
