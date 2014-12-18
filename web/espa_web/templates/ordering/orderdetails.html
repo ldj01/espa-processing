@@ -66,7 +66,7 @@
         padding-bottom:8px;
     }
 
-    .product_stats span{
+    .product_stats span.status_item{
         margin-right:90px;
     }
 
@@ -86,10 +86,10 @@
 
 <div class='product_stats'>
     <p>
-    <span class='status_item'>Requested: {{ order.scene_set.count }} </span>
-    <span class='status_item'>Completed: {{ order.finished_count }}  </span>
-    <span class='status_item'>Open: {{ order.inprocess_count }}  </span>
-    <span class='status_item'>Waiting on Data: {{ order.wait_on_data_count }}  </span>
+    <span>Requested: </span><span class='status_item' id='requested_prods'></span>
+    <span>Completed: </span><span class='status_item' id='completed prods'></span>
+    <span>Open: </span><span class='status_item' id='open_prods'></span>
+    <span>Waiting on data: </span><span class='status_item' id='waiting_prods'></span>
     </p>
 </div>    
   
@@ -210,6 +210,31 @@ $(document).ready(function(){
     var product_options = {{ order.product_options }};
 
 
+   
+
+    function populateProductCounts() {
+
+        var product_counts = {{ order.product_counts }};
+
+        var requested = {{ order.scene_set.count }};
+        
+        var completed = product_counts['complete'] +
+                        product_counts['unavailable'];
+
+        var open = product_counts['oncache'] + 
+                   product_counts['queued'] + 
+                   product_counts['processing'] + 
+                   product_counts['error'] + 
+                   product_counts['submitted'];
+
+        var waiting = product_counts['retry'] + product_counts['onorder'];
+        
+        $('#requested_prods').append(requested);
+        $('#completed_prods').append(completed);
+        $('#open_prods').append(open);
+        $('#waiting_prods').append(waiting);
+    }
+
 
     function buildOrderedOptionString() {
         var return_list = [];
@@ -242,6 +267,8 @@ $(document).ready(function(){
 
     //$('#requested_products').html(output);
     $('#requested_products').append(output);
+
+    populateProductCounts();
 });
 
 

@@ -7,6 +7,7 @@ from django.db import models
 from django.db import transaction
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.db.models import Count
 
 
 class UserProfile (models.Model):
@@ -109,54 +110,22 @@ class Order(models.Model):
     # populated when the order is placed through EE vs ESPA
     ee_order_id = models.CharField(max_length=13, blank=True)
 
-    def finished_count(self):
-        scenes = Scene.objects.filter(order=self,
-                                      status__in=['unavailable','complete'])
-        return scenes.count()
+    def product_counts(self):
+        '''Returns a dictionary of product status with a count for each one'''
+        counts = {}
         
-    def inprocess_count(self):
-        return Scene.objects.filter(order=self).count() - self.finished_count()
+        for s,d in Scene.STATUS:
+            counts[s] = 0
+        
+        scenes = Scene.objects.filter(order=self)
+        scenes = scenes.values('status').annotate(Count('status'));
+        
+        for scene in scenes:
+            counts[scene['status']] = scene['status__count']
 
-    def unavailable_count(self):
-        scenes = Scene.objects.filter(order=self, status='unavailable')
-        return scenes.count()
+        return counts
         
-    def wait_on_data_count(self):
-        scenes = Scene.objects.filter(order=self, 
-                                      status__in=['retry', 'onorder'])
-        return scenes.count()
-                
-    def complete_count(self):
-        scenes = Scene.objects.filter(order=self, status='complete')
-        return scenes.count()
-        
-    def processing_count(self):
-        scenes = Scene.objects.filter(order=self, status='processing')
-        return scenes.count()
-        
-    def submitted_count(self):
-        scenes = Scene.objects.filter(order=self, status='submitted')
-        return scenes.count()
-
-    def oncache_count(self):
-        scenes = Scene.objects.filter(order=self, status='oncache')
-        return scenes.count()
-        
-    def onorder_count(self):
-        scenes = Scene.objects.filter(order=self, status='onorder')
-        return scenes.count()
-        
-    def queued_count(self):
-        scenes = Scene.objects.filter(order=self, status='queued')
-        return scenes.count()
-
-    def retry_count(self):
-        scenes = Scene.objects.filter(order=self, status='retry')
-        return scenes.count()
-        
-    def error_count(self):
-        scenes = Scene.objects.filter(order=self, status='error')
-        return scenes.count()
+    
 
 
     @staticmethod
