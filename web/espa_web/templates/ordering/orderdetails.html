@@ -207,9 +207,9 @@ $(document).ready(function(){
                    'include_sr_ndmi': 'NDMI', 'include_sr_ndvi': 'NDVI',
                    'include_sr_savi': 'SAVI'};
 
-    var customization = {'reproject': 'Reproject',
-                         'resize': 'Resize',
-                         'image_extents': 'Image Extents'};
+    var customization = {'reproject': 'reproject',
+                         'resize': 'resize',
+                         'image_extents': 'image extents'};
 
     var product_options = {{ order.product_options }};
 
@@ -334,11 +334,11 @@ $(document).ready(function(){
                     }
                     else if (item == 'resize') {
                         return_item = groups[g][item] + 
-                                      " to " + buildResizeString();
+                                      " pixels to " + buildResizeString();
                     }
                     else if (item == 'image_extents') {
                         return_item = groups[g][item] + 
-                                      " to " + buildExtentsString();
+                                      " set to " + buildExtentsString();
                     }
                     else {
                         return_item = groups[g][item];
