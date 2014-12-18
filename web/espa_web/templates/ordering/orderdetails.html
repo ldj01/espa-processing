@@ -70,6 +70,10 @@
         margin-right:90px;
     }
 
+    .column1 { width:500px; }
+    .column2 { width:500px; }
+    
+
      
     
 {% endblock %}
@@ -98,10 +102,10 @@
 <table class='noborder'>
 <tbody>
 <tr class='noborder'>
-<td class='noborder'>
+<td class='noborder column1'>
 <span class='list_label'>Order:</span><span>{{ order.orderid }}</span>
 </td>
-<td class='noborder'>
+<td class='noborder column2'>
 <span class='list_label'>Date Ordered:</span><span>{{ order.order_date }}</span>
 </td>
 </tr>
@@ -114,7 +118,7 @@
 </td>
 </tr>
 <tr class='noborder'>
-<td class='noborder' id='requested_products'></td>
+<td class='noborder' colspan="2" id='requested_products'></td>
 </tr>
 </tbody>
 </table>
