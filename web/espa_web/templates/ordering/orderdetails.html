@@ -214,8 +214,6 @@ $(document).ready(function(){
     var product_options = {{ order.product_options }};
 
 
-   
-
     function populateProductCounts() {
 
         var product_counts = {{ order.product_counts }};
@@ -240,38 +238,133 @@ $(document).ready(function(){
     }
 
 
+    function buildProjectionString() {
+
+        if (! product_options['reproject'] == true) { return ''; }
+        
+        var s = '';
+
+        switch(product_options['target_projection']) {
+            case "aea":
+                lo = product_options['origin_lat'];
+                cm = product_options['central_meridian'];
+                stdp1 = product_options['standard_parallel_1'];
+                stdp2 = product_options['standard_parallel_2'];
+                fe = product_options['false_easting'];
+                fn = product_options['false_northing'];
+                dt = product_options['datum'];
+
+                s = "Albers Equal Area -- latitude of origin:" + lo +
+                    " central meridian:" + cm + 
+                    " 1st standard parallel:" + stdp1 +
+                    " 2nd standard parallel:" + stdp2 +
+                    " false easting:" + fe +
+                    " false northing:" + fn + 
+                    " datum:" + dt;
+                break;
+            case "utm":                
+                zone = product_options['utm_zone'];
+                ns = product_options['utm_north_south'];
+                s = "Universal Transverse Mercator -- zone:" + zone +
+                    " " + ns;
+                break;
+            case "lonlat":
+                return "Geographic";
+            case "sinu":
+                cm = product_options['central_meridian'];
+                fe = product_options['false_easting'];
+                fn = product_options['false_northing'];
+                s = "Sinusoidal -- central meridian:" + cm +
+                    " false easting:" + fe +
+                    " false northing:" + fn;
+                break;
+            case "ps":
+                lp = product_options['longitude_pole'];
+                ls = product_options['latitude_true_scale'];
+                fe = product_options['false_easting'];
+                fn = product_options['false_northing'];
+                s = "Polar Stereographic -- longitudinal pole:" + lp +
+                    " latitude true scale:" + ls + 
+                    " false easting:" + fe +
+                    " false northing:" + fn;
+                break;
+            default:
+                break;
+        }
+
+        return s;
+
+    }
+
+    function buildExtentsString() {
+
+        if (! product_options['image_extents'] == true) { return ''; }
+       
+        var ulx = product_options['minx'];
+        var uly = product_options['maxy'];
+        var lrx = product_options['maxx'];
+        var lry = product_options['miny'];
+        var s = "ulx:" + ulx + " " + "uly:" + uly + " " +
+                "lrx:" + lrx + " " + "lry:" + lry;
+        return s
+    }
+
+    function buildResizeString() {
+        
+        if (! product_options['resize'] == true) { return ''; }
+        
+        var s = product_options['pixel_size'] + " " +
+                product_options['pixel_size_units'];
+        return s;
+    }
+
     function buildOrderedOptionString() {
         var return_list = [];
         var groups = [source_products, products, indices, customization];    
         for (g=0; g< groups.length; g++) {
             for (var item in groups[g]) {
                 var value = product_options[item];
-            
-                if (value == true) { 
-                    return_list.push(groups[g][item]);
+                
+                var return_item = '';
+
+                if (value == true) {
+                    if (item == 'reproject') {
+                        return_item = groups[g][item] + 
+                                      "( " + buildProjectionString() + " )";
+                    }
+                    else if (item == 'resize') {
+                        return_item = groups[g][item] + 
+                                      "( " + buildResizeString() + " )";
+                    }
+                    else if (item == 'image_extents') {
+                        return_item = groups[g][item] + 
+                                      "( " + buildExtentsString() + " )";
+                    }
+                    else {
+                        return_item = groups[g][item];
+                    } 
+                    return_list.push(return_item);
                 }
             }
         }
        return return_list;
     }
 
-    var items = buildOrderedOptionString();
+    function populateOrderedOptions() {
+        var items = buildOrderedOptionString();
 
-    var output = "<span class='list_label'>Requested Processing:</span><span>";
+        var output = "<span class='list_label'>Requested Processing:</span><span>";
 
-    for (i=0; i< items.length; i++) {
-        if (i > 0) {
-            output = output + ", " + items[i];
+        for (i=0; i< items.length; i++) {
+            if (i > 0) { output = output + ", " + items[i]; }
+            else { output = output + items[i]; }
         }
-        else {
-            output = output + items[i];
-        }
+
+        output = output + "</span>";
+        $('#requested_products').append(output);
     }
-    output = output + "</span>";
-
-    //$('#requested_products').html(output);
-    $('#requested_products').append(output);
-
+    
+    populateOrderedOptions();
     populateProductCounts();
 });
 
