@@ -179,63 +179,64 @@
 {% block scripts %}
 
 {% autoescape off %}
+ 
+$(document).ready(function(){
 
-var source_products = {
+    var source_products = {
         'include_source_data': 'Original Input Products',
         'include_source_metadata': 'Original Input Metadata',
         'include_customized_source_data': 'Customized Input Products'
-};
+    };
 
-var products = {'include_sr': 'Surface Reflectance',
-                'include_sr_toa':'Top of Atmosphere',
-                'include_sr_thermal': 'Brightness Temperature',
-                'include_statistics': 'Plots & Statistics'};
+    var products = {'include_sr': 'Surface Reflectance',
+                    'include_sr_toa':'Top of Atmosphere',
+                    'include_sr_thermal': 'Brightness Temperature',
+                    'include_statistics': 'Plots & Statistics'};
 
-var indices = {'include_sr_evi': 'EVI', 'include_sr_msavi': 'MSAVI',
-               'include_sr_nbr': 'NBR', 'include_sr_nbr2': 'NBR2',
-               'include_sr_ndmi': 'NDMI', 'include_sr_ndvi': 'NDVI',
-               'include_sr_savi': 'SAVI'};
+    var indices = {'include_sr_evi': 'EVI', 'include_sr_msavi': 'MSAVI',
+                   'include_sr_nbr': 'NBR', 'include_sr_nbr2': 'NBR2',
+                   'include_sr_ndmi': 'NDMI', 'include_sr_ndvi': 'NDVI',
+                   'include_sr_savi': 'SAVI'};
 
-var customization = {'reproject': 'Reproject',
-                     'resize': 'Resize',
-                     'image_extents': 'Image Extents'};
+    var customization = {'reproject': 'Reproject',
+                         'resize': 'Resize',
+                         'image_extents': 'Image Extents'};
 
-var product_options = {{ order.product_options }};
+    var product_options = {{ order.product_options }};
 
-console.log(product_options);
 
-function buildOrderedOptionString() {
-    var return_list = [];
-    var groups = [source_products, products, indices, customization];    
-    for (g=0; g< groups.length; g++) {
-        for (item in groups[g]) {
-            var value = product_options[item];
+
+    function buildOrderedOptionString() {
+        var return_list = [];
+        var groups = [source_products, products, indices, customization];    
+        for (g=0; g< groups.length; g++) {
+            for (item in groups[g]) {
+                var value = product_options[item];
             
-            if (value == true) { 
-                return_list.push(groups[g][item]);
+                if (value == true) { 
+                    return_list.push(groups[g][item]);
+                }
             }
         }
+       return return_list;
     }
-   return return_list;
-}
 
-var items = buildOrderedOptionString();
+    var items = buildOrderedOptionString();
 
-var output = "<span class='list_label'>Requested Processing:</span><span>";
+    var output = "<span class='list_label'>Requested Processing:</span><span>";
 
-for (i=0; i< items.length; i++) {
-    if (i > 0) {
-        output = output + ", " + items[i];
+    for (i=0; i< items.length; i++) {
+        if (i > 0) {
+            output = output + ", " + items[i];
+        }
+        else {
+            output = output + items[i];
+        }
     }
-    else {
-        output = output + items[i];
-    }
-}
-output = output + "</span>";
+    output = output + "</span>";
 
-
-$('#requested_products').html(output);
-/*document.writeln(output);*/
+    $('#requested_products').html(output);
+});
 
 
 {% endautoescape %}
