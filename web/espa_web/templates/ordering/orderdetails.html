@@ -141,7 +141,7 @@
     {% if s.name %}
     <tr class="{% cycle 'oddrow' 'evenrow' %}">
 
-     <td class="{% cycle 'oddrow' 'evenrow' %} product noborder">
+    <td class="{% cycle 'oddrow' 'evenrow' %} product noborder">
     {% if s.name == 'plot' %}   
             Plotting & Statistics
     {% else %}
@@ -152,19 +152,24 @@
      <td class="{% cycle 'oddrow' 'evenrow' %} status noborder">
          {{ s.get_status_display }}
     </td>
-      
+     
+    <td class="{% cycle 'oddrow' 'evenrow' %} purl noborder"> 
     {% if s.status == 'complete'%} 
-     <td class="{% cycle 'oddrow' 'evenrow' %} purl noborder">
-     <a href="{{s.product_dload_url}}">Download</a>
+         <a href="{{s.product_dload_url}}">Download</a>
+    {% else %}
+        &nbsp;
+    {% endif %}
+     </td>
+    
+     <td class="{% cycle 'oddrow' 'evenrow' %} cksum noborder">
+     {% if s.status == 'complete' %}
+        <a href="{{s.cksum_download_url}}">Checksum</a>
+     {% else %}
+        &nbsp;
+     {% endif %}
      </td>
 
-     <td class="{% cycle 'oddrow' 'evenrow' %} cksum noborder">
-        <a href="{{s.cksum_download_url}}">Checksum</a>
-     </td>
-    {% else %}
-    <td class="{% cycle 'oddrow' 'evenrow' %} cksum noborder">&nbsp;</td>
-    <td class="{% cycle 'oddrow' 'evenrow' %} cksum noborder">&nbsp;</td>
-    {% endif %}
+    
     <td class="{% cycle 'oddrow' 'evenrow' %} note noborder">
         {{ s.note }}
     </td>
