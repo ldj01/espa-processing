@@ -36,6 +36,17 @@
         line-height:1.2em;
     }
 
+    .left-block {
+       width:300px;
+       display:inline-block;
+       margin-right:150px;
+     }
+
+     .right-block {
+         width:inherit;
+         display:inline-block;
+     }
+
     .requested_processing {
         margin-bottom:15px;
         overflow:hidden;
@@ -83,12 +94,12 @@
   
 <div class='details'>
 
-<div style='display:inline-block'>
+<div class='left-block'>
  <p><span class='list_label'>Order:</span><span>{{ order.orderid }}</span></p>
  <p><span class='list_label'>Status:</span><span>{{ order.get_status_display }}</span></p> 
 </div>
 
-<div style='display:inline-block;float:right'>
+<div class='right-block'>
  <p><span class='list_label'>Date Ordered:</span><span>{{ order.order_date }}</span></p>
  <p><span class='list_label'>Date Completed:</span><span>{{ order.completion_date }}</span></p>
 </div>
