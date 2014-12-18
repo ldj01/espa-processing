@@ -422,6 +422,7 @@ class Order(models.Model):
             scene.order_date = datetime.datetime.now()
             scene.status = 'submitted'
             scene.sensor_type = sensor_type
+            scene.note = ''
             scene.save()
 
         return order
