@@ -589,7 +589,12 @@ def get_products_to_process(record_limit=500,
         orderby = 'order__order_date'
 
         scenes = Scene.objects.filter(**filters)
-        scenes = scenes.select_related(select_related).order_by(orderby)
+        scenes = scenes.select_related(select_related)
+        
+        if record_limit is not None:            
+            scenes = scenes.order_by(orderby)[:int(record_limit)]
+        else:
+            scenes = scenes.order_by(orderby)
 
         #landsat = [s.name for s in scenes where s.sensor_type = 'landsat']
         landsat = [s.name for s in scenes if s.sensor_type == 'landsat']
