@@ -592,7 +592,7 @@ def get_products_to_process(record_limit=500,
         scenes = scenes.select_related(select_related)
         
         if record_limit is not None:            
-            scenes = scenes.order_by(orderby)[:int(record_limit)]
+            scenes = scenes.order_by(orderby)[:record_limit]
         else:
             scenes = scenes.order_by(orderby)
 
