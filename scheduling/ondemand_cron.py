@@ -100,7 +100,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
 
     try:
         logger.info("Checking for requests to process...")
-        requests = server.get_scenes_to_process(args.limit, args.user,
+        requests = server.get_scenes_to_process(int(args.limit), args.user,
                                                 request_priority,
                                                 list(args.product_types))
         if requests:
