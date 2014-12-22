@@ -530,6 +530,10 @@ def get_products_to_process(record_limit=500,
                             encode_urls=False):
     '''Find scenes that are oncache and return them as properly formatted
     json per the interface description between the web and processing tier'''
+    
+    # cast the record_limit to int since that's how its being used:
+    if record_limit is not None:
+        record_limit = int(record_limit)
 
     # use kwargs so we can dynamically build the filter criteria
     filters = {
@@ -569,7 +573,7 @@ def get_products_to_process(record_limit=500,
 
     for cid in cids:
 
-        if record_limit is not None and len(results) + 1 >= record_limit:
+        if record_limit is not None and len(results) + 1 > record_limit:
             break
 
         filters = {
@@ -596,7 +600,7 @@ def get_products_to_process(record_limit=500,
 
         for scene in scenes:
 
-            if record_limit is not None and len(results) + 1 >= record_limit:
+            if record_limit is not None and len(results) + 1 > record_limit:
                 break
 
             dload_url = None
