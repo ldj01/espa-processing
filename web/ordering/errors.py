@@ -17,6 +17,7 @@ class Errors(object):
         self.conditions.append(self.ftp_ftplib_error_reply)
         self.conditions.append(self.network_is_unreachable)
         self.conditions.append(self.connection_timed_out)
+        self.conditions.append(self.http_not_found)
 
         #construct the named tuple for the return value of this module
         self.resolution = collections.namedtuple('ErrorResolution',
