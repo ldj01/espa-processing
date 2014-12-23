@@ -141,12 +141,10 @@ class LandsatProductListValidator(Validator):
                     self.add_error('input_products', [msg, ])
                 else:
                     
-                    
-                           
                     for p in landsat_products:
                         
                         if isinstance(p, sensor.LandsatOLITIRS):
-                            if p.year >= 2014 and p.doy > 352:
+                            if int(p.year) >= 2014 and int(p.doy) > 352:
                                 msg = ("%s is not available due "
                                        "to TIRS 12-19-2014 "
                                        "calibration event.") % p.product_id
