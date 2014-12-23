@@ -248,10 +248,6 @@ class LandsatOLITIRS(Landsat):
     def __init__(self, product_id):                
         super(LandsatOLITIRS, self).__init__(product_id)
         
-        # this is currently not available due to the TIRS zero fill coming in
-        # after December 18, 2014 (last good day).
-        #if int(self.year) >= 2014 and int(self.doy) > 352:
-        #    raise ProductNotImplemented(product_id)
 
 class LandsatOLI(Landsat):
     ''' Models Landsat 8 OLI only products '''

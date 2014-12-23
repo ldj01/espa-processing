@@ -193,7 +193,8 @@ RETRY = {
     'ftp_500_oops': {'timeout': 60, 'retry_limit': 5},
     'ftp_ftplib_error_reply': {'timeout': 60, 'retry_limit': 5},
     'network_is_unreachable': {'timeout': 120, 'retry_limit': 5},
-    'connection_timed_out': {'timeout': 60, 'retry_limit': 5}
+    'connection_timed_out': {'timeout': 60, 'retry_limit': 5},
+    'http_not_found': {'timeout':60 * 5, 'retry_limit': 5}
 }
 
 '''

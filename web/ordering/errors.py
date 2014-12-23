@@ -84,6 +84,14 @@ class Errors(object):
         reason = ('This scene cannot be processed to surface reflectance '
                   'due to the high solar zenith angle')
         return self.__find_error(error_message, key, status, reason)
+        
+    def http_not_found(self, error_message):
+        '''Indicates that we had an issue trying to download the product'''
+        key = '404 Client Error: Not Found'
+        status = 'retry'
+        reason = 'HTTP 404 for input product, retrying download'
+        extras = self.__add_retry('http_not_found')
+        return self.__find_error(error_message, key, status, reason, extras)
 
     def missing_ledaps_aux_data(self, error_message):
         '''LEDAPS could not run because there was no aux data available'''
