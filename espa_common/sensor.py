@@ -250,8 +250,8 @@ class LandsatOLITIRS(Landsat):
         
         # this is currently not available due to the TIRS zero fill coming in
         # after December 18, 2014 (last good day).
-        if int(self.year) >= 2014 and int(self.doy) > 352:
-            raise ProductNotImplemented(product_id)
+        #if int(self.year) >= 2014 and int(self.doy) > 352:
+        #    raise ProductNotImplemented(product_id)
 
 
 class LandsatOLI(Landsat):
