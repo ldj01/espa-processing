@@ -810,10 +810,7 @@ def mark_product_complete(name,
         lta.update_order_status(product.order.ee_order_id,
                                 product.ee_unit_id, 'C')
         return True
-    else:
-        print("MarkSceneComplete:No scene was found with the name:%s" % name)
-        return False
-
+   
 
 @transaction.atomic
 def update_order_if_complete(order):
