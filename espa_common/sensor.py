@@ -253,7 +253,6 @@ class LandsatOLITIRS(Landsat):
         #if int(self.year) >= 2014 and int(self.doy) > 352:
         #    raise ProductNotImplemented(product_id)
 
-
 class LandsatOLI(Landsat):
     ''' Models Landsat 8 OLI only products '''
     def __init__(self, product_id):
