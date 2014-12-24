@@ -633,8 +633,10 @@ def get_products_to_process(record_limit=500,
 
             if dload_url is not None:
                 result['download_url'] = dload_url
-
-            results.append(result)
+                results.append(result)
+            else:
+                print("dload_url for %s:%s was None, skipping..." 
+                    % (scene.order.id, scene.name))
 
     return results
 
