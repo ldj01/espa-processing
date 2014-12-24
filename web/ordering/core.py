@@ -639,22 +639,30 @@ def get_products_to_process(record_limit=500,
             dload_url = None
 
             if scene.sensor_type == 'landsat':
-                
-                if ('status' in landsat_urls[scene.name] and 
-                    landsat_urls[scene.name]['status'] != 'available' ):
-                        lookup = espa_common.settings.RETRY
-                        limit = lookup['retry_missing_l1']['retry_limit']
-                        timeout = lookup['retry_missing_l1']['timeout']
-                        ts = datetime.datetime.now()
-                        after = ts + datetime.timedelta(seconds=timeout)
+
+                if ('status' in landsat_urls[scene.name] and
+                    landsat_urls[scene.name]['status'] != 'available'):
+                        try:
+                            lookup = espa_common.settings.RETRY
+                            limit = lookup['retry_missing_l1']['retry_limit']
+                            timeout = lookup['retry_missing_l1']['timeout']
+                            ts = datetime.datetime.now()
+                            after = ts + datetime.timedelta(seconds=timeout)
                         
-                        set_product_retry(scene.name,
-                                          scene.order.orderid,
-                                          'get_products_to_process',
-                                          'product was not available',
-                                          'reordering missing level 1 product',
-                                          after, limit)
+                            set_product_retry(scene.name,
+                                              scene.order.orderid,
+                                              'get_products_to_process',
+                                              'product was not available',
+                                              'reordering missing level 1 product',
+                                              after, limit)
+                        except:
+                            set_product_error(scene.name, scene.order.order,
+                                              'get_products_to_process',
+                                              ('level1 product data '
+                                              'not available after EE call '
+                                              'marked product as available'))
                         continue
+                    
                     
                 if 'download_url' in landsat_urls[scene.name]:
                     dload_url = landsat_urls[scene.name]['download_url']
