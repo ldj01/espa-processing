@@ -71,7 +71,7 @@ def set_product_error(server, order_id, product_id, processing_location):
             except Exception, e:
                 logger.critical("Failed processing xmlrpc call to"
                                 " set_scene_error")
-                logger.error("Exception Message: %s" % str(e))
+                logger.exception("Exception encountered and follows")
 
                 if attempt < settings.MAX_SET_SCENE_ERROR_ATTEMPTS:
                     sleep(sleep_seconds)  # sleep before trying again
@@ -79,8 +79,6 @@ def set_product_error(server, order_id, product_id, processing_location):
                     sleep_seconds = int(sleep_seconds * 1.5)
                     continue
                 else:
-                    logger.exception("Exception encountered and follows")
-
                     return False
         # END - while True
 
