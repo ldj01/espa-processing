@@ -978,7 +978,7 @@
                update_pixelsize_units(meters);
                //update_bounding_box_placeholders(meters);
                update_available_extents_units([meters, decimal_degrees]);
-               $("input:radio[name='image_extents_units'][value='dd']").click();
+               //$("input:radio[name='image_extents_units'][value='dd']").click();
                update_datum();                                               //set hidden input field for initial value
 		    break;
 
@@ -989,7 +989,7 @@
                  $("#select_pixel_size_units").val("meters");                  //force pixel size units to meters
                  update_pixelsize_units(meters);
                  update_available_extents_units([meters, decimal_degrees]);
-                 $("input:radio[name='image_extents_units'][value='dd']").click();
+                 //$("input:radio[name='image_extents_units'][value='dd']").click();
                  $("#target_projection").val("sinu");
 		      break;
 
@@ -1000,7 +1000,7 @@
                   $("#select_pixel_size_units").val("meters");                  //force pixel size units to meters
                   update_pixelsize_units(meters);
                   update_available_extents_units([meters, decimal_degrees]);
-                  $("input:radio[name='image_extents_units'][value='dd']").click();
+                  //$("input:radio[name='image_extents_units'][value='dd']").click();
                   $("#target_projection").val("ps");
 		       break;
 
@@ -1012,7 +1012,7 @@
                 $("#select_pixel_size_units").val("meters");                  //force pixel size units to meters
                 update_pixelsize_units(meters);
                 update_available_extents_units([meters, decimal_degrees]);
-                $("input:radio[name='image_extents_units'][value='dd']").click();
+                //$("input:radio[name='image_extents_units'][value='dd']").click();
                 update_utm_params();                                          //update hidden input field
                 break;
 	    
