@@ -772,19 +772,22 @@
               Initialize the bounding box placeholders
            *******************************************************************/
            $(image_extents).click(function(item) {
-                              
+                if ( $("input:radio[name='image_extents_unit']:checked").val() ==  undefined ) {
+                    $("input:radio[name='image_extents_units'][value='dd']").click();
+                }
+
                //make sure dd is selected if the projection is lonlat
-               if ( $("#target_projection").val() == "lonlat") {
-                   $("input:radio[name='image_extents_units'][value='dd']").click();
-               }
-               else if ( $("input:radio[name='image_extents_unit']:checked").val() ==  undefined ) {
-                   if ( $("#target_projection").val() == "lonlat") {
-                       $("input:radio[name='image_extents_units'][value='dd']").click();
-                   }    
-                   else {
-                       $("input:radio[name='image_extents_units'][value='meters']").click();
-                   }
-               }
+               //if ( $("#target_projection").val() == "lonlat") {
+               //    $("input:radio[name='image_extents_units'][value='dd']").click();
+               //}
+               //else if ( $("input:radio[name='image_extents_unit']:checked").val() ==  undefined ) {
+               //    if ( $("#target_projection").val() == "lonlat") {
+               //        $("input:radio[name='image_extents_units'][value='dd']").click();
+               //    }    
+               //    else {
+               //        $("input:radio[name='image_extents_units'][value='meters']").click();
+               //    }
+               //}
                
            });
 
