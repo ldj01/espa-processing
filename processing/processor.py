@@ -3018,9 +3018,9 @@ class PlotProcessor(ProductProcessor):
 
         # Transfer the directory using scp
         try:
-            scp_transfer_directory(options['statistics_host'],
-                                   source_stats_directory,
-                                   'localhost', self._stage_dir)
+            transfer.scp_transfer_directory(options['statistics_host'],
+                                            source_stats_directory,
+                                            'localhost', self._stage_dir)
         except Exception, e:
             raise ee.ESPAException(ee.ErrorCodes.staging_data, str(e)), \
                 None, sys.exc_info()[2]
