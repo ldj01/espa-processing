@@ -10,6 +10,7 @@ History:
   Created Jan/2014 by Ron Dilley, USGS/EROS
 '''
 
+import os
 import ftplib
 import urllib2
 import requests
