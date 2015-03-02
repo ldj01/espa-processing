@@ -3027,7 +3027,8 @@ class PlotProcessor(ProductProcessor):
 
         # Move the staged data to the work directory
         try:
-            source_stats_files = os.path.join(self._stage_dir, 'stats/*')
+            source_stats_files = glob.glob(os.path.join(self._stage_dir,
+                                                        'stats/*'))
 
             transfer.move_files_to_directory(source_stats_files,
                                              self._work_dir)
