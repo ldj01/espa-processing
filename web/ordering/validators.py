@@ -671,16 +671,16 @@ class ImageExtentsValidator(Validator):
                 x_m = ('Decimal degree longitude values must be -180 to 180')
                 y_m = ('Decimal degree latitude values must be -90 to 90')
 
-                if minx < -180.0 and minx > 180.0:
+                if minx < -180.0 or minx > 180.0:
                     self.add_error('minx', [x_m, ])
 
-                if maxx < 180.0 and maxx > 180.0:
+                if maxx < 180.0 or maxx > 180.0:
                     self.add_error('maxx', [x_m, ])
 
-                if miny < -90.0 and miny > 90.0:
+                if miny < -90.0 or miny > 90.0:
                     self.add_error('miny', [y_m, ])
 
-                if maxy < -90.0 and maxy > 90.0:
+                if maxy < -90.0 or maxy > 90.0:
                     self.add_error('maxy', [y_m, ])
             else:
                 m = ('Please specify extent coordinates in meters.')
