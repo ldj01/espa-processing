@@ -325,8 +325,7 @@ class NewOrder(AbstractView):
 
             c['errors'] = sorted(error_list)
             c['user'] = request.user
-            c['optionstyle'] = self._get_option_style(request)
-
+            
             t = loader.get_template(self.template)
 
             return HttpResponse(t.render(c))
