@@ -660,12 +660,12 @@ class ImageExtentsValidator(Validator):
             if minx >= maxx:
                 m = "Upper left x value must be less than lower right x value"
                 self.add_error('minx', [m, ])
-                self.add_error('maxx', [m, ])
+                #self.add_error('maxx', [m, ])
 
             if miny >= maxy:
                 m = "Lower right y value must be less than upper left y value"
                 self.add_error('miny', [m, ])
-                self.add_error('maxy', [m, ])
+                #self.add_error('maxy', [m, ])
 
             if image_extents_units == 'dd':
                 x_m = ('Decimal degree longitude values must be -180 to 180')
@@ -674,7 +674,7 @@ class ImageExtentsValidator(Validator):
                 if minx < -180.0 or minx > 180.0:
                     self.add_error('minx', [x_m, ])
 
-                if maxx < 180.0 or maxx > 180.0:
+                if maxx < -180.0 or maxx > 180.0:
                     self.add_error('maxx', [x_m, ])
 
                 if miny < -90.0 or miny > 90.0:
