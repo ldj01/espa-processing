@@ -9,6 +9,7 @@ class Errors(object):
     '''Implementation for ESPA errors.resolve(error_message) interface'''
 
     def __init__(self, name=None):
+        
         self.product_name = name
 
         #build list of known error conditions to be checked
@@ -257,7 +258,7 @@ def resolve(error_message, name):
     conditions = None
     result = None
     try:
-        conditions = Errors().conditions
+        conditions = Errors(name).conditions
         for condition in conditions:
             result = condition(error_message)
             if result is not None:
