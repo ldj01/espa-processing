@@ -37,7 +37,7 @@ class Errors(object):
         #in the future, retrieve it from a database or elsewhere if necessary
         self.retry = settings.RETRY
 
-    def __find_error(self, error_message, key, status, reason, extra=None):
+    def __find_error(self, error_message, keys, status, reason, extra=None):
         '''Logic to search the error_message and return the appropriate value
 
         Keyword args:
@@ -54,7 +54,7 @@ class Errors(object):
         ErrorResolution.status - The status a product should be set to
         ErrorResolution.reason - The reason the status was set
         '''
-        for key in self.keys:
+        for key in keys:
             if key.lower() in error_message.lower():
                 return self.resolution(status, reason, extra)
             else:
