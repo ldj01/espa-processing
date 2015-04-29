@@ -2,7 +2,7 @@ import collections
 from espa_common import settings
 from espa_common import sensor
 import datetime
-import email
+import emails
 
 
 class Errors(object):
@@ -127,7 +127,7 @@ class Errors(object):
         extras = self.__add_retry('gzip_errors')
 
         if isinstance(sensor.instance(self.product_name), sensor.Landsat):
-            email.Emails().send_gzip_error_email(self.product_name)
+            emails.Emails().send_gzip_error_email(self.product_name)
         
         return self.__find_error(error_message, keys, status, reason, extras)
 
