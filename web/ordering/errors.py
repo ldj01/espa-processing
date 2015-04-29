@@ -127,10 +127,18 @@ class Errors(object):
         reason = 'Input gzip corrupt'
         extras = self.__add_retry('gzip_errors')
 
-        if isinstance(sensor.instance(self.product_name), sensor.Landsat):
+        resolution = self.__find_error(error_message,
+                                       keys,
+                                       status,
+                                       reason,
+                                       extras)
+        is_landsat =  isinstance(sensor.instance(self.product_name),
+                                 sensor.Landsat)    
+                                 
+        if resolution is not None and is_landsat:
             emails.Emails().send_gzip_error_email(self.product_name)
         
-        return self.__find_error(error_message, keys, status, reason, extras)
+        return resolution
 
     def oli_no_sr(self, error_message):
         ''' Indicates the user requested sr processing against OLI-only'''
