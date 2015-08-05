@@ -19,6 +19,9 @@
     Aug/2014          Ron Dilley               Made operational for cron
     Sept/2014         Ron Dilley               Updated to use espa_common and
                                                our python logging setup
+    July/2015         Ron Dilley               Removed dependence on
+                                               installation of
+                                               espa-product-formatter.
 '''
 
 import os
@@ -26,9 +29,6 @@ import sys
 import xmlrpclib
 import traceback
 
-# espa-common objects and methods
-from espa_constants import EXIT_FAILURE
-from espa_constants import EXIT_SUCCESS
 
 # imports from espa/espa_common
 from espa_common.logger_factory import EspaLogging
@@ -52,8 +52,9 @@ def determine_order_disposition():
     server = None
 
     # Create a server object if the rpcurl seems valid
-    if (rpcurl is not None and rpcurl.startswith('http://')
-            and len(rpcurl) > 7):
+    if (rpcurl is not None and
+            rpcurl.startswith('http://') and
+            len(rpcurl) > 7):
 
         server = xmlrpclib.ServerProxy(rpcurl)
     else:
@@ -102,16 +103,16 @@ if __name__ == '__main__':
     # defined
     required_vars = ['ESPA_XMLRPC']
     for env_var in required_vars:
-        if (env_var not in os.environ or os.environ.get(env_var) is None
-                or len(os.environ.get(env_var)) < 1):
+        if (env_var not in os.environ or os.environ.get(env_var) is None or
+                len(os.environ.get(env_var)) < 1):
 
             logger.critical("$%s is not defined... exiting" % env_var)
-            sys.exit(EXIT_FAILURE)
+            sys.exit(1)
 
     try:
         determine_order_disposition()
     except Exception, e:
         logger.exception("Processing failed")
-        sys.exit(EXIT_FAILURE)
+        sys.exit(1)
 
-    sys.exit(EXIT_SUCCESS)
+    sys.exit(0)
