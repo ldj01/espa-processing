@@ -23,6 +23,9 @@
                                                our python logging setup
     Oct/2014          Ron Dilley               Renamed and incorporates all of
                                                our ondemand cron processing
+    July/2015         Ron Dilley               Removed dependencies on
+                                               installation of the
+                                               espa-product-formatter.
 '''
 
 import os
@@ -33,9 +36,6 @@ import urllib
 from datetime import datetime
 from argparse import ArgumentParser
 
-# espa-common objects and methods
-from espa_constants import EXIT_FAILURE
-from espa_constants import EXIT_SUCCESS
 
 # imports from espa/espa_common
 from espa_common import settings, utilities
@@ -59,8 +59,9 @@ def process_requests(args, logger_name, queue_priority, request_priority):
     server = None
 
     # Create a server object if the rpcurl seems valid
-    if (rpcurl is not None and rpcurl.startswith('http://')
-            and len(rpcurl) > 7):
+    if (rpcurl is not None and
+            rpcurl.startswith('http://') and
+            len(rpcurl) > 7):
 
         server = xmlrpclib.ServerProxy(rpcurl, allow_none=True)
     else:
@@ -174,7 +175,8 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                  '-D', 'mapred.reduce.tasks=0',
                  '-D', 'mapred.job.queue.name=%s' % hadoop_job_queue,
                  '-D', 'mapred.job.name="%s"' % job_name,
-                 '-inputformat', 'org.apache.hadoop.mapred.lib.NLineInputFormat',
+                 '-inputformat', ('org.apache.hadoop.mapred.'
+                                  'lib.NLineInputFormat'),
                  '-file', '%s/espa-site/processing/%s' % (home_dir, mapper),
                  '-file', '%s/espa-site/processing/processor.py' % home_dir,
                  '-file', '%s/espa-site/processing/browse.py' % home_dir,
@@ -187,7 +189,8 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                  '-file', '%s/espa-site/processing/staging.py' % home_dir,
                  '-file', '%s/espa-site/processing/statistics.py' % home_dir,
                  '-file', '%s/espa-site/processing/environment.py' % home_dir,
-                 '-file', '%s/espa-site/processing/initialization.py' % home_dir,
+                 '-file', ('%s/espa-site/processing/initialization.py'
+                           % home_dir),
                  '-file', '%s/espa-site/processing/transfer.py' % home_dir,
                  '-file', '%s/espa-site/processing/warp.py' % home_dir,
                  '-file', ('%s/espa-site/espa_common/logger_factory.py'
@@ -340,12 +343,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Validate product_types
-    if ((set(['landsat', 'plot']) == set(args.product_types))
-            or (set(['modis', 'plot']) == set(args.product_types))
-            or (set(['landsat', 'modis', 'plot']) == set(args.product_types))):
+    if ((set(['landsat', 'plot']) == set(args.product_types)) or
+            (set(['modis', 'plot']) == set(args.product_types)) or
+            (set(['landsat', 'modis', 'plot']) == set(args.product_types))):
         print("Invalid --product-types: 'plot' cannot be combined with any"
               " other product types")
-        sys.exit(EXIT_FAILURE)
+        sys.exit(1)
 
     # Configure and get the logger for this task
     if 'plot' in args.product_types:
@@ -360,11 +363,11 @@ if __name__ == '__main__':
     required_vars = ['ESPA_XMLRPC', 'ESPA_WORK_DIR', 'LEDAPS_AUX_DIR',
                      'L8_AUX_DIR', 'PATH', 'HOME']
     for env_var in required_vars:
-        if (env_var not in os.environ or os.environ.get(env_var) is None
-                or len(os.environ.get(env_var)) < 1):
+        if (env_var not in os.environ or os.environ.get(env_var) is None or
+                len(os.environ.get(env_var)) < 1):
 
             logger.critical("$%s is not defined... exiting" % env_var)
-            sys.exit(EXIT_FAILURE)
+            sys.exit(1)
 
     # Determine the appropriate priority value to use for the queue and request
     queue_priority = args.priority.lower()
@@ -385,6 +388,6 @@ if __name__ == '__main__':
         process_requests(args, logger_name, queue_priority, request_priority)
     except Exception, e:
         logger.exception("Processing failed")
-        sys.exit(EXIT_FAILURE)
+        sys.exit(1)
 
-    sys.exit(EXIT_SUCCESS)
+    sys.exit(0)
