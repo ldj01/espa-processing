@@ -5,6 +5,20 @@ License: NASA Open Source Agreement 1.3
 USGS Designation: EROS Science Processing Architecture (ESPA)
 
 Change Notes
+Version 2.9.0 (XXXX 2015)
+        Code for the web interface has been moved to the following repository.
+            https://github.com/USGS-EROS/espa-web
+
+        Code for the down load client has been moved to the following
+        repository.
+            https://github.com/USGS-EROS/espa-bulk-downloader
+
+        Code for the tools and prototype directories have been moved to better
+        locations under the following repositories.
+            https://github.com/USGS-EROS/espa-junk-drawer
+            https://github.com/USGS-EROS/espa-maintenance
+
+
 Version 2.8.5 (July 2015)
         Added additional error condition to network errors 
             - retry on socket timeouts
@@ -53,10 +67,13 @@ Version 2.7.0 (December 22, 2014)
 
 Version 2.5.0 (August 27, 2014)
         Added console application for staff personnel.
+
         Added priority to Orders in conjunction with Hadoop Queueing to prevent
         large orders from dominating all compute resources.
+
         Moved espa schema file to espa-common to prevent network effects from
         causing processing failures.
+
         Added select MODIS products as customizable input products.
         Corrected error with invalid checksum generation.
         Multiple bug fixes relating to image reprojection and resampling.
@@ -107,21 +124,27 @@ Version 2.3.0 (May 30, 2014)
         -----------------
         settings.py
         -----------------
-        Modified settings.py to include the static files app and set STATIC_ROOT, STATIC_URL
+        Modified settings.py to include the static files app and set
+        STATIC_ROOT, STATIC_URL
         Added LOGIN_URL, LOGIN_REDIRECT_URL
         Added URL_FOR() lambda function as service locator function
-            - was previously implemented in lta.py, multiple modules now need this and its a critical dependency 
+            - was previously implemented in lta.py, multiple modules now need
+              this and its a critical dependency 
         Added ESPA_DEBUG flag to settings.py
-            - looks for ESPA_DEBUG = TRUE in environment variables, enables DEBUG and TEMPLATE_DEBUG
+            - looks for ESPA_DEBUG = TRUE in environment variables, enables
+              DEBUG and TEMPLATE_DEBUG
 
         Moved all configuration items to settings.py
-            - configurable items can be set in espa-uwsgi.ini or as environment variables
-            - private key & database credentials must be provided on the local filesystem in ~/.cfgno
+            - configurable items can be set in espa-uwsgi.ini or as environment
+              variables
+            - private key & database credentials must be provided on the local
+              filesystem in ~/.cfgno
 
         -----------------
         espa-uwsgi.ini
         -----------------
-        Removed the /media mapping in espa-uwsgi.ini as it is no longer necessary (merged into /static mapping)
+        Removed the /media mapping in espa-uwsgi.ini as it is no longer
+        necessary (merged into /static mapping)
 
         -----------------
         Misc
@@ -130,15 +153,19 @@ Version 2.3.0 (May 30, 2014)
         django.wsgi removed in favor of django generated wsgi.py
 
         Deleted scene_cache.py from the espa/ codebase
-            - Moved the scene cache replacement from trunk/prototype/new_scene_cache to trunk/scenecache.
+            - Moved the scene cache replacement from
+              trunk/prototype/new_scene_cache to trunk/scenecache.
 
-        Moved all Order & Scene related operations to the models.Order and models.Scene classes as either class or static methods
+        Moved all Order & Scene related operations to the models.Order and
+        models.Scene classes as either class or static methods
 
-        Removed all partially hardcoded urls from template and view code, replaced with named urls, {% url %}, {% static %} and reverse() tags
+        Removed all partially hardcoded urls from template and view code,
+        replaced with named urls, {% url %}, {% static %} and reverse() tags
 
         Moved all cross-application functionality into espa_web
 
-        Added espa_web/context_processors.py to include needed variables in templates
+        Added espa_web/context_processors.py to include needed variables in
+        templates
             - must include in settings.py TEMPLATE_CONTEXT_PROCESSORS
 
         Added espa_web/auth_backends.py for EE authentication 
@@ -219,7 +246,7 @@ Version 2.1.1
         Integrated cfmask 1.0.4
         Integrated updated Spectral Indices
 
-Version 2.1
+Version 2.1.0
         Updated web code to verify submitted scenes against the inventory
         before accepting them.
         Updated web code to pull orders from EE on demand for surface
@@ -234,7 +261,8 @@ Version 2.0.3
         Updated espa to work with ledaps 1.2 & cfmask 1.0.1
         Added ability for all users to select product options.
         Added ability to order cfmask for espa_internal and espa_admin
-        Removed seperate source file distribution (can be selected as an option)
+        Removed seperate source file distribution (can be selected as an
+        option)
 
 Version 2.0.2
         Fixed solr generation to account for landsat metadata field name
@@ -259,36 +287,50 @@ Version 1.3.8
         Updated espa to work with ledaps 1.1.1.
 
 Version 1.3.7
-        Updated espa to work with ledaps 1.1.0.  Added scene_cache.py to speed up scene submission.
+        Updated espa to work with ledaps 1.1.0.  Added scene_cache.py to speed
+        up scene submission.
+
         Multiple bugfixes and cosmetic website/email changes.
+
 Version 1.3.5
         Updated 'lndpm' binary to work with new Landsat metdata
 
         Corrected metadata file lookup to account for Landsat's metadata format
         changes.
+
 Version 1.3.4
         Corrections to reprojection code in espacollection.py when creating
         browse images.
+
 Version 1.3.3
         Modifications to the NDVI code to release memory more quickly, reduce
         memory footprint.
+
 Version 1.3.2
         Correction to the solr index to be semicolon seperated
 
 Version 1.3.1
         Bug fixes for NDVI and CleanupDirs
 
-Version 1.3
-        Updated LEDAPS to the latest version from November 2011.  Added ability to generate NDVI for output products
-        Multiple additions to collection processing to create browse and solr index.
+Version 1.3.0
+        Updated LEDAPS to the latest version from November 2011.  Added
+        ability to generate NDVI for output products
 
-Version 1.2
-        Replaced Python's tar and untar commands in espa.py with the native operating system commands.
-        Prior to this there were intermittent corrupt archives making it into the distribution node.
+        Multiple additions to collection processing to create browse and solr
+        index.
+
+Version 1.2.0
+        Replaced Python's tar and untar commands in espa.py with the native
+        operating system commands.
+
+        Prior to this there were intermittent corrupt archives making it into
+        the distribution node.
+
         Native os commands are also far faster than the python implementation.
 
-Version 1.1
+Version 1.1.0
         Added RSS Status capability to ordering interface
 
-Version 1.0
-        First major stable version of ESPA released that will process Landsat L1T's to Surface Reflectance
+Version 1.0.0
+        First major stable version of ESPA released that will process Landsat
+        L1T's to Surface Reflectance
