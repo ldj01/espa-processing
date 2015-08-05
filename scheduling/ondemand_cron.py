@@ -143,11 +143,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                     # could not be logged
                     line_entry = json.dumps(request)
 
-                    # Pad the entry so hadoop will properly split the jobs
-                    #filler_count = (settings.ORDER_BUFFER_LENGTH -
-                    #                len(line_entry))
-                    #request_line = ''.join([line_entry,
-                    #                        ('#' * filler_count), '\n'])
+                    # Split the jobs using newline's
                     request_line = ''.join([line_entry, '\n'])
 
                     # Write out the request line
