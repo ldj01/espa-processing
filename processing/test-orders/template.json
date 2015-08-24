@@ -11,6 +11,7 @@
         "include_cfmask": false,
         "include_customized_source_data": false,
         "include_dswe": false,
+        "include_lst": false,
         "include_solr_index": false,
         "include_source_data": false,
         "include_source_metadata": false,
@@ -49,7 +50,7 @@
         "utm_zone": null
     },
     "orderid": "ORDER_ID",
-    "scene": "SCENE_ID",
     "product_type": "PRODUCT_TYPE",
+    "scene": "SCENE_ID",
     "xmlrpcurl": "skip_xmlrpc"
 }
