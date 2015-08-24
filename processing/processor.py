@@ -741,6 +741,7 @@ class LandsatProcessor(CDRProcessor):
         required_includes = ['include_cfmask',
                              'include_customized_source_data',
                              'include_dswe',
+                             'include_lst',
                              'include_solr_index',
                              'include_source_data',
                              'include_source_metadata',
@@ -799,6 +800,7 @@ class LandsatProcessor(CDRProcessor):
                 and not options['include_sr_msavi']
                 and not options['include_sr_evi']
                 and not options['include_dswe']
+                and not options['include_lst']
                 and not options['include_solr_index']):
 
             logger.info("***NO SCIENCE PRODUCTS CHOSEN***")
@@ -893,7 +895,8 @@ class LandsatProcessor(CDRProcessor):
         options = self._parms['options']
 
         cmd = None
-        if (options['include_dswe']):
+        if (options['include_dswe']
+                or options['include_lst']):
 
             cmd = ['do_create_dem.py',
                    '--mtl', self._metadata_filename,
@@ -1011,6 +1014,7 @@ class LandsatProcessor(CDRProcessor):
                 or options['include_sr_thermal']
                 or options['include_sr']
                 or options['include_dswe']
+                or options['include_lst']
                 or options['include_cfmask']):
 
             execute_do_ledaps = True
@@ -1225,6 +1229,57 @@ class LandsatProcessor(CDRProcessor):
                     logger.info(output)
 
     # -------------------------------------------
+    def lst_command_line(self):
+        '''
+        Description:
+            Returns the command line required to generate Land Surface
+            Temperature.  Evaluates the options requested by the user to
+            define the command line string to use, or returns None indicating
+            nothing todo.
+
+        Note:
+            Provides the L5, and L7 command line.
+        '''
+
+        options = self._parms['options']
+
+        cmd = None
+        if options['include_lst']:
+
+            cmd = ['l5_7_lst.py',
+                   '--xml', self._xml_filename]
+
+            cmd = ' '.join(cmd)
+
+        return cmd
+
+    # -------------------------------------------
+    def generate_lst(self):
+        '''
+        Description:
+            Generates the Dynamic Surface Water Extent product.
+        '''
+
+        logger = self._logger
+
+        cmd = self.lst_command_line()
+
+        # Only if required
+        if cmd is not None:
+
+            logger.info(' '.join(['LST COMMAND:', cmd]))
+
+            output = ''
+            try:
+                output = utilities.execute_cmd(cmd)
+            except Exception as e:
+                raise ee.ESPAException(ee.ErrorCodes.lst,
+                                       str(e)), None, sys.exc_info()[2]
+            finally:
+                if len(output) > 0:
+                    logger.info(output)
+
+    # -------------------------------------------
     def build_science_products(self):
         '''
         Description:
@@ -1261,6 +1316,8 @@ class LandsatProcessor(CDRProcessor):
             self.generate_spectral_indices()
 
             self.generate_dswe()
+
+            self.generate_lst()
 
         finally:
             # Change back to the previous directory
@@ -1436,6 +1493,37 @@ class LandsatTMProcessor(LandsatProcessor):
 
 
 # ===========================================================================
+class Landsat4TMProcessor(LandsatTMProcessor):
+    '''
+    Description:
+        Implements L4 TM specific processing.
+
+    Note:
+        Today all processing is inherited from the LandsatProcessors because
+        the TM and ETM processors are identical.
+    '''
+
+    # -------------------------------------------
+    def __init__(self, parms):
+        super(LandsatTMProcessor, self).__init__(parms)
+
+    # -------------------------------------------
+    def lst_command_line(self):
+        '''
+        Description:
+            Returns the command line required to generate Land Surface
+            Temperature.  Evaluates the options requested by the user to
+            define the command line string to use, or returns None indicating
+            nothing todo.
+
+        Note: LST processing only implemented for L5 and L7
+        '''
+
+        # Return None since we can not process this option.
+        return None
+
+
+# ===========================================================================
 class LandsatETMProcessor(LandsatProcessor):
     '''
     Description:
@@ -1580,6 +1668,21 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
                             '--xml', self._xml_filename])
 
         return cmd
+
+    # -------------------------------------------
+    def lst_command_line(self):
+        '''
+        Description:
+            Returns the command line required to generate Land Surface
+            Temperature.  Evaluates the options requested by the user to
+            define the command line string to use, or returns None indicating
+            nothing todo.
+
+        Note: LST processing only implemented for L5 and L7
+        '''
+
+        # Return None since we can not process this option.
+        return None
 
 
 # ===========================================================================
@@ -3048,7 +3151,7 @@ def get_instance(parms):
     sensor_code = sensor.instance(product_id).sensor_code.lower()
 
     if sensor_code == 'lt4':
-        return LandsatTMProcessor(parms)
+        return Landsat4TMProcessor(parms)
     elif sensor_code == 'lt5':
         return LandsatTMProcessor(parms)
     elif sensor_code == 'le7':
