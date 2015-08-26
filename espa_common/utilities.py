@@ -57,7 +57,7 @@ def execute_cmd(cmd):
       Execute a command line and return the terminal output or raise an
       exception
 
-    Returnsdsflh01.cr.usgs.gov
+    Returns:
         output - The stdout and/or stderr from the executed command.
     '''
 
