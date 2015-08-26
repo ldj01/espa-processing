@@ -557,8 +557,8 @@ class CDRProcessor(CustomizationProcessor):
         if not options['include_sr_thermal']:
             products_to_remove.append(
                 order2xml_mapping['include_sr_thermal'])
-        # These both need to be false before we delete the cfmask files
-        # Because our defined SR product includes the cfmask band
+        # These both need to be false before we delete the cloud mask files
+        # Because our defined SR product includes the cloud mask bands
         if not options['include_cfmask'] and not options['include_sr']:
             products_to_remove.append(
                 order2xml_mapping['include_cfmask'])
@@ -1054,51 +1054,34 @@ class LandsatProcessor(CDRProcessor):
                     logger.info(output)
 
     # -------------------------------------------
-    def cfmask_command_line(self):
+    def generate_cloud_masking(self):
         '''
         Description:
-            Returns the command line required to generate cfmask.
-            Evaluates the options requested by the user to define the command
-            line string to use, or returns None indicating nothing todo.
-
-        Note:
-            Provides the L4, L5, and L7 command line.  L8 processing overrides
-            this method.
-        '''
-
-        options = self._parms['options']
-
-        cmd = None
-        if (options['include_cfmask']
-                or options['include_dswe']
-                or options['include_sr']):
-            cmd = ' '.join(['cfmask', '--verbose', '--max_cloud_pixels',
-                            settings.CFMASK_MAX_CLOUD_PIXELS,
-                            '--xml', self._xml_filename])
-
-        return cmd
-
-    # -------------------------------------------
-    def generate_cfmask(self):
-        '''
-        Description:
-            Generates cfmask.
+            Generates cloud mask products.
         '''
 
         logger = self._logger
 
-        cmd = self.cfmask_command_line()
+        options = self._parms['options']
+        cmd = None
+        if (options['include_cfmask']
+                or options['include_dswe']
+                or options['include_sr']):
+            cmd = ' '.join(['cloud_masking.py', '--verbose',
+                            '--max_cloud_pixels',
+                            settings.CFMASK_MAX_CLOUD_PIXELS,
+                            '--xml', self._xml_filename])
 
         # Only if required
         if cmd is not None:
 
-            logger.info(' '.join(['CFMASK COMMAND:', cmd]))
+            logger.info(' '.join(['CLOUD MASKING COMMAND:', cmd]))
 
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
             except Exception as e:
-                raise ee.ESPAException(ee.ErrorCodes.cfmask,
+                raise ee.ESPAException(ee.ErrorCodes.cloud_masking,
                                        str(e)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
@@ -1307,7 +1290,7 @@ class LandsatProcessor(CDRProcessor):
 
             self.generate_sr_products()
 
-            self.generate_cfmask()
+            self.generate_cloud_masking()
 
             # TODO - Today we do not do this anymore so code it back in
             #        if/when it is required
@@ -1651,25 +1634,6 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
         return cmd
 
     # -------------------------------------------
-    def cfmask_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate cfmask.
-            Evaluates the options requested by the user to define the command
-            line string to use, or returns None indicating nothing todo.
-        '''
-
-        options = self._parms['options']
-
-        cmd = None
-        if options['include_cfmask'] or options['include_sr']:
-            cmd = ' '.join(['l8cfmask', '--verbose', '--max_cloud_pixels',
-                            settings.CFMASK_MAX_CLOUD_PIXELS,
-                            '--xml', self._xml_filename])
-
-        return cmd
-
-    # -------------------------------------------
     def lst_command_line(self):
         '''
         Description:
@@ -1732,19 +1696,14 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
         return None
 
     # -------------------------------------------
-    def cfmask_command_line(self):
+    def generate_cloud_masking(self):
         '''
         Description:
-            Returns the command line required to generate cfmask.
-            Evaluates the options requested by the user to define the command
-            line string to use, or returns None indicating nothing todo.
-
-        Note: cfmask processing requires both OLI and TIRS bands so OLI only
-              products can not execute l8cfmask.
+              cloud_masking processing requires both OLI and TIRS bands so
+              OLI only products can not produce cloud mask products.
         '''
 
-        # Return None since we can not process this option.
-        return None
+        pass
 
     # -------------------------------------------
     def spectral_indices_command_line(self):

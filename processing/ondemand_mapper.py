@@ -285,7 +285,7 @@ def process(args):
                           or e.error_code == ee.ErrorCodes.spectral_indices
                           or e.error_code == ee.ErrorCodes.create_dem
                           or e.error_code == ee.ErrorCodes.solr
-                          or e.error_code == ee.ErrorCodes.cfmask
+                          or e.error_code == ee.ErrorCodes.cloud_masking
                           or e.error_code == ee.ErrorCodes.dswe
                           or e.error_code == ee.ErrorCodes.cleanup_work_dir
                           or e.error_code == ee.ErrorCodes.remove_products):
