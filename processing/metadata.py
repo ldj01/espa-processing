@@ -39,8 +39,8 @@ def get_landsat_metadata(work_dir, product_id):
 
     try:
         for meta_file in glob.glob('%s_MTL.*' % product_id):
-            if ('old' not in meta_file
-                    and not meta_file.startswith('lnd')):
+            if ('old' not in meta_file and
+                    not meta_file.startswith('lnd')):
 
                 # Save the filename and break out of the directory loop
                 metadata_filename = meta_file
