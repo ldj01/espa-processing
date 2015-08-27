@@ -167,8 +167,8 @@ def create_link(src_path, link_path):
     try:
         os.symlink(src_path, link_path)
     except OSError as ose:
-        if (ose.errno == errno.EEXIST and os.path.islink(link_path)
-                and src_path == os.path.realpath(link_path)):
+        if (ose.errno == errno.EEXIST and os.path.islink(link_path) and
+                src_path == os.path.realpath(link_path)):
             pass
         else:
             raise
