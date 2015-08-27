@@ -287,6 +287,7 @@ def process(args):
                           or e.error_code == ee.ErrorCodes.solr
                           or e.error_code == ee.ErrorCodes.cloud_masking
                           or e.error_code == ee.ErrorCodes.dswe
+                          or e.error_code == ee.ErrorCodes.land_surface_temperature
                           or e.error_code == ee.ErrorCodes.cleanup_work_dir
                           or e.error_code == ee.ErrorCodes.remove_products):
 
