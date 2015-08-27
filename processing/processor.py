@@ -95,7 +95,6 @@ class ProductProcessor(object):
         '''
 
         self._logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
-        logger = self._logger
 
         # Some minor enforcement for what parms should be
         if type(parms) is dict:
@@ -108,8 +107,8 @@ class ProductProcessor(object):
         self._environment = Environment()
 
         # Log the distribution method that will be used
-        logger.info("Using distribution method '{0}'".
-                    format(self._environment.get_distribution_method()))
+        self._logger.info("Using distribution method '{0}'".
+                          format(self._environment.get_distribution_method()))
 
         # Validate the parameters
         self.validate_parameters()
@@ -120,8 +119,6 @@ class ProductProcessor(object):
         Description:
             Validates the parameters required for the processor.
         '''
-
-        logger = self._logger
 
         # Test for presence of required top-level parameters
         keys = ['orderid', 'scene', 'product_type', 'options']
@@ -136,8 +133,8 @@ class ProductProcessor(object):
 
         # TODO - Remove this once we have converted
         if not parameters.test_for_parameter(self._parms, 'product_id'):
-            logger.warning("'product_id' parameter missing defaulting to"
-                           " 'scene'")
+            self._logger.warning("'product_id' parameter missing defaulting to"
+                                 " 'scene'")
             self._parms['product_id'] = self._parms['scene']
 
         # Validate the options
@@ -165,8 +162,6 @@ class ProductProcessor(object):
             Log the order parameters in json format.
         '''
 
-        logger = self._logger
-
         # Override the usernames and passwords for logging
         parms = copy.deepcopy(self._parms)
         parms['options']['source_username'] = 'XXXXXXX'
@@ -174,8 +169,8 @@ class ProductProcessor(object):
         parms['options']['source_pw'] = 'XXXXXXX'
         parms['options']['destination_pw'] = 'XXXXXXX'
 
-        logger.info("MAPPER OPTION LINE %s"
-                    % json.dumps(parms, sort_keys=True))
+        self._logger.info("MAPPER OPTION LINE %s"
+                          % json.dumps(parms, sort_keys=True))
 
         del parms
 
@@ -194,8 +189,6 @@ class ProductProcessor(object):
             order_id and product_id along with the ESPA_WORK_DIR environment
             variable provide the path to the processing locations.
         '''
-
-        logger = self._logger
 
         product_id = self._parms['product_id']
         order_id = self._parms['orderid']
@@ -228,7 +221,7 @@ class ProductProcessor(object):
         except Exception as e:
             raise ee.ESPAException(ee.ErrorCodes.creating_stage_dir,
                                    str(e)), None, sys.exc_info()[2]
-        logger.info("Created directory [{0}]".format(self._stage_dir))
+        self._logger.info("Created directory [{0}]".format(self._stage_dir))
 
         try:
             self._work_dir = \
@@ -236,7 +229,7 @@ class ProductProcessor(object):
         except Exception as e:
             raise ee.ESPAException(ee.ErrorCodes.creating_work_dir,
                                    str(e)), None, sys.exc_info()[2]
-        logger.info("Created directory [{0}]".format(self._work_dir))
+        self._logger.info("Created directory [{0}]".format(self._work_dir))
 
         try:
             self._output_dir = \
@@ -244,7 +237,7 @@ class ProductProcessor(object):
         except Exception as e:
             raise ee.ESPAException(ee.ErrorCodes.creating_output_dir,
                                    str(e)), None, sys.exc_info()[2]
-        logger.info("Created directory [{0}]".format(self._output_dir))
+        self._logger.info("Created directory [{0}]".format(self._output_dir))
 
     # -------------------------------------------
     def remove_product_directory(self):
@@ -285,8 +278,6 @@ class ProductProcessor(object):
             the distribution module.
         '''
 
-        logger = self._logger
-
         product_id = self._parms['product_id']
 
         product_name = self.get_product_name()
@@ -301,10 +292,11 @@ class ProductProcessor(object):
                                                 self._output_dir,
                                                 self._parms)
         except Exception as e:
-            logger.exception("An exception occurred delivering the product")
+            self._logger.exception('An exception occurred delivering'
+                                   ' the product')
             raise
 
-        logger.info("*** Product Delivery Complete ***")
+        self._logger.info("*** Product Delivery Complete ***")
 
         # Let the caller know where we put these on the destination system
         return (product_file, cksum_file)
@@ -399,15 +391,13 @@ class CustomizationProcessor(ProductProcessor):
             Validates the parameters required for the processor.
         '''
 
-        logger = self._logger
-
         # Call the base class parameter validation
         super(CustomizationProcessor, self).validate_parameters()
 
         product_id = self._parms['product_id']
         options = self._parms['options']
 
-        logger.info("Validating [CustomizationProcessor] parameters")
+        self._logger.info("Validating [CustomizationProcessor] parameters")
 
         parameters. \
             validate_reprojection_parameters(options,
@@ -437,10 +427,10 @@ class CustomizationProcessor(ProductProcessor):
         options = self._parms['options']
 
         # Reproject the data for each product, but only if necessary
-        if (options['reproject']
-                or options['resize']
-                or options['image_extents']
-                or options['projection'] is not None):
+        if (options['reproject'] or
+                options['resize'] or
+                options['image_extents'] or
+                options['projection'] is not None):
 
             # The warp method requires this parameter
             options['work_directory'] = self._work_dir
@@ -524,8 +514,6 @@ class CDRProcessor(CustomizationProcessor):
         # Nothing to do if the user did not specify anything to build
         if not self._build_products:
             return
-
-        logger = self._logger
 
         options = self._parms['options']
 
@@ -630,8 +618,6 @@ class CDRProcessor(CustomizationProcessor):
             Distributes statistics if required for the processor.
         '''
 
-        logger = self._logger
-
         options = self._parms['options']
 
         if options['include_statistics']:
@@ -640,10 +626,11 @@ class CDRProcessor(CustomizationProcessor):
                                                    self._output_dir,
                                                    self._parms)
             except Exception as e:
-                logger.exception("An exception occurred delivering the stats")
+                self._logger.exception('An exception occurred delivering'
+                                       ' the stats')
                 raise
 
-            logger.info("*** Statistics Distribution Complete ***")
+            self._logger.info("*** Statistics Distribution Complete ***")
 
     # -------------------------------------------
     def reformat_products(self):
@@ -727,12 +714,10 @@ class LandsatProcessor(CDRProcessor):
             Validates the parameters required for the processor.
         '''
 
-        logger = self._logger
-
         # Call the base class parameter validation
         super(LandsatProcessor, self).validate_parameters()
 
-        logger.info("Validating [LandsatProcessor] parameters")
+        self._logger.info("Validating [LandsatProcessor] parameters")
 
         options = self._parms['options']
 
@@ -760,17 +745,17 @@ class LandsatProcessor(CDRProcessor):
 
         for parameter in required_includes:
             if not parameters.test_for_parameter(options, parameter):
-                logger.warning("'%s' parameter missing defaulting to False"
-                               % parameter)
+                self._logger.warning("'%s' parameter missing defaulting to"
+                                     " False" % parameter)
                 options[parameter] = False
 
         # Determine if browse was requested and specify the default
         # resolution if a resolution was not specified
         if options['include_sr_browse']:
             if not parameters.test_for_parameter(options, 'browse_resolution'):
-                logger.warning("'browse_resolution' parameter missing"
-                               " defaulting to %d"
-                               % settings.DEFAULT_BROWSE_RESOLUTION)
+                self._logger.warning("'browse_resolution' parameter missing"
+                                     " defaulting to %d"
+                                     % settings.DEFAULT_BROWSE_RESOLUTION)
                 options['browse_resolution'] = \
                     settings.DEFAULT_BROWSE_RESOLUTION
 
@@ -779,31 +764,31 @@ class LandsatProcessor(CDRProcessor):
         # name if a collection name was not specified
         if options['include_solr_index']:
             if not parameters.test_for_parameter(options, 'collection_name'):
-                logger.warning("'collection_name' parameter missing"
-                               " defaulting to %s"
-                               % settings.DEFAULT_SOLR_COLLECTION_NAME)
+                self._logger.warning("'collection_name' parameter missing"
+                                     " defaulting to %s"
+                                     % settings.DEFAULT_SOLR_COLLECTION_NAME)
                 options['collection_name'] = \
                     settings.DEFAULT_SOLR_COLLECTION_NAME
 
         # Determine if we need to build products
-        if (not options['include_customized_source_data']
-                and not options['include_sr']
-                and not options['include_sr_toa']
-                and not options['include_sr_thermal']
-                and not options['include_sr_browse']
-                and not options['include_cfmask']
-                and not options['include_sr_nbr']
-                and not options['include_sr_nbr2']
-                and not options['include_sr_ndvi']
-                and not options['include_sr_ndmi']
-                and not options['include_sr_savi']
-                and not options['include_sr_msavi']
-                and not options['include_sr_evi']
-                and not options['include_dswe']
-                and not options['include_lst']
-                and not options['include_solr_index']):
+        if (not options['include_customized_source_data'] and
+                not options['include_sr'] and
+                not options['include_sr_toa'] and
+                not options['include_sr_thermal'] and
+                not options['include_sr_browse'] and
+                not options['include_cfmask'] and
+                not options['include_sr_nbr'] and
+                not options['include_sr_nbr2'] and
+                not options['include_sr_ndvi'] and
+                not options['include_sr_ndmi'] and
+                not options['include_sr_savi'] and
+                not options['include_sr_msavi'] and
+                not options['include_sr_evi'] and
+                not options['include_dswe'] and
+                not options['include_lst'] and
+                not options['include_solr_index']):
 
-            logger.info("***NO SCIENCE PRODUCTS CHOSEN***")
+            self._logger.info("***NO SCIENCE PRODUCTS CHOSEN***")
             self._build_products = False
         else:
             self._build_products = True
@@ -855,8 +840,6 @@ class LandsatProcessor(CDRProcessor):
             format.
         '''
 
-        logger = self._logger
-
         options = self._parms['options']
 
         # Build a command line arguments list
@@ -868,7 +851,7 @@ class LandsatProcessor(CDRProcessor):
 
         # Turn the list into a string
         cmd = ' '.join(cmd)
-        logger.info(' '.join(['CONVERT LPGS TO ESPA COMMAND:', cmd]))
+        self._logger.info(' '.join(['CONVERT LPGS TO ESPA COMMAND:', cmd]))
 
         output = ''
         try:
@@ -878,7 +861,7 @@ class LandsatProcessor(CDRProcessor):
                                    str(e)), None, sys.exc_info()[2]
         finally:
             if len(output) > 0:
-                logger.info(output)
+                self._logger.info(output)
 
     # -------------------------------------------
     def dem_command_line(self):
@@ -895,8 +878,7 @@ class LandsatProcessor(CDRProcessor):
         options = self._parms['options']
 
         cmd = None
-        if (options['include_dswe']
-                or options['include_lst']):
+        if (options['include_dswe'] or options['include_lst']):
 
             cmd = ['do_create_dem.py',
                    '--mtl', self._metadata_filename,
@@ -914,14 +896,12 @@ class LandsatProcessor(CDRProcessor):
             Generates a DEM product using the metadata from the input data.
         '''
 
-        logger = self._logger
-
         cmd = self.dem_command_line()
 
         # Only if required
         if cmd is not None:
 
-            logger.info(' '.join(['DEM COMMAND:', cmd]))
+            self._logger.info(' '.join(['DEM COMMAND:', cmd]))
 
             output = ''
             try:
@@ -931,7 +911,7 @@ class LandsatProcessor(CDRProcessor):
                                        str(e)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
-                    logger.info(output)
+                    self._logger.info(output)
 
     # -------------------------------------------
     def land_water_mask_command_line(self):
@@ -951,14 +931,12 @@ class LandsatProcessor(CDRProcessor):
             Generates a land water mask.
         '''
 
-        logger = self._logger
-
         cmd = self.land_water_mask_command_line()
 
         # Only if required
         if cmd is not None:
 
-            logger.info(' '.join(['LAND/WATER MASK COMMAND:', cmd]))
+            self._logger.info(' '.join(['LAND/WATER MASK COMMAND:', cmd]))
 
             output = ''
             try:
@@ -968,7 +946,7 @@ class LandsatProcessor(CDRProcessor):
                                        str(e)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
-                    logger.info(output)
+                    self._logger.info(output)
 
     # -------------------------------------------
     def sr_command_line(self):
@@ -990,16 +968,16 @@ class LandsatProcessor(CDRProcessor):
         execute_do_ledaps = False
 
         # Check to see if SR is required
-        if (options['include_sr']
-                or options['include_sr_browse']
-                or options['include_sr_nbr']
-                or options['include_sr_nbr2']
-                or options['include_sr_ndvi']
-                or options['include_sr_ndmi']
-                or options['include_sr_savi']
-                or options['include_sr_msavi']
-                or options['include_sr_evi']
-                or options['include_dswe']):
+        if (options['include_sr'] or
+                options['include_sr_browse'] or
+                options['include_sr_nbr'] or
+                options['include_sr_nbr2'] or
+                options['include_sr_ndvi'] or
+                options['include_sr_ndmi'] or
+                options['include_sr_savi'] or
+                options['include_sr_msavi'] or
+                options['include_sr_evi'] or
+                options['include_dswe']):
 
             cmd.extend(['--process_sr', 'True'])
             execute_do_ledaps = True
@@ -1010,12 +988,12 @@ class LandsatProcessor(CDRProcessor):
 
         # Check to see if Thermal or TOA is required
         # include_sr is added here for sanity to match L8 and business logic
-        if (options['include_sr_toa']
-                or options['include_sr_thermal']
-                or options['include_sr']
-                or options['include_dswe']
-                or options['include_lst']
-                or options['include_cfmask']):
+        if (options['include_sr_toa'] or
+                options['include_sr_thermal'] or
+                options['include_sr'] or
+                options['include_dswe'] or
+                options['include_lst'] or
+                options['include_cfmask']):
 
             execute_do_ledaps = True
 
@@ -1034,14 +1012,12 @@ class LandsatProcessor(CDRProcessor):
             Generates surface reflectance products.
         '''
 
-        logger = self._logger
-
         cmd = self.sr_command_line()
 
         # Only if required
         if cmd is not None:
 
-            logger.info(' '.join(['SURFACE REFLECTANCE COMMAND:', cmd]))
+            self._logger.info(' '.join(['SURFACE REFLECTANCE COMMAND:', cmd]))
 
             output = ''
             try:
@@ -1051,7 +1027,7 @@ class LandsatProcessor(CDRProcessor):
                                        str(e)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
-                    logger.info(output)
+                    self._logger.info(output)
 
     # -------------------------------------------
     def generate_cloud_masking(self):
@@ -1060,13 +1036,11 @@ class LandsatProcessor(CDRProcessor):
             Generates cloud mask products.
         '''
 
-        logger = self._logger
-
         options = self._parms['options']
         cmd = None
-        if (options['include_cfmask']
-                or options['include_dswe']
-                or options['include_sr']):
+        if (options['include_cfmask'] or
+                options['include_dswe'] or
+                options['include_sr']):
             cmd = ' '.join(['cloud_masking.py', '--verbose',
                             '--max_cloud_pixels',
                             settings.CFMASK_MAX_CLOUD_PIXELS,
@@ -1075,7 +1049,7 @@ class LandsatProcessor(CDRProcessor):
         # Only if required
         if cmd is not None:
 
-            logger.info(' '.join(['CLOUD MASKING COMMAND:', cmd]))
+            self._logger.info(' '.join(['CLOUD MASKING COMMAND:', cmd]))
 
             output = ''
             try:
@@ -1085,7 +1059,7 @@ class LandsatProcessor(CDRProcessor):
                                        str(e)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
-                    logger.info(output)
+                    self._logger.info(output)
 
     # -------------------------------------------
     def generate_spectral_indices(self):
@@ -1094,18 +1068,16 @@ class LandsatProcessor(CDRProcessor):
             Generates the requested spectral indices.
         '''
 
-        logger = self._logger
-
         options = self._parms['options']
 
         cmd = None
-        if (options['include_sr_nbr']
-                or options['include_sr_nbr2']
-                or options['include_sr_ndvi']
-                or options['include_sr_ndmi']
-                or options['include_sr_savi']
-                or options['include_sr_msavi']
-                or options['include_sr_evi']):
+        if (options['include_sr_nbr'] or
+                options['include_sr_nbr2'] or
+                options['include_sr_ndvi'] or
+                options['include_sr_ndmi'] or
+                options['include_sr_savi'] or
+                options['include_sr_msavi'] or
+                options['include_sr_evi']):
 
             cmd = ['spectral_indices.py', '--xml', self._xml_filename]
 
@@ -1130,7 +1102,7 @@ class LandsatProcessor(CDRProcessor):
         # Only if required
         if cmd is not None:
 
-            logger.info(' '.join(['SPECTRAL INDICES COMMAND:', cmd]))
+            self._logger.info(' '.join(['SPECTRAL INDICES COMMAND:', cmd]))
 
             output = ''
             try:
@@ -1140,7 +1112,7 @@ class LandsatProcessor(CDRProcessor):
                                        str(e)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
-                    logger.info(output)
+                    self._logger.info(output)
 
     # -------------------------------------------
     def dswe_command_line(self):
@@ -1176,14 +1148,12 @@ class LandsatProcessor(CDRProcessor):
             Generates the Dynamic Surface Water Extent product.
         '''
 
-        logger = self._logger
-
         cmd = self.dswe_command_line()
 
         # Only if required
         if cmd is not None:
 
-            logger.info(' '.join(['DSWE COMMAND:', cmd]))
+            self._logger.info(' '.join(['DSWE COMMAND:', cmd]))
 
             output = ''
             try:
@@ -1193,7 +1163,7 @@ class LandsatProcessor(CDRProcessor):
                                        str(e)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
-                    logger.info(output)
+                    self._logger.info(output)
 
     # -------------------------------------------
     def generate_land_surface_temperature(self):
@@ -1204,8 +1174,6 @@ class LandsatProcessor(CDRProcessor):
         Note: Land Surface Temperature processing is only implemented for
               L5 and L7
         '''
-
-        logger = self._logger
 
         options = self._parms['options']
 
@@ -1220,7 +1188,7 @@ class LandsatProcessor(CDRProcessor):
         # Only if required
         if cmd is not None:
 
-            logger.info(' '.join(['LST COMMAND:', cmd]))
+            self._logger.info(' '.join(['LST COMMAND:', cmd]))
 
             output = ''
             try:
@@ -1230,7 +1198,7 @@ class LandsatProcessor(CDRProcessor):
                                        str(e)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
-                    logger.info(output)
+                    self._logger.info(output)
 
     # -------------------------------------------
     def build_science_products(self):
@@ -1243,9 +1211,7 @@ class LandsatProcessor(CDRProcessor):
         if not self._build_products:
             return
 
-        logger = self._logger
-
-        logger.info("[LandsatProcessor] Building Science Products")
+        self._logger.info("[LandsatProcessor] Building Science Products")
 
         # Change to the working directory
         current_directory = os.getcwd()
@@ -1283,8 +1249,6 @@ class LandsatProcessor(CDRProcessor):
             Cleanup all the intermediate non-products and the science
             products not requested.
         '''
-
-        logger = self._logger
 
         product_id = self._parms['product_id']
         options = self._parms['options']
@@ -1340,8 +1304,8 @@ class LandsatProcessor(CDRProcessor):
 
             if len(non_products) > 0:
                 cmd = ' '.join(['rm', '-rf'] + non_products)
-                logger.info(' '.join(['REMOVING INTERMEDIATE DATA COMMAND:',
-                                      cmd]))
+                self._logger.info(' '.join(['REMOVING INTERMEDIATE DATA'
+                                            ' COMMAND:', cmd]))
 
                 output = ''
                 try:
@@ -1351,7 +1315,7 @@ class LandsatProcessor(CDRProcessor):
                                            str(e)), None, sys.exc_info()[2]
                 finally:
                     if len(output) > 0:
-                        logger.info(output)
+                        self._logger.info(output)
 
             try:
                 self.remove_products_from_xml()
@@ -1507,12 +1471,10 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
             Validates the parameters required for the processor.
         '''
 
-        logger = self._logger
-
         # Call the base class parameter validation
         super(LandsatOLITIRSProcessor, self).validate_parameters()
 
-        logger.info("Validating [LandsatOLITIRSProcessor] parameters")
+        self._logger.info("Validating [LandsatOLITIRSProcessor] parameters")
 
         options = self._parms['options']
 
@@ -1533,16 +1495,16 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
         options = self._parms['options']
 
         cmd = None
-        if (options['include_sr']
-                or options['include_sr_browse']
-                or options['include_sr_nbr']
-                or options['include_sr_nbr2']
-                or options['include_sr_ndvi']
-                or options['include_sr_ndmi']
-                or options['include_sr_savi']
-                or options['include_sr_msavi']
-                or options['include_sr_evi']
-                or options['include_dswe']):
+        if (options['include_sr'] or
+                options['include_sr_browse'] or
+                options['include_sr_nbr'] or
+                options['include_sr_nbr2'] or
+                options['include_sr_ndvi'] or
+                options['include_sr_ndmi'] or
+                options['include_sr_savi'] or
+                options['include_sr_msavi'] or
+                options['include_sr_evi'] or
+                options['include_dswe']):
             cmd = ' '.join(['create_land_water_mask',
                             '--xml', self._xml_filename])
 
@@ -1564,16 +1526,16 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
         execute_do_l8_sr = False
 
         # Check to see if SR is required
-        if (options['include_sr']
-                or options['include_sr_browse']
-                or options['include_sr_nbr']
-                or options['include_sr_nbr2']
-                or options['include_sr_ndvi']
-                or options['include_sr_ndmi']
-                or options['include_sr_savi']
-                or options['include_sr_msavi']
-                or options['include_sr_evi']
-                or options['include_dswe']):
+        if (options['include_sr'] or
+                options['include_sr_browse'] or
+                options['include_sr_nbr'] or
+                options['include_sr_nbr2'] or
+                options['include_sr_ndvi'] or
+                options['include_sr_ndmi'] or
+                options['include_sr_savi'] or
+                options['include_sr_msavi'] or
+                options['include_sr_evi'] or
+                options['include_dswe']):
 
             cmd.extend(['--process_sr', 'True'])
             execute_do_l8_sr = True
@@ -1584,10 +1546,10 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
         # Check to see if Thermal or TOA is required
         # include_sr is added here for business logic
-        if (options['include_sr_toa']
-                or options['include_sr_thermal']
-                or options['include_sr']
-                or options['include_cfmask']):
+        if (options['include_sr_toa'] or
+                options['include_sr_thermal'] or
+                options['include_sr'] or
+                options['include_cfmask']):
 
             cmd.append('--write_toa')
             execute_do_l8_sr = True
@@ -1631,12 +1593,10 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
             Validates the parameters required for the processor.
         '''
 
-        logger = self._logger
-
         # Call the base class parameter validation
         super(LandsatOLIProcessor, self).validate_parameters()
 
-        logger.info("Validating [LandsatOLIProcessor] parameters")
+        self._logger.info("Validating [LandsatOLIProcessor] parameters")
 
         options = self._parms['options']
 
@@ -1697,12 +1657,10 @@ class ModisProcessor(CDRProcessor):
             Validates the parameters required for the processor.
         '''
 
-        logger = self._logger
-
         # Call the base class parameter validation
         super(ModisProcessor, self).validate_parameters()
 
-        logger.info("Validating [ModisProcessor] parameters")
+        self._logger.info("Validating [ModisProcessor] parameters")
 
         options = self._parms['options']
 
@@ -1714,14 +1672,14 @@ class ModisProcessor(CDRProcessor):
 
         for parameter in required_includes:
             if not parameters.test_for_parameter(options, parameter):
-                logger.warning("'%s' parameter missing defaulting to False"
-                               % parameter)
+                self._logger.warning("'%s' parameter missing defaulting to"
+                                     " False" % parameter)
                 options[parameter] = False
 
         # Determine if we need to build products
         if (not options['include_customized_source_data']):
 
-            logger.info("***NO CUSTOMIZED PRODUCTS CHOSEN***")
+            self._logger.info("***NO CUSTOMIZED PRODUCTS CHOSEN***")
             self._build_products = False
         else:
             self._build_products = True
@@ -1766,8 +1724,6 @@ class ModisProcessor(CDRProcessor):
             format.
         '''
 
-        logger = self._logger
-
         options = self._parms['options']
 
         # Build a command line arguments list
@@ -1779,7 +1735,7 @@ class ModisProcessor(CDRProcessor):
 
         # Turn the list into a string
         cmd = ' '.join(cmd)
-        logger.info(' '.join(['CONVERT MODIS TO ESPA COMMAND:', cmd]))
+        self._logger.info(' '.join(['CONVERT MODIS TO ESPA COMMAND:', cmd]))
 
         output = ''
         try:
@@ -1789,7 +1745,7 @@ class ModisProcessor(CDRProcessor):
                                    str(e)), None, sys.exc_info()[2]
         finally:
             if len(output) > 0:
-                logger.info(output)
+                self._logger.info(output)
 
     # -------------------------------------------
     def build_science_products(self):
@@ -1807,9 +1763,7 @@ class ModisProcessor(CDRProcessor):
         if not self._build_products:
             return
 
-        logger = self._logger
-
-        logger.info("[ModisProcessor] Building Science Products")
+        self._logger.info("[ModisProcessor] Building Science Products")
 
         # Change to the working directory
         current_directory = os.getcwd()
@@ -2356,12 +2310,10 @@ class PlotProcessor(ProductProcessor):
             Validates the parameters required for the processor.
         '''
 
-        logger = self._logger
-
         # Call the base class parameter validation
         super(PlotProcessor, self).validate_parameters()
 
-        logger.info("Validating [PlotProcessor] parameters")
+        self._logger.info("Validating [PlotProcessor] parameters")
 
         options = self._parms['options']
 
@@ -2503,8 +2455,6 @@ class PlotProcessor(ProductProcessor):
           Combines all the stat files for one sensor into one csv file.
         '''
 
-        logger = self._logger
-
         stats = dict()
 
         # Fix the output filename
@@ -2520,18 +2470,18 @@ class PlotProcessor(ProductProcessor):
         stat_data = list()
         # Process through and create records
         for filename, obj in stats.items():
-            logger.debug(filename)
+            self._logger.debug(filename)
             # Figure out the date for stats record
             (year, month, day_of_month, day_of_year, sensor) = \
                 self.get_ymds_from_filename(filename)
             date = ('%04d-%02d-%02d'
                     % (int(year), int(month), int(day_of_month)))
-            logger.debug(date)
+            self._logger.debug(date)
 
             line = ','.join([date, '%03d' % day_of_year,
                              obj['minimum'], obj['maximum'],
                              obj['mean'], obj['stddev'], obj['valid']])
-            logger.debug(line)
+            self._logger.debug(line)
 
             stat_data.append(line)
 
@@ -2576,8 +2526,6 @@ class PlotProcessor(ProductProcessor):
           Builds a plot and then generates a png formatted image of the plot.
         '''
 
-        logger = self._logger
-
         # Test for a valid plot_type parameter
         # For us 'Range' mean min, max, and mean
         if plot_type not in ('Range', 'Value'):
@@ -2599,8 +2547,8 @@ class PlotProcessor(ProductProcessor):
             if band_type.startswith(range_type):
                 use_data_range = range_type
                 break
-        logger.info("Using use_data_range [%s] for band_type [%s]"
-                    % (use_data_range, band_type))
+        self._logger.info("Using use_data_range [%s] for band_type [%s]"
+                          % (use_data_range, band_type))
 
         # Make sure the band_type has been coded (help the developer)
         if use_data_range == '':
@@ -2636,7 +2584,7 @@ class PlotProcessor(ProductProcessor):
         # Convert the list of stats read from the file into a list of stats
         # organized by the sensor and contains a python date element
         for filename, obj in stats.items():
-            logger.debug(filename)
+            self._logger.debug(filename)
             # Figure out the date for plotting
             (year, month, day_of_month, day_of_year, sensor) = \
                 self.get_ymds_from_filename(filename)
@@ -2760,15 +2708,15 @@ class PlotProcessor(ProductProcessor):
 
         # Adjust the day range to help move them from the edge of the plot
         date_diff = plot_date_max - plot_date_min
-        logger.debug(date_diff.days)
+        self._logger.debug(date_diff.days)
         for increment in range(0, int(date_diff.days/365) + 1):
             # Add 5 days to each end of the range for each year
             # With a minimum of 5 days added to each end of the range
             plot_date_min -= self._time_delta_5_days
             plot_date_max += self._time_delta_5_days
-        logger.debug(plot_date_min)
-        logger.debug(plot_date_max)
-        logger.debug((plot_date_max - plot_date_min).days)
+        self._logger.debug(plot_date_min)
+        self._logger.debug(plot_date_max)
+        self._logger.debug((plot_date_max - plot_date_min).days)
 
         # Configuration for the dates
         auto_date_locator = mpl_dates.AutoDateLocator()
@@ -2845,27 +2793,25 @@ class PlotProcessor(ProductProcessor):
           generate a plot for each statistic
         '''
 
-        logger = self._logger
-
         stats = dict()
 
         # Read each file into a dictionary
         for stats_file in stats_files:
-            logger.debug(stats_file)
+            self._logger.debug(stats_file)
             stats[stats_file] = \
                 dict((key, value) for(key, value)
                      in self.read_statistics(stats_file))
             if stats[stats_file]['valid'] == 'no':
                 # Remove it so we do not have it in the plot
-                logger.warning("[%s] Data is not valid:"
-                               " Will not be used for plot generation"
-                               % stats_file)
+                self._logger.warning("[%s] Data is not valid:"
+                                     " Will not be used for plot generation"
+                                     % stats_file)
                 del stats[stats_file]
 
         # Check if we have enough stuff to plot or not
         if len(stats) < 2:
-            logger.warning("Not enough points to plot [%s] skipping plotting"
-                           % plot_name)
+            self._logger.warning("Not enough points to plot [%s]"
+                                 " skipping plotting" % plot_name)
             return
 
         plot_subjects = ['Minimum', 'Maximum', 'Mean']
