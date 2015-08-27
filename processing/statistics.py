@@ -60,8 +60,8 @@ def get_statistics(file_name, band_type):
     lower_bound = settings.BAND_TYPE_STAT_RANGES[band_type]['LOWER_BOUND']
 
     # Clean the data
-    input_data = input_data[((input_data >= lower_bound)
-                             & (input_data <= upper_bound))]
+    input_data = input_data[((input_data >= lower_bound) &
+                             (input_data <= upper_bound))]
 
     # Calculate the stats
     if input_data.size > 0:
