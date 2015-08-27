@@ -627,8 +627,8 @@ def validate_reprojection_parameters(parms, scene, projections, ns_values,
                     raise RuntimeError("Missing latitude_true_scale parameter")
                 else:
                     value = float(parms['latitude_true_scale'])
-                    if ((value < 60.0 and value > -60.0)
-                            or value > 90.0 or value < -90.0):
+                    if ((value < 60.0 and value > -60.0) or
+                            value > 90.0 or value < -90.0):
                         raise ValueError("Invalid latitude_true_scale [%f]:"
                                          " Value must be between"
                                          " (-60.0 and -90.0) or"
@@ -733,8 +733,8 @@ def validate_reprojection_parameters(parms, scene, projections, ns_values,
         parms['pixel_size_units'] = None
 
     # ------------------------------------------------------------------------
-    if ((parms['reproject'] or parms['image_extents'])
-            and not parms['resize']):
+    if ((parms['reproject'] or parms['image_extents']) and
+            not parms['resize']):
         # Sombody asked for reproject or extents, but didn't specify a pixel
         # size
 
