@@ -69,8 +69,8 @@ class EspaLogging(object):
                    % logger_name)
             raise EspaLoggerException(msg)
 
-        if (logger_name == 'espa.processing'
-                and (order is None or product is None)):
+        if (logger_name == 'espa.processing' and
+                (order is None or product is None)):
             msg = ("Reporter [espa.processing] is required to have an order"
                    " and product for proper configuration of the loggers"
                    " filename")
@@ -115,8 +115,8 @@ class EspaLogging(object):
                 cls.my_config['formatters'][formatter_name] = \
                     formatters[formatter_name].copy()
 
-            if (logger_name == 'espa.processing'
-                    and order is not None and product is not None):
+            if (logger_name == 'espa.processing' and
+                    order is not None and product is not None):
                 # Get the name of the handler to be modified
                 handler_name = logger_name
 
