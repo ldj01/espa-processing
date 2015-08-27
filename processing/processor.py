@@ -1088,16 +1088,13 @@ class LandsatProcessor(CDRProcessor):
                     logger.info(output)
 
     # -------------------------------------------
-    def spectral_indices_command_line(self):
+    def generate_spectral_indices(self):
         '''
         Description:
-            Returns the command line required to generate spectral indices.
-            Evaluates the options requested by the user to define the command
-            line string to use, or returns None indicating nothing todo.
-
-        Note:
-            Provides the L4, L5, L7, and L8(LC8) command line.
+            Generates the requested spectral indices.
         '''
+
+        logger = self._logger
 
         options = self._parms['options']
 
@@ -1110,7 +1107,7 @@ class LandsatProcessor(CDRProcessor):
                 or options['include_sr_msavi']
                 or options['include_sr_evi']):
 
-            cmd = ['do_spectral_indices.py', '--xml', self._xml_filename]
+            cmd = ['spectral_indices.py', '--xml', self._xml_filename]
 
             # Add the specified index options
             if options['include_sr_nbr']:
@@ -1129,19 +1126,6 @@ class LandsatProcessor(CDRProcessor):
                 cmd.append('--evi')
 
             cmd = ' '.join(cmd)
-
-        return cmd
-
-    # -------------------------------------------
-    def generate_spectral_indices(self):
-        '''
-        Description:
-            Generates the requested spectral indices.
-        '''
-
-        logger = self._logger
-
-        cmd = self.spectral_indices_command_line()
 
         # Only if required
         if cmd is not None:
@@ -1212,17 +1196,16 @@ class LandsatProcessor(CDRProcessor):
                     logger.info(output)
 
     # -------------------------------------------
-    def lst_command_line(self):
+    def generate_land_surface_temperature(self):
         '''
         Description:
-            Returns the command line required to generate Land Surface
-            Temperature.  Evaluates the options requested by the user to
-            define the command line string to use, or returns None indicating
-            nothing todo.
+            Generates the Land Surface Temperature product.
 
-        Note:
-            Provides the L5, and L7 command line.
+        Note: Land Surface Temperature processing is only implemented for
+              L5 and L7
         '''
+
+        logger = self._logger
 
         options = self._parms['options']
 
@@ -1234,19 +1217,6 @@ class LandsatProcessor(CDRProcessor):
 
             cmd = ' '.join(cmd)
 
-        return cmd
-
-    # -------------------------------------------
-    def generate_lst(self):
-        '''
-        Description:
-            Generates the Dynamic Surface Water Extent product.
-        '''
-
-        logger = self._logger
-
-        cmd = self.lst_command_line()
-
         # Only if required
         if cmd is not None:
 
@@ -1256,7 +1226,7 @@ class LandsatProcessor(CDRProcessor):
             try:
                 output = utilities.execute_cmd(cmd)
             except Exception as e:
-                raise ee.ESPAException(ee.ErrorCodes.lst,
+                raise ee.ESPAException(ee.ErrorCodes.land_surface_temperature,
                                        str(e)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
@@ -1300,7 +1270,7 @@ class LandsatProcessor(CDRProcessor):
 
             self.generate_dswe()
 
-            self.generate_lst()
+            self.generate_land_surface_temperature()
 
         finally:
             # Change back to the previous directory
@@ -1491,19 +1461,16 @@ class Landsat4TMProcessor(LandsatTMProcessor):
         super(LandsatTMProcessor, self).__init__(parms)
 
     # -------------------------------------------
-    def lst_command_line(self):
+    def generate_land_surface_temperature(self):
         '''
         Description:
-            Returns the command line required to generate Land Surface
-            Temperature.  Evaluates the options requested by the user to
-            define the command line string to use, or returns None indicating
-            nothing todo.
+            Generates the Land Surface Temperature product.
 
-        Note: LST processing only implemented for L5 and L7
+        Note: Land Surface Temperature processing is only implemented for
+              L5 and L7
         '''
 
-        # Return None since we can not process this option.
-        return None
+        pass
 
 
 # ===========================================================================
@@ -1634,19 +1601,16 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
         return cmd
 
     # -------------------------------------------
-    def lst_command_line(self):
+    def generate_land_surface_temperature(self):
         '''
         Description:
-            Returns the command line required to generate Land Surface
-            Temperature.  Evaluates the options requested by the user to
-            define the command line string to use, or returns None indicating
-            nothing todo.
+            Generates the Land Surface Temperature product.
 
-        Note: LST processing only implemented for L5 and L7
+        Note: Land Surface Temperature processing is only implemented for
+              L5 and L7
         '''
 
-        # Return None since we can not process this option.
-        return None
+        pass
 
 
 # ===========================================================================
@@ -1699,26 +1663,22 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
     def generate_cloud_masking(self):
         '''
         Description:
-              cloud_masking processing requires both OLI and TIRS bands so
-              OLI only products can not produce cloud mask products.
+            Cloud Masking processing requires both OLI and TIRS bands.  So OLI
+            only processing can not produce cloud mask products.
         '''
 
         pass
 
     # -------------------------------------------
-    def spectral_indices_command_line(self):
+    def generate_spectral_indices(self):
         '''
         Description:
-            Returns the command line required to generate spectral indices.
-            Evaluates the options requested by the user to define the command
-            line string to use, or returns None indicating nothing todo.
-
-        Note:
-            SR indices can not be produced with OLI only products
+            Spectral Indices processing requires surface reflectance products
+            as input.  So since, SR products can not be produced with OLI
+            only data, OLI only processing can not produce spectral indices.
         '''
 
-        # Return None since we can not process this option.
-        return None
+        pass
 
 
 # ===========================================================================
