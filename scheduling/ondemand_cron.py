@@ -218,7 +218,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                 logger.info("Store cmd:%s" % cmd)
 
                 output = utilities.execute_cmd(cmd)
-            except Exception, e:
+            except Exception:
                 msg = "Error storing files to HDFS... exiting"
                 raise Exception(msg)
             finally:
@@ -253,7 +253,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                     logger.info("Run cmd:%s" % cmd)
 
                     output = utilities.execute_cmd(cmd)
-                except Exception, e:
+                except Exception:
                     logger.exception("Error running Hadoop job...")
                 finally:
                     if len(output) > 0:
@@ -266,7 +266,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                 try:
                     cmd = ' '.join(hadoop_delete_request_command1)
                     output = utilities.execute_cmd(cmd)
-                except Exception, e:
+                except Exception:
                     logger.exception("Error deleting hadoop job request file")
                 finally:
                     if len(output) > 0:
@@ -278,7 +278,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                 try:
                     cmd = ' '.join(hadoop_delete_request_command2)
                     output = utilities.execute_cmd(cmd)
-                except Exception, e:
+                except Exception:
                     logger.exception("Error deleting hadoop job output")
                 finally:
                     if len(output) > 0:
@@ -287,10 +287,10 @@ def process_requests(args, logger_name, queue_priority, request_priority):
         else:
             logger.info("No requests to process....")
 
-    except xmlrpclib.ProtocolError, e:
+    except xmlrpclib.ProtocolError:
         logger.exception("A protocol error occurred")
 
-    except Exception, e:
+    except Exception:
         logger.exception("Error Processing Ondemand Requests")
 
     finally:
@@ -382,7 +382,7 @@ if __name__ == '__main__':
     # Setup and submit products to hadoop for processing
     try:
         process_requests(args, logger_name, queue_priority, request_priority)
-    except Exception, e:
+    except Exception:
         logger.exception("Processing failed")
         sys.exit(1)
 

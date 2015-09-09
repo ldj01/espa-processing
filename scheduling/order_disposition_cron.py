@@ -27,7 +27,6 @@
 import os
 import sys
 import xmlrpclib
-import traceback
 
 
 # imports from espa/espa_common
@@ -77,10 +76,10 @@ def determine_order_disposition():
             msg = "server.handle_orders() was not successful"
             raise Exception(msg)
 
-    except xmlrpclib.ProtocolError, e:
+    except xmlrpclib.ProtocolError:
         logger.exception("A protocol error occurred")
 
-    except Exception, e:
+    except Exception:
         logger.exception("An error occurred finalizing orders")
 
     finally:
@@ -111,7 +110,7 @@ if __name__ == '__main__':
 
     try:
         determine_order_disposition()
-    except Exception, e:
+    except Exception:
         logger.exception("Processing failed")
         sys.exit(1)
 

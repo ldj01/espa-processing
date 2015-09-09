@@ -291,7 +291,7 @@ class ProductProcessor(object):
                                                 self._work_dir,
                                                 self._output_dir,
                                                 self._parms)
-        except Exception as e:
+        except Exception:
             self._logger.exception('An exception occurred delivering'
                                    ' the product')
             raise
@@ -625,7 +625,7 @@ class CDRProcessor(CustomizationProcessor):
                 distribution.distribute_statistics(self._work_dir,
                                                    self._output_dir,
                                                    self._parms)
-            except Exception as e:
+            except Exception:
                 self._logger.exception('An exception occurred delivering'
                                        ' the stats')
                 raise
@@ -878,7 +878,7 @@ class LandsatProcessor(CDRProcessor):
         options = self._parms['options']
 
         cmd = None
-        if (options['include_dswe'] or options['include_lst']):
+        if options['include_dswe'] or options['include_lst']:
 
             cmd = ['do_create_dem.py',
                    '--mtl', self._metadata_filename,
@@ -1677,7 +1677,7 @@ class ModisProcessor(CDRProcessor):
                 options[parameter] = False
 
         # Determine if we need to build products
-        if (not options['include_customized_source_data']):
+        if not options['include_customized_source_data']:
 
             self._logger.info("***NO CUSTOMIZED PRODUCTS CHOSEN***")
             self._build_products = False
@@ -2385,7 +2385,7 @@ class PlotProcessor(ProductProcessor):
                 # TODO - This can be removed after version 2.6.1
                 if parts[0] == 'valid':
                     found_valid = True
-                yield(parts)
+                yield parts
 
         # Some files may not contain the field so report valid for them
         # TODO - This can be removed after version 2.6.1
@@ -2516,7 +2516,7 @@ class PlotProcessor(ProductProcessor):
         in_range = in_high - in_low
         out_range = out_high - out_low
 
-        return (out_high - ((out_range * (in_high - data)) / in_range))
+        return out_high - ((out_range * (in_high - data)) / in_range)
 
     # -------------------------------------------
     def generate_plot(self, plot_name, subjects, band_type, stats,

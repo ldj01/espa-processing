@@ -364,8 +364,8 @@ def add_reprojection_parameters(parser, projection_values, ns_values,
     # Default to the first entry which should be WGS84
     parser.add_argument('--datum',
                         action='store', dest='datum', default=datum_values[0],
-                        help="one of (%s), only used with albers projection"
-                             % ', '.join(datum_values))
+                        help=("one of (%s), only used with albers projection"
+                              % ', '.join(datum_values)))
 
     parser.add_argument('--longitude_pole',
                         action='store', dest='longitude_pole',
@@ -406,8 +406,8 @@ def add_reprojection_parameters(parser, projection_values, ns_values,
     parser.add_argument('--pixel_size_units',
                         action='store', dest='pixel_size_units',
                         choices=pixel_size_units,
-                        help="units pixel size is specified in: one of (%s)"
-                             % ', '.join(pixel_size_units))
+                        help=("units pixel size is specified in: one of (%s)"
+                              % ', '.join(pixel_size_units)))
 
     parser.add_argument('--image_extents',
                         action='store_true', dest='image_extents',

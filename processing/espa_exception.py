@@ -14,7 +14,6 @@ History:
 '''
 
 # espa-common objects and methods
-from espa_constants import EXIT_FAILURE
 from espa_constants import EXIT_SUCCESS
 
 

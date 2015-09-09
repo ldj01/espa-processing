@@ -86,7 +86,7 @@ def set_product_error(server, order_id, product_id, processing_location):
 
                 break
 
-            except Exception, e:
+            except Exception:
                 logger.critical("Failed processing xmlrpc call to"
                                 " set_scene_error")
                 logger.exception("Exception encountered and follows")
@@ -122,11 +122,11 @@ def process(args):
     for line in sys.stdin:
         if not line or len(line) < 1 or not line.strip().find('{') > -1:
             # this is how the nlineinputformat is supplying values:
-            #341104        {"orderid":
-            #logger.info("BAD LINE:%s##" % line)
+            # 341104        {"orderid":
+            # logger.info("BAD LINE:%s##" % line)
             continue
         else:
-            #take the entry starting at the first opening parenth to the end
+            # take the entry starting at the first opening parenth to the end
             line = line[line.find("{"):]
             line = line.strip()
 
@@ -260,36 +260,37 @@ def process(args):
             status = False
             if server is not None:
                 try:
-                    if (e.error_code == ee.ErrorCodes.creating_stage_dir
-                            or (e.error_code ==
-                                ee.ErrorCodes.creating_work_dir)
-                            or (e.error_code ==
-                                ee.ErrorCodes.creating_output_dir)):
+                    if (e.error_code == ee.ErrorCodes.creating_stage_dir or
+                            (e.error_code ==
+                             ee.ErrorCodes.creating_work_dir) or
+                            (e.error_code ==
+                             ee.ErrorCodes.creating_output_dir)):
 
                         status = set_product_error(server,
                                                    order_id,
                                                    product_id,
                                                    processing_location)
 
-                    elif (e.error_code == ee.ErrorCodes.staging_data
-                          or e.error_code == ee.ErrorCodes.unpacking):
+                    elif (e.error_code == ee.ErrorCodes.staging_data or
+                          e.error_code == ee.ErrorCodes.unpacking):
 
                         status = set_product_error(server,
                                                    order_id,
                                                    product_id,
                                                    processing_location)
 
-                    elif (e.error_code == ee.ErrorCodes.metadata
-                          or e.error_code == ee.ErrorCodes.surface_reflectance
-                          or e.error_code == ee.ErrorCodes.browse
-                          or e.error_code == ee.ErrorCodes.spectral_indices
-                          or e.error_code == ee.ErrorCodes.create_dem
-                          or e.error_code == ee.ErrorCodes.solr
-                          or e.error_code == ee.ErrorCodes.cloud_masking
-                          or e.error_code == ee.ErrorCodes.dswe
-                          or e.error_code == ee.ErrorCodes.land_surface_temperature
-                          or e.error_code == ee.ErrorCodes.cleanup_work_dir
-                          or e.error_code == ee.ErrorCodes.remove_products):
+                    elif (e.error_code == ee.ErrorCodes.metadata or
+                          e.error_code == ee.ErrorCodes.surface_reflectance or
+                          e.error_code == ee.ErrorCodes.browse or
+                          e.error_code == ee.ErrorCodes.spectral_indices or
+                          e.error_code == ee.ErrorCodes.create_dem or
+                          e.error_code == ee.ErrorCodes.solr or
+                          e.error_code == ee.ErrorCodes.cloud_masking or
+                          e.error_code == ee.ErrorCodes.dswe or
+                          e.error_code ==
+                          ee.ErrorCodes.land_surface_temperature or
+                          e.error_code == ee.ErrorCodes.cleanup_work_dir or
+                          e.error_code == ee.ErrorCodes.remove_products):
 
                         status = set_product_error(server,
                                                    order_id,
@@ -317,11 +318,11 @@ def process(args):
                                                    product_id,
                                                    processing_location)
 
-                    elif (e.error_code == ee.ErrorCodes.packaging_product
-                          or (e.error_code ==
-                              ee.ErrorCodes.distributing_product)
-                          or (e.error_code ==
-                              ee.ErrorCodes.verifying_checksum)):
+                    elif (e.error_code == ee.ErrorCodes.packaging_product or
+                          (e.error_code ==
+                           ee.ErrorCodes.distributing_product) or
+                          (e.error_code ==
+                           ee.ErrorCodes.verifying_checksum)):
 
                         status = set_product_error(server,
                                                    order_id,
@@ -340,11 +341,11 @@ def process(args):
                             # Cleanup the log file
                             EspaLogging. \
                                 delete_logger_file(settings.PROCESSING_LOGGER)
-                        except Exception, e:
+                        except Exception:
                             logger.exception("Exception encountered"
                                              " stacktrace follows")
 
-                except Exception, e:
+                except Exception:
                     logger.exception("Exception encountered and follows")
             # END - if server is not None
 
@@ -367,10 +368,10 @@ def process(args):
                             # Cleanup the log file
                             EspaLogging. \
                                 delete_logger_file(settings.PROCESSING_LOGGER)
-                        except Exception, e:
+                        except Exception:
                             logger.exception("Exception encountered"
                                              " stacktrace follows")
-                except Exception, e:
+                except Exception:
                     logger.exception("Exception encountered stacktrace"
                                      " follows")
     # END - for line in STDIN
@@ -396,7 +397,7 @@ if __name__ == '__main__':
 
     try:
         process(args)
-    except Exception, e:
+    except Exception:
         logger.exception("Processing failed stacktrace follows")
 
     sys.exit(0)

@@ -102,7 +102,6 @@ class EspaLogging(object):
                 loggers[logger_name].copy()
 
             # Turn on debug level logging if requested
-            # TODO - May only want to do this for file loggers
             if debug:
                 cls.my_config['loggers'][logger_name]['level'] = 'DEBUG'
 
