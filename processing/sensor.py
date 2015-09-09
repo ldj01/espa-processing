@@ -93,7 +93,7 @@ class Modis(SensorProduct):
 
         # Now that we have the year and doy, we can get the month and day of
         # month
-        date = utilities.date_from_doy(year, day_of_year)
+        date = utilities.date_from_doy(self.year, self.doy)
         self.month = date.month
         self.day = date.day
 
@@ -225,7 +225,7 @@ class Landsat(SensorProduct):
 
         # Now that we have the year and doy, we can get the month and day of
         # month
-        date = utilities.date_from_doy(year, day_of_year)
+        date = utilities.date_from_doy(self.year, self.doy)
         self.month = date.month
         self.day = date.day
 
