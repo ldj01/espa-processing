@@ -516,7 +516,7 @@ def distribute_product_remote(product_name, source_path, packaging_path,
                                        " %s and %s:%s"
                                        % (product_full_path,
                                           destination_host,
-                                          destination_product_file))
+                                          product_file))
 
             # Always log where we placed the files
             logger.info("Delivered product to %s at location %s"
