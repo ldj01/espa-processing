@@ -91,6 +91,12 @@ class Modis(SensorProduct):
         self.year = self.date_acquired[0:4]
         self.doy = self.date_acquired[4:8]
 
+        # Now that we have the year and doy, we can get the month and day of
+        # month
+        date = utilities.date_from_doy(year, day_of_year)
+        self.month = date.month
+        self.day = date.day
+
         __hv = parts[2]
         self.horizontal = __hv[1:3]
         self.vertical = __hv[4:6]
@@ -203,10 +209,6 @@ class ModisAqua13Q1(Aqua):
 
 class Landsat(SensorProduct):
     ''' Superclass for all landsat based products '''
-    path = None
-    row = None
-    station = None
-    lta_product_code = None
 
     def __init__(self, product_id):
 
@@ -220,6 +222,12 @@ class Landsat(SensorProduct):
         self.doy = product_id[13:16]
         self.station = product_id[16:19]
         self.version = product_id[19:21]
+
+        # Now that we have the year and doy, we can get the month and day of
+        # month
+        date = utilities.date_from_doy(year, day_of_year)
+        self.month = date.month
+        self.day = date.day
 
         # set the default pixel sizes
         _pixels = settings.DEFAULT_PIXEL_SIZE
