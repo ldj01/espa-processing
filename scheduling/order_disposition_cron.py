@@ -32,6 +32,7 @@ import xmlrpclib
 # imports from espa/espa_common
 from espa_common.logger_factory import EspaLogging
 
+
 LOGGER_NAME = 'espa.cron.orderdisp'
 
 
@@ -84,7 +85,6 @@ def determine_order_disposition():
 
     finally:
         server = None
-# END - determine_order_disposition
 
 
 # ============================================================================

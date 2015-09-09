@@ -80,8 +80,8 @@ def process_requests(args, logger_name, queue_priority, request_priority):
         msg = "landsatds.username is not defined... exiting"
         raise Exception(msg)
 
-    pw = urllib.quote(server.get_configuration('landsatds.password'))
-    if len(pw) == 0:
+    password = urllib.quote(server.get_configuration('landsatds.password'))
+    if len(password) == 0:
         msg = "landsatds.password is not defined... exiting"
         raise Exception(msg)
 
@@ -134,8 +134,8 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                     # Add the usernames and passwords to the options
                     options['source_username'] = user
                     options['destination_username'] = user
-                    options['source_pw'] = pw
-                    options['destination_pw'] = pw
+                    options['source_pw'] = password
+                    options['destination_pw'] = password
 
                     request['options'] = options
 
@@ -295,7 +295,6 @@ def process_requests(args, logger_name, queue_priority, request_priority):
 
     finally:
         server = None
-# END - process_requests
 
 
 # ============================================================================
