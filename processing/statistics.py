@@ -149,9 +149,9 @@ def generate_statistics(work_directory, files_to_search_for):
                     with open(stats_output_file, 'w+') as stat_fd:
                         stat_fd.write(data_io.getvalue())
             # END - for tile
-        except Exception as e:
+        except Exception as excep:
             raise ee.ESPAException(ee.ErrorCodes.statistics,
-                                   str(e)), None, sys.exc_info()[2]
+                                   str(excep)), None, sys.exc_info()[2]
 
     finally:
         # Change back to the previous directory
@@ -191,11 +191,10 @@ if __name__ == '__main__':
 
     try:
         generate_statistics('.', files_to_search_for)
-    except Exception as e:
-        if hasattr(e, 'output'):
-            logger.error("Output [%s]" % e.output)
+    except Exception as excep:
+        if hasattr(excep, 'output'):
+            logger.error("Output [%s]" % excep.output)
         logger.exception("Processing failed")
         sys.exit(EXIT_FAILURE)
 
     sys.exit(EXIT_SUCCESS)
-# END - __main__
