@@ -27,7 +27,6 @@ import glob
 import json
 import datetime
 import copy
-from time import sleep
 from cStringIO import StringIO
 from collections import defaultdict
 from matplotlib import pyplot as mpl_plot
@@ -82,7 +81,7 @@ class ProductProcessor(object):
         self._logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
 
         # Some minor enforcement for what parms should be
-        if type(parms) is dict:
+        if isinstance(parms, dict):
             self._parms = parms
         else:
             raise Exception("Input parameters was of type {0},"
@@ -98,9 +97,13 @@ class ProductProcessor(object):
         # Validate the parameters
         self.validate_parameters()
 
-        # Initialize the product name determined and set by child processors
+        # Initialize these, which are set by other methods
         self._product_name = None
-
+        self._order_dir = None
+        self._product_dir = None
+        self._stage_dir = None
+        self._work_dir = None
+        self._output_dir = None
 
     # -------------------------------------------
     def validate_parameters(self):
@@ -207,25 +210,25 @@ class ProductProcessor(object):
         try:
             self._stage_dir = \
                 initialization.create_stage_directory(self._product_dir)
-        except Exception as e:
+        except Exception as excep:
             raise ee.ESPAException(ee.ErrorCodes.creating_stage_dir,
-                                   str(e)), None, sys.exc_info()[2]
+                                   str(excep)), None, sys.exc_info()[2]
         self._logger.info("Created directory [{0}]".format(self._stage_dir))
 
         try:
             self._work_dir = \
                 initialization.create_work_directory(self._product_dir)
-        except Exception as e:
+        except Exception as excep:
             raise ee.ESPAException(ee.ErrorCodes.creating_work_dir,
-                                   str(e)), None, sys.exc_info()[2]
+                                   str(excep)), None, sys.exc_info()[2]
         self._logger.info("Created directory [{0}]".format(self._work_dir))
 
         try:
             self._output_dir = \
                 initialization.create_output_directory(self._product_dir)
-        except Exception as e:
+        except Exception as excep:
             raise ee.ESPAException(ee.ErrorCodes.creating_output_dir,
-                                   str(e)), None, sys.exc_info()[2]
+                                   str(excep)), None, sys.exc_info()[2]
         self._logger.info("Created directory [{0}]".format(self._output_dir))
 
     # -------------------------------------------
@@ -266,8 +269,6 @@ class ProductProcessor(object):
             Does both the packaging and distribution of the product using
             the distribution module.
         '''
-
-        product_id = self._parms['product_id']
 
         product_name = self.get_product_name()
 
@@ -356,6 +357,8 @@ class CustomizationProcessor(ProductProcessor):
                                         'cubicspline', 'lanczos']
         self._valid_pixel_size_units = ['meters', 'dd']
         self._valid_image_extents_units = ['meters', 'dd']
+
+        self._build_products = False
 
         super(CustomizationProcessor, self).__init__(parms)
 
@@ -562,9 +565,9 @@ class CDRProcessor(CustomizationProcessor):
                     with open(self._xml_filename, 'w') as xml_fd:
                         metadata_api.export(xml_fd, espa_xml)
 
-                except Exception as e:
+                except Exception as excep:
                     raise ee.ESPAException(ee.ErrorCodes.remove_products,
-                                           str(e)), None, sys.exc_info()[2]
+                                           str(excep)), None, sys.exc_info()[2]
             # END - if file_names
 
             # Cleanup
@@ -679,6 +682,8 @@ class LandsatProcessor(CDRProcessor):
         # Setup the dem filename, even though we may not need it
         self._dem_filename = "%s_dem.img" % product_id
 
+        self._metadata_filename = None
+
     # -------------------------------------------
     def validate_parameters(self):
         '''
@@ -774,7 +779,6 @@ class LandsatProcessor(CDRProcessor):
 
         product_id = self._parms['product_id']
         download_url = self._parms['download_url']
-        options = self._parms['options']
 
         file_name = ''.join([product_id,
                              settings.LANDSAT_INPUT_FILENAME_EXTENSION])
@@ -783,8 +787,8 @@ class LandsatProcessor(CDRProcessor):
         # Download the source data
         try:
             transfer.download_file_url(download_url, staged_file)
-        except Exception as e:
-            raise ee.ESPAException(ee.ErrorCodes.staging_data, str(e)), \
+        except Exception as excep:
+            raise ee.ESPAException(ee.ErrorCodes.staging_data, str(excep)), \
                 None, sys.exc_info()[2]
 
         # Un-tar the input data to the work directory
@@ -796,12 +800,12 @@ class LandsatProcessor(CDRProcessor):
             try:
                 self._metadata_filename = \
                     metadata.get_landsat_metadata(self._work_dir, product_id)
-            except Exception as e:
+            except Exception as excep:
                 raise ee.ESPAException(ee.ErrorCodes.metadata,
-                                       str(e)), None, sys.exc_info()[2]
+                                       str(excep)), None, sys.exc_info()[2]
 
-        except Exception as e:
-            raise ee.ESPAException(ee.ErrorCodes.unpacking, str(e)), \
+        except Exception as excep:
+            raise ee.ESPAException(ee.ErrorCodes.unpacking, str(excep)), \
                 None, sys.exc_info()[2]
 
     # -------------------------------------------
@@ -878,9 +882,9 @@ class LandsatProcessor(CDRProcessor):
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as e:
+            except Exception as excep:
                 raise ee.ESPAException(ee.ErrorCodes.reformat,
-                                       str(e)), None, sys.exc_info()[2]
+                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     self._logger.info(output)
@@ -913,9 +917,9 @@ class LandsatProcessor(CDRProcessor):
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as e:
+            except Exception as excep:
                 raise ee.ESPAException(ee.ErrorCodes.surface_reflectance,
-                                       str(e)), None, sys.exc_info()[2]
+                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     self._logger.info(output)
@@ -994,9 +998,9 @@ class LandsatProcessor(CDRProcessor):
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as e:
+            except Exception as excep:
                 raise ee.ESPAException(ee.ErrorCodes.surface_reflectance,
-                                       str(e)), None, sys.exc_info()[2]
+                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     self._logger.info(output)
@@ -1026,9 +1030,9 @@ class LandsatProcessor(CDRProcessor):
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as e:
+            except Exception as excep:
                 raise ee.ESPAException(ee.ErrorCodes.cloud_masking,
-                                       str(e)), None, sys.exc_info()[2]
+                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     self._logger.info(output)
@@ -1079,9 +1083,9 @@ class LandsatProcessor(CDRProcessor):
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as e:
+            except Exception as excep:
                 raise ee.ESPAException(ee.ErrorCodes.spectral_indices,
-                                       str(e)), None, sys.exc_info()[2]
+                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     self._logger.info(output)
@@ -1130,9 +1134,9 @@ class LandsatProcessor(CDRProcessor):
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as e:
+            except Exception as excep:
                 raise ee.ESPAException(ee.ErrorCodes.dswe,
-                                       str(e)), None, sys.exc_info()[2]
+                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     self._logger.info(output)
@@ -1165,9 +1169,9 @@ class LandsatProcessor(CDRProcessor):
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as e:
+            except Exception as excep:
                 raise ee.ESPAException(ee.ErrorCodes.land_surface_temperature,
-                                       str(e)), None, sys.exc_info()[2]
+                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     self._logger.info(output)
@@ -1282,18 +1286,18 @@ class LandsatProcessor(CDRProcessor):
                 output = ''
                 try:
                     output = utilities.execute_cmd(cmd)
-                except Exception as e:
+                except Exception as excep:
                     raise ee.ESPAException(ee.ErrorCodes.cleanup_work_dir,
-                                           str(e)), None, sys.exc_info()[2]
+                                           str(excep)), None, sys.exc_info()[2]
                 finally:
                     if len(output) > 0:
                         self._logger.info(output)
 
             try:
                 self.remove_products_from_xml()
-            except Exception as e:
+            except Exception as excep:
                 raise ee.ESPAException(ee.ErrorCodes.remove_products,
-                                       str(e)), None, sys.exc_info()[2]
+                                       str(excep)), None, sys.exc_info()[2]
 
         finally:
             # Change back to the previous directory
@@ -1394,7 +1398,7 @@ class Landsat4TMProcessor(LandsatTMProcessor):
 
     # -------------------------------------------
     def __init__(self, parms):
-        super(LandsatTMProcessor, self).__init__(parms)
+        super(Landsat4TMProcessor, self).__init__(parms)
 
     # -------------------------------------------
     def generate_land_surface_temperature(self):
@@ -1620,6 +1624,8 @@ class ModisProcessor(CDRProcessor):
     def __init__(self, parms):
         super(ModisProcessor, self).__init__(parms)
 
+        self._hdf_filename = None
+
     # -------------------------------------------
     def validate_parameters(self):
         '''
@@ -1671,8 +1677,8 @@ class ModisProcessor(CDRProcessor):
         # Download the source data
         try:
             transfer.download_file_url(download_url, staged_file)
-        except Exception as e:
-            raise ee.ESPAException(ee.ErrorCodes.staging_data, str(e)), \
+        except Exception as excep:
+            raise ee.ESPAException(ee.ErrorCodes.staging_data, str(excep)), \
                 None, sys.exc_info()[2]
 
         self._hdf_filename = os.path.basename(staged_file)
@@ -1682,8 +1688,8 @@ class ModisProcessor(CDRProcessor):
         try:
             shutil.copyfile(staged_file, work_file)
             os.unlink(staged_file)
-        except Exception as e:
-            raise ee.ESPAException(ee.ErrorCodes.unpacking, str(e)), \
+        except Exception as excep:
+            raise ee.ESPAException(ee.ErrorCodes.unpacking, str(excep)), \
                 None, sys.exc_info()[2]
 
     # -------------------------------------------
@@ -1710,9 +1716,9 @@ class ModisProcessor(CDRProcessor):
         output = ''
         try:
             output = utilities.execute_cmd(cmd)
-        except Exception as e:
+        except Exception as excep:
             raise ee.ESPAException(ee.ErrorCodes.reformat,
-                                   str(e)), None, sys.exc_info()[2]
+                                   str(excep)), None, sys.exc_info()[2]
         finally:
             if len(output) > 0:
                 self._logger.info(output)
@@ -2323,34 +2329,34 @@ class PlotProcessor(ProductProcessor):
         '''
 
         year = 0
-        sensor = 'unk'
+        sensor_string = 'unk'
 
         if filename.startswith('MOD'):
             date_element = filename.split('.')[1]
             year = int(date_element[1:5])
             day_of_year = int(date_element[5:8])
-            sensor = 'Terra'
+            sensor_string = 'Terra'
 
         elif filename.startswith('MYD'):
             date_element = filename.split('.')[1]
             year = int(date_element[1:5])
             day_of_year = int(date_element[5:8])
-            sensor = 'Aqua'
+            sensor_string = 'Aqua'
 
         elif filename.startswith('LT4'):
             year = int(filename[9:13])
             day_of_year = int(filename[13:16])
-            sensor = 'L4'
+            sensor_string = 'L4'
 
         elif filename.startswith('LT5'):
             year = int(filename[9:13])
             day_of_year = int(filename[13:16])
-            sensor = 'L5'
+            sensor_string = 'L5'
 
         elif filename.startswith('LE7'):
             year = int(filename[9:13])
             day_of_year = int(filename[13:16])
-            sensor = 'L7'
+            sensor_string = 'L7'
 
         elif filename.startswith('LC8') or filename.startswith('LO8'):
             year = int(filename[9:13])
@@ -2358,17 +2364,17 @@ class PlotProcessor(ProductProcessor):
             # We plot both TIRS bands in the thermal plot so they need to
             # be separatly identified
             if 'toa_band10' in filename:
-                sensor = 'L8-TIRS1'
+                sensor_string = 'L8-TIRS1'
             elif 'toa_band11' in filename:
-                sensor = 'L8-TIRS2'
+                sensor_string = 'L8-TIRS2'
             else:
-                sensor = 'L8'
+                sensor_string = 'L8'
 
         # Now that we have the year and doy we can get the month and day of
         # month
         date = utilities.date_from_doy(year, day_of_year)
 
-        return (year, date.month, date.day, day_of_year, sensor)
+        return (year, date.month, date.day, day_of_year, sensor_string)
 
     # -------------------------------------------
     def combine_sensor_stats(self, stats_name, stats_files):
@@ -2394,7 +2400,7 @@ class PlotProcessor(ProductProcessor):
         for filename, obj in stats.items():
             self._logger.debug(filename)
             # Figure out the date for stats record
-            (year, month, day_of_month, day_of_year, sensor) = \
+            (year, month, day_of_month, day_of_year, sensor_string) = \
                 self.get_ymds_from_filename(filename)
             date = ('%04d-%02d-%02d'
                     % (int(year), int(month), int(day_of_month)))
@@ -2508,7 +2514,7 @@ class PlotProcessor(ProductProcessor):
         for filename, obj in stats.items():
             self._logger.debug(filename)
             # Figure out the date for plotting
-            (year, month, day_of_month, day_of_year, sensor) = \
+            (year, month, day_of_month, day_of_year, sensor_string) = \
                 self.get_ymds_from_filename(filename)
             # day_of_year isn't used, but need a var because it is returned
 
@@ -2519,8 +2525,8 @@ class PlotProcessor(ProductProcessor):
             stddev = float(obj['stddev'])
 
             # Date must be first in the list for later sorting to work
-            sensor_dict[sensor].append((date, min_value, max_value, mean,
-                                        stddev))
+            sensor_dict[sensor_string].append((date, min_value, max_value,
+                                               mean, stddev))
 
             # While we are here figure out...
             # The min and max range for the X-Axis value
@@ -2533,7 +2539,7 @@ class PlotProcessor(ProductProcessor):
         # Process through the sensor organized dictionary in sorted order
         sorted_sensors = sorted(sensor_dict.keys())
         proxy_artists = list()
-        for sensor in sorted_sensors:
+        for sensor_name in sorted_sensors:
             dates = list()
             min_values = np.empty(0, dtype=np.float)
             max_values = np.empty(0, dtype=np.float)
@@ -2543,7 +2549,7 @@ class PlotProcessor(ProductProcessor):
             # Collect all for a specific sensor
             # Sorted only works because we have date first in the list
             for (date, min_value, max_value, mean,
-                 stddev) in sorted(sensor_dict[sensor]):
+                 stddev) in sorted(sensor_dict[sensor_name]):
                 dates.append(date)
                 min_values = np.append(min_values, min_value)
                 max_values = np.append(max_values, max_value)
@@ -2567,7 +2573,7 @@ class PlotProcessor(ProductProcessor):
             # Draw the min to max line for these dates
             if plot_type == "Range":
                 min_plot.vlines(dates, min_values, max_values,
-                                colors=self._sensor_colors[sensor],
+                                colors=self._sensor_colors[sensor_name],
                                 linestyles='solid', linewidths=1)
 
             # Plot the lists of dates and values for the subject
@@ -2593,9 +2599,9 @@ class PlotProcessor(ProductProcessor):
                 if index < (data_count - 1):
                     if dates[index] == dates[index+1]:
                         # Draw the markers for this segment of the dates
-                        min_plot.plot(x_data, y_data, label=sensor,
+                        min_plot.plot(x_data, y_data, label=sensor_name,
                                       marker=self._marker,
-                                      color=self._sensor_colors[sensor],
+                                      color=self._sensor_colors[sensor_name],
                                       linestyle='-',
                                       markersize=self._marker_size,
                                       markeredgewidth=self._marker_edge_width)
@@ -2604,16 +2610,16 @@ class PlotProcessor(ProductProcessor):
 
             if len(x_data) > 0:
                 # Draw the markers for the final segment of the dates
-                min_plot.plot(x_data, y_data, label=sensor,
+                min_plot.plot(x_data, y_data, label=sensor_name,
                               marker=self._marker,
-                              color=self._sensor_colors[sensor],
+                              color=self._sensor_colors[sensor_name],
                               linestyle='-',
                               markersize=self._marker_size,
                               markeredgewidth=self._marker_edge_width)
 
             # Generate a proxy artist for the legend
             proxy_artists.append(mpl_lines.Line2D([], [],
-                                 color=self._sensor_colors[sensor],
+                                 color=self._sensor_colors[sensor_name],
                                  marker=self._marker,
                                  markersize=self._marker_size,
                                  markeredgewidth=self._marker_edge_width))
