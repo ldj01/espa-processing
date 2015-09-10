@@ -15,7 +15,6 @@ import shutil
 import ftplib
 import urllib2
 import requests
-from contextlib import closing
 from time import sleep
 
 # imports from espa_common
@@ -33,7 +32,7 @@ def copy_files_to_directory(source_files, destination_directory):
 
     logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
 
-    if type(source_files) == list:
+    if isinstance(source_files, list):
         for source_file in source_files:
             cmd = ' '.join(['cp', source_file, destination_directory])
 
@@ -41,9 +40,9 @@ def copy_files_to_directory(source_files, destination_directory):
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as e:
+            except Exception:
                 logger.error("Failed to copy file")
-                raise e
+                raise
             finally:
                 if len(output) > 0:
                     logger.info(output)
@@ -61,14 +60,14 @@ def move_files_to_directory(source_files, destination_directory):
 
     logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
 
-    if type(source_files) == str:
+    if isinstance(source_files, str):
         filename = os.path.basename(source_files)
 
         new_name = os.path.join(destination_directory, filename)
 
         os.rename(source_files, new_name)
 
-    elif type(source_files) == list:
+    elif isinstance(source_files, list):
         for source_file in source_files:
             filename = os.path.basename(source_file)
 
@@ -97,9 +96,9 @@ def remote_copy_file_to_file(source_host, source_file, destination_file):
     output = ''
     try:
         output = utilities.execute_cmd(cmd)
-    except Exception as e:
+    except Exception:
         logger.error("Failed to copy file")
-        raise e
+        raise
     finally:
         if len(output) > 0:
             logger.info(output)
@@ -109,7 +108,7 @@ def remote_copy_file_to_file(source_host, source_file, destination_file):
 
 
 # ============================================================================
-def ftp_from_remote_location(username, pw, host, remotefile, localfile):
+def ftp_from_remote_location(username, pword, host, remotefile, localfile):
     '''
     Author: David Hill
 
@@ -120,7 +119,7 @@ def ftp_from_remote_location(username, pw, host, remotefile, localfile):
 
     Parameters:
       username = Username for ftp account
-      pw = Password for ftp account
+      pword = Password for ftp account
       host = The ftp server host
       remotefile = The file to transfer
       localfile = Full path to where the local file should be created.
@@ -137,7 +136,7 @@ def ftp_from_remote_location(username, pw, host, remotefile, localfile):
     if not remotefile.startswith('/'):
         remotefile = ''.join(['/', remotefile])
 
-    pw = urllib2.unquote(pw)
+    password = urllib2.unquote(pword)
 
     url = 'ftp://%s/%s' % (host, remotefile)
 
@@ -149,7 +148,7 @@ def ftp_from_remote_location(username, pw, host, remotefile, localfile):
                 loc_file.write(data)
 
             ftp = ftplib.FTP(host, timeout=60)
-            ftp.login(user=username, passwd=pw)
+            ftp.login(user=username, passwd=password)
             ftp.set_debuglevel(0)
             ftp.retrbinary(' '.join(['RETR', remotefile]), callback)
 
@@ -162,7 +161,7 @@ def ftp_from_remote_location(username, pw, host, remotefile, localfile):
 
 
 # ============================================================================
-def ftp_to_remote_location(username, pw, localfile, host, remotefile):
+def ftp_to_remote_location(username, pword, localfile, host, remotefile):
     '''
     Author: David Hill
 
@@ -173,7 +172,7 @@ def ftp_to_remote_location(username, pw, localfile, host, remotefile):
 
     Parameters:
       username = Username for ftp account
-      pw = Password for ftp account
+      pword = Password for ftp account
       host = The ftp server host
       remotefile = Full path of where to store the file
                    (Directories must exist)
@@ -190,7 +189,7 @@ def ftp_to_remote_location(username, pw, localfile, host, remotefile):
     if not remotefile.startswith('/'):
         remotefile = ''.join(['/', remotefile])
 
-    pw = urllib2.unquote(pw)
+    password = urllib2.unquote(pword)
 
     logger.info("Transferring file from %s to %s"
                 % (localfile, 'ftp://%s/%s' % (host, remotefile)))
@@ -198,7 +197,7 @@ def ftp_to_remote_location(username, pw, localfile, host, remotefile):
     ftp = None
 
     try:
-        ftp = ftplib.FTP(host, user=username, passwd=pw, timeout=60)
+        ftp = ftplib.FTP(host, user=username, passwd=password, timeout=60)
         with open(localfile, 'rb') as tmp_fd:
             ftp.storbinary(' '.join(['STOR', remotefile]), tmp_fd, 1024)
     finally:
@@ -253,11 +252,11 @@ def scp_transfer_file(source_host, source_file,
     output = ''
     try:
         output = utilities.execute_cmd(cmd)
-    except Exception as e:
+    except Exception:
         if len(output) > 0:
             logger.info(output)
         logger.error("Failed to transfer data")
-        raise e
+        raise
 
     logger.info("Transfer complete - SCP")
 # END - scp_transfer_file
@@ -305,11 +304,11 @@ def scp_transfer_directory(source_host, source_directory,
     output = ''
     try:
         output = utilities.execute_cmd(cmd)
-    except Exception as e:
+    except Exception:
         if len(output) > 0:
             logger.info(output)
         logger.error("Failed to transfer data")
-        raise e
+        raise
 
     logger.info("Transfer complete - SCP")
 # END - scp_transfer_directory
@@ -388,7 +387,7 @@ def http_transfer_file(download_url, destination_file):
 
             done = True
 
-        except:
+        except Exception:
             logger.exception("Transfer Issue - HTTP")
             if retry_attempt > 3:
                 raise Exception("Transfer Failed - HTTP"
@@ -464,9 +463,9 @@ def transfer_file(source_host, source_file,
             ftp_from_remote_location(source_username, source_pw, source_host,
                                      source_file, destination_file)
             return
-        except Exception as e:
+        except Exception as excep:
             logger.warning("FTP failures will attempt transfer using SCP")
-            logger.warning("FTP Errors: %s" % str(e))
+            logger.warning("FTP Errors: %s" % str(excep))
 
     elif destination_username is not None and destination_pw is not None:
         try:
@@ -474,9 +473,9 @@ def transfer_file(source_host, source_file,
                                    source_file, destination_host,
                                    destination_file)
             return
-        except Exception as e:
+        except Exception as excep:
             logger.warning("FTP failures will attempt transfer using SCP")
-            logger.warning("FTP Errors: %s" % str(e))
+            logger.warning("FTP Errors: %s" % str(excep))
 
     # As a last resort try SCP
     scp_transfer_file(source_host, source_file,
