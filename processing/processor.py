@@ -38,7 +38,6 @@ import numpy as np
 
 # imports from espa_common
 from logger_factory import EspaLogging
-import sensor
 import settings
 import utilities
 
@@ -54,6 +53,7 @@ import staging
 import statistics
 import transfer
 import distribution
+import sensor
 
 
 # ===========================================================================
@@ -72,21 +72,6 @@ class ProductProcessor(object):
         It also implements the cleanup of the product directory.
     '''
 
-    _logger = None
-    _environment = None
-
-    _parms = None
-
-    _order_dir = None
-    _product_dir = None
-    _stage_dir = None
-    _output_dir = None
-    _work_dir = None
-
-    _build_products = False
-
-    _product_name = None
-
     # -------------------------------------------
     def __init__(self, parms):
         '''
@@ -100,7 +85,7 @@ class ProductProcessor(object):
         if type(parms) is dict:
             self._parms = parms
         else:
-            raise Exception("Parameters was of type {0},"
+            raise Exception("Input parameters was of type {0},"
                             " where dict is required".format(type(parms)))
 
         # Create an environment object (which also validates it)
@@ -112,6 +97,10 @@ class ProductProcessor(object):
 
         # Validate the parameters
         self.validate_parameters()
+
+        # Initialize the product name determined and set by child processors
+        self._product_name = None
+
 
     # -------------------------------------------
     def validate_parameters(self):
@@ -358,19 +347,6 @@ class CustomizationProcessor(ProductProcessor):
         which warps the products to the user requested projection.
     '''
 
-    _WGS84 = 'WGS84'
-    _NAD27 = 'NAD27'
-    _NAD83 = 'NAD83'
-
-    _valid_projections = None
-    _valid_ns = None
-    _valid_resample_methods = None
-    _valid_pixel_size_units = None
-    _valid_image_extents_units = None
-    _valid_datums = None
-
-    _xml_filename = None
-
     # -------------------------------------------
     def __init__(self, parms):
 
@@ -380,7 +356,6 @@ class CustomizationProcessor(ProductProcessor):
                                         'cubicspline', 'lanczos']
         self._valid_pixel_size_units = ['meters', 'dd']
         self._valid_image_extents_units = ['meters', 'dd']
-        self._valid_datums = [self._WGS84, self._NAD27, self._NAD83]
 
         super(CustomizationProcessor, self).__init__(parms)
 
@@ -407,7 +382,7 @@ class CustomizationProcessor(ProductProcessor):
                                              self._valid_pixel_size_units,
                                              self._valid_image_extents_units,
                                              self._valid_resample_methods,
-                                             self._valid_datums)
+                                             settings.VALID_DATUMS)
 
         # Update the xml filename to be correct
         self._xml_filename = '.'.join([product_id, 'xml'])
@@ -694,9 +669,6 @@ class LandsatProcessor(CDRProcessor):
         Implements the common processing between all of the landsat
         processors.
     '''
-
-    _metadata_filename = None
-    _dem_filename = None
 
     # -------------------------------------------
     def __init__(self, parms):
@@ -1644,8 +1616,6 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
 # ===========================================================================
 class ModisProcessor(CDRProcessor):
 
-    _hdf_filename = None
-
     # -------------------------------------------
     def __init__(self, parms):
         super(ModisProcessor, self).__init__(parms)
@@ -1884,54 +1854,6 @@ class PlotProcessor(ProductProcessor):
     Description:
         Implements Plot processing.
     '''
-
-    _sensor_colors = None
-    _bg_color = None
-    _marker = None
-    _marker_size = None
-    _marker_edge_width = None
-
-    _time_delta_5_days = None
-
-    _band_type_data_ranges = None
-
-    _sr_swir_modis_b5_sensor_info = None
-    _sr_swir1_sensor_info = None
-    _sr_swir2_sensor_info = None
-    _sr_coastal_sensor_info = None
-    _sr_blue_sensor_info = None
-    _sr_green_sensor_info = None
-    _sr_red_sensor_info = None
-    _sr_nir_sensor_info = None
-    _sr_cirrus_sensor_info = None
-
-    _toa_thermal_sensor_info = None
-    _toa_swir1_sensor_info = None
-    _toa_swir2_sensor_info = None
-    _toa_coastal_sensor_info = None
-    _toa_blue_sensor_info = None
-    _toa_green_sensor_info = None
-    _toa_red_sensor_info = None
-    _toa_nir_sensor_info = None
-    _toa_cirrus_sensor_info = None
-
-    _emis_20_sensor_info = None
-    _emis_22_sensor_info = None
-    _emis_23_sensor_info = None
-    _emis_29_sensor_info = None
-    _emis_31_sensor_info = None
-    _emis_32_sensor_info = None
-
-    _lst_day_sensor_info = None
-    _lst_night_sensor_info = None
-
-    _ndvi_sensor_info = None
-    _evi_sensor_info = None
-    _savi_sensor_info = None
-    _msavi_sensor_info = None
-    _nbr_sensor_info = None
-    _nbr2_sensor_info = None
-    _ndmi_sensor_info = None
 
     def __init__(self, parms):
 
