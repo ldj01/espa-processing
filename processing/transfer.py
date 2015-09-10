@@ -16,12 +16,12 @@ import ftplib
 import urllib2
 import requests
 from contextlib import closing
+from time import sleep
 
 # imports from espa_common
 from logger_factory import EspaLogging
-import settings
-from time import sleep
 import utilities
+import settings
 
 
 # ============================================================================
