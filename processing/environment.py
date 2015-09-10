@@ -10,9 +10,10 @@ Description:
 History:
   Created Oct/2014 by Ron Dilley, USGS/EROS
 
-    Date              Programmer               Reason
-    ----------------  ------------------------ -------------------------------
-    May/2015          Ron Dilley               Initial implementation
+    Date              Reason
+    ----------------  --------------------------------------------------------
+    May/2015          Initial implementation
+    Sep/2015          Enhanced distribution method support
 
 '''
 
@@ -20,7 +21,7 @@ History:
 import os
 
 
-'''Define the distribution methods allowed'''
+# Define the distribution methods allowed
 DISTRIBUTION_METHOD_LOCAL = 'local'
 DISTRIBUTION_METHOD_REMOTE = 'remote'
 DISTRIBUTION_METHODS = [DISTRIBUTION_METHOD_LOCAL, DISTRIBUTION_METHOD_REMOTE]
@@ -74,7 +75,7 @@ class Environment(object):
             valid_values = obj['valid_values']
 
             # Check that required variables are present in the environment
-            if (obj['required'] and (env_var not in os.environ)):
+            if obj['required'] and (env_var not in os.environ):
                 raise Exception("Environment variable ${0} is not defined".
                                 format(env_var))
 
@@ -92,12 +93,15 @@ class Environment(object):
 
     # --------------------------------------
     def get_distribution_method(self):
+        '''Returns the distribution method'''
         return self._keys['distribution_method']['value']
 
     # --------------------------------------
     def get_distribution_directory(self):
+        '''Returns the distribution directory'''
         return self._keys['distribution_directory']['value']
 
     # --------------------------------------
     def get_base_work_directory(self):
+        '''Returns the base working directory'''
         return self._keys['base_work_directory']['value']
