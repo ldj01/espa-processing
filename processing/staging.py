@@ -13,7 +13,6 @@ History:
 import os
 import sys
 import glob
-import errno
 
 # imports from espa_common
 from logger_factory import EspaLogging
@@ -49,9 +48,9 @@ def untar_data(source_file, destination_directory):
     output = ''
     try:
         output = utilities.execute_cmd(cmd)
-    except Exception as e:
+    except Exception:
         logger.error("Failed to unpack data")
-        raise e
+        raise
     finally:
         if len(output) > 0:
             logger.info(output)
@@ -73,8 +72,8 @@ def stage_local_statistics_data(output_dir, work_dir, order_id):
         stats_files = glob.glob(cache_files)
 
         transfer.copy_files_to_directory(stats_files, work_dir)
-    except Exception as e:
-        raise ee.ESPAException(ee.ErrorCodes.staging_data, str(e)), \
+    except Exception as excep:
+        raise ee.ESPAException(ee.ErrorCodes.staging_data, str(excep)), \
             None, sys.exc_info()[2]
 
 
@@ -93,8 +92,8 @@ def stage_remote_statistics_data(stage_dir, work_dir, order_id):
     try:
         transfer.scp_transfer_directory(cache_host, cache_dir,
                                         'localhost', stage_dir)
-    except Exception as e:
-        raise ee.ESPAException(ee.ErrorCodes.staging_data, str(e)), \
+    except Exception as excep:
+        raise ee.ESPAException(ee.ErrorCodes.staging_data, str(excep)), \
             None, sys.exc_info()[2]
 
     # Move the staged data to the work directory
@@ -102,8 +101,8 @@ def stage_remote_statistics_data(stage_dir, work_dir, order_id):
         stats_files = glob.glob(os.path.join(stage_dir, 'stats/*'))
 
         transfer.move_files_to_directory(stats_files, work_dir)
-    except Exception as e:
-        raise ee.ESPAException(ee.ErrorCodes.unpacking, str(e)), \
+    except Exception as excep:
+        raise ee.ESPAException(ee.ErrorCodes.unpacking, str(excep)), \
             None, sys.exc_info()[2]
 
 
@@ -115,12 +114,11 @@ def stage_statistics_data(output_dir, stage_dir, work_dir, parms):
         or by just copying them from a local disk path.
     '''
 
-    e = Environment()
+    env = Environment()
 
-    distribution_method = e.get_distribution_method()
+    distribution_method = env.get_distribution_method()
 
     order_id = parms['orderid']
-    options = parms['options']
 
     if distribution_method == DISTRIBUTION_METHOD_LOCAL:
         stage_local_statistics_data(output_dir, work_dir, order_id)
