@@ -20,14 +20,18 @@ History:
 import os
 
 
+'''Define the distribution methods allowed'''
+DISTRIBUTION_METHOD_LOCAL = 'local'
+DISTRIBUTION_METHOD_REMOTE = 'remote'
+DISTRIBUTION_METHODS = [DISTRIBUTION_METHOD_LOCAL, DISTRIBUTION_METHOD_REMOTE]
+
+
 class Environment(object):
     '''
     Description:
         Provides consistent access to the environment variables, so that
         they do not need to be retrieved everywhere they are used.
     '''
-
-    _keys = None
 
     # --------------------------------------
     def __init__(self):
@@ -43,7 +47,7 @@ class Environment(object):
         self._keys = \
             {'distribution_method': {'env_var': 'ESPA_DISTRIBUTION_METHOD',
                                      'required': True,
-                                     'valid_values': ['local', 'remote'],
+                                     'valid_values': DISTRIBUTION_METHODS,
                                      'value': None},
              'distribution_directory': {'env_var': 'ESPA_DISTRIBUTION_DIR',
                                         'required': False,
