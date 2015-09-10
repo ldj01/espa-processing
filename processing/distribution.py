@@ -18,7 +18,6 @@ import sys
 import shutil
 import glob
 from time import sleep
-from argparse import ArgumentParser
 
 # imports from espa_common
 from logger_factory import EspaLogging
@@ -64,9 +63,9 @@ def package_product(source_directory, destination_directory, product_name):
     output = ''
     try:
         output = utilities.execute_cmd(cmd)
-    except Exception as e:
+    except Exception as excep:
         raise ee.ESPAException(ee.ErrorCodes.packaging_product,
-                               str(e)), None, sys.exc_info()[2]
+                               str(excep)), None, sys.exc_info()[2]
     finally:
         if len(output) > 0:
             logger.info(output)
@@ -97,9 +96,9 @@ def package_product(source_directory, destination_directory, product_name):
         cmd = ' '.join(['tar', '-tf', product_full_path])
         try:
             output = utilities.execute_cmd(cmd)
-        except Exception as e:
+        except Exception as excep:
             raise ee.ESPAException(ee.ErrorCodes.packaging_product,
-                                   str(e)), None, sys.exc_info()[2]
+                                   str(excep)), None, sys.exc_info()[2]
         finally:
             if len(output) > 0:
                 logger.info(output)
@@ -109,11 +108,11 @@ def package_product(source_directory, destination_directory, product_name):
         cmd = ' '.join([settings.ESPA_CHECKSUM_TOOL, product_full_path])
         try:
             cksum_output = utilities.execute_cmd(cmd)
-        except Exception as e:
+        except Exception as excep:
             if len(cksum_output) > 0:
                 logger.info(cksum_output)
             raise ee.ESPAException(ee.ErrorCodes.packaging_product,
-                                   str(e)), None, sys.exc_info()[2]
+                                   str(excep)), None, sys.exc_info()[2]
 
         # Name of the checksum file created
         cksum_filename = '.'.join([product_name,
@@ -135,7 +134,7 @@ def package_product(source_directory, destination_directory, product_name):
         try:
             with open(cksum_full_path, 'wb+') as cksum_fd:
                 cksum_fd.write(cksum_value)
-        except Exception as e:
+        except Exception:
             raise ee.ESPAException(ee.ErrorCodes.packaging_product,
                                    "Error building checksum file"), \
                 None, sys.exc_info()[2]
@@ -178,9 +177,9 @@ def transfer_product(destination_host, destination_directory,
     try:
         logger.debug(' '.join(["mkdir cmd:", cmd]))
         output = utilities.execute_cmd(cmd)
-    except Exception as e:
+    except Exception as excep:
         raise ee.ESPAException(ee.ErrorCodes.transfer_product,
-                               str(e)), None, sys.exc_info()[2]
+                               str(excep)), None, sys.exc_info()[2]
     finally:
         if len(output) > 0:
             logger.info(output)
@@ -203,9 +202,9 @@ def transfer_product(destination_host, destination_directory,
     try:
         logger.debug(' '.join(["rm remote file cmd:", cmd]))
         output = utilities.execute_cmd(cmd)
-    except Exception as e:
+    except Exception as excep:
         raise ee.ESPAException(ee.ErrorCodes.transfer_product,
-                               str(e)), None, sys.exc_info()[2]
+                               str(excep)), None, sys.exc_info()[2]
     finally:
         if len(output) > 0:
             logger.info(output)
@@ -230,11 +229,11 @@ def transfer_product(destination_host, destination_directory,
     try:
         logger.debug(' '.join(["ssh cmd:", cmd]))
         cksum_value = utilities.execute_cmd(cmd)
-    except Exception as e:
+    except Exception as excep:
         if len(cksum_value) > 0:
             logger.error(cksum_value)
         raise ee.ESPAException(ee.ErrorCodes.transfer_product,
-                               str(e)), None, sys.exc_info()[2]
+                               str(excep)), None, sys.exc_info()[2]
 
     return (cksum_value, destination_product_file, destination_cksum_file)
 
@@ -291,9 +290,9 @@ def distribute_statistics_remote(product_id, source_path,
             try:
                 logger.debug(' '.join(["mkdir cmd:", cmd]))
                 output = utilities.execute_cmd(cmd)
-            except Exception as e:
+            except Exception as excep:
                 raise ee.ESPAException(ee.ErrorCodes.packaging_product,
-                                       str(e)), None, sys.exc_info()[2]
+                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     logger.info(output)
@@ -306,9 +305,9 @@ def distribute_statistics_remote(product_id, source_path,
             try:
                 logger.debug(' '.join(["rm remote stats cmd:", cmd]))
                 output = utilities.execute_cmd(cmd)
-            except Exception as e:
+            except Exception as excep:
                 raise ee.ESPAException(ee.ErrorCodes.packaging_product,
-                                       str(e)), None, sys.exc_info()[2]
+                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     logger.info(output)
@@ -331,11 +330,11 @@ def distribute_statistics_remote(product_id, source_path,
                 try:
                     logger.debug(' '.join(["checksum cmd:", cmd]))
                     local_cksum_value = utilities.execute_cmd(cmd)
-                except Exception as e:
+                except Exception as excep:
                     if len(local_cksum_value) > 0:
                         logger.error(local_cksum_value)
                     raise ee.ESPAException(ee.ErrorCodes.packaging_product,
-                                           str(e)), None, sys.exc_info()[2]
+                                           str(excep)), None, sys.exc_info()[2]
 
                 # Generate a remote checksum value
                 remote_file = os.path.join(destination_path, file_name)
@@ -344,11 +343,11 @@ def distribute_statistics_remote(product_id, source_path,
                                 remote_file])
                 try:
                     remote_cksum_value = utilities.execute_cmd(cmd)
-                except Exception as e:
+                except Exception as excep:
                     if len(remote_cksum_value) > 0:
                         logger.error(remote_cksum_value)
                     raise ee.ESPAException(ee.ErrorCodes.packaging_product,
-                                           str(e)), None, sys.exc_info()[2]
+                                           str(excep)), None, sys.exc_info()[2]
 
                 # Checksum validation
                 if (local_cksum_value.split()[0] !=
@@ -358,7 +357,7 @@ def distribute_statistics_remote(product_id, source_path,
                                            " %s and %s:%s" % (file_name,
                                                               destination_host,
                                                               remote_file))
-        except Exception as e:
+        except Exception as excep:
             logger.exception("An exception occurred processing %s"
                              % product_id)
             if attempt < settings.MAX_DELIVERY_ATTEMPTS:
@@ -368,7 +367,7 @@ def distribute_statistics_remote(product_id, source_path,
             else:
                 e_code = ee.ErrorCodes.distributing_product
                 raise ee.ESPAException(e_code,
-                                       str(e)), None, sys.exc_info()[2]
+                                       str(excep)), None, sys.exc_info()[2]
 
         finally:
             # Change back to the previous directory
@@ -417,9 +416,9 @@ def distribute_statistics_local(product_id, source_path, destination_path):
         output = ''
         try:
             output = utilities.execute_cmd(cmd)
-        except Exception as e:
+        except Exception as excep:
             raise ee.ESPAException(ee.ErrorCodes.distributing_product,
-                                   str(e)), None, sys.exc_info()[2]
+                                   str(excep)), None, sys.exc_info()[2]
         finally:
             if len(output) > 0:
                 logger.info(output)
@@ -432,11 +431,11 @@ def distribute_statistics_local(product_id, source_path, destination_path):
             logger.info("Copying {0} to {1}".format(filename, dest_file_path))
             shutil.copyfile(file_path, dest_file_path)
 
-    except Exception as e:
+    except Exception as excep:
         logger.exception("An exception occurred processing {0}".
                          format(product_id))
         e_code = ee.ErrorCodes.distributing_product
-        raise ee.ESPAException(e_code, str(e)), None, sys.exc_info()[2]
+        raise ee.ESPAException(e_code, str(excep)), None, sys.exc_info()[2]
 
     finally:
         # Change back to the previous directory
@@ -475,7 +474,7 @@ def distribute_product_remote(product_name, source_path, packaging_path,
                      local_cksum_value) = package_product(source_path,
                                                           packaging_path,
                                                           product_name)
-                except Exception as e:
+                except Exception as excep:
                     logger.exception("An exception occurred processing %s"
                                      % product_name)
                     if sub_attempt < max_package_attempts:
@@ -484,7 +483,7 @@ def distribute_product_remote(product_name, source_path, packaging_path,
                         continue
                     else:
                         raise ee.ESPAException(ee.ErrorCodes.packaging_product,
-                                               str(e)), None, sys.exc_info()[2]
+                                               str(excep)), None, sys.exc_info()[2]
                 break
 
             # Distribute the product
@@ -497,7 +496,7 @@ def distribute_product_remote(product_name, source_path, packaging_path,
                                          opts['destination_username'],
                                          opts['destination_pw'],
                                          product_full_path, cksum_full_path)
-                except Exception as e:
+                except Exception as excep:
                     logger.exception("An exception occurred processing %s"
                                      % product_name)
                     if sub_attempt < max_delivery_attempts:
@@ -506,7 +505,7 @@ def distribute_product_remote(product_name, source_path, packaging_path,
                         continue
                     else:
                         raise ee.ESPAException(ee.ErrorCodes.transfer_product,
-                                               str(e)), None, sys.exc_info()[2]
+                                               str(excep)), None, sys.exc_info()[2]
                 break
 
             # Checksum validation
@@ -522,7 +521,7 @@ def distribute_product_remote(product_name, source_path, packaging_path,
             logger.info("Delivered product to %s at location %s"
                         " and cksum location %s" % (destination_host,
                                                     product_file, cksum_file))
-        except Exception as e:
+        except Exception:
             if attempt < max_number_of_attempts:
                 sleep(sleep_seconds)  # sleep before trying again
                 attempt += 1
@@ -531,7 +530,7 @@ def distribute_product_remote(product_name, source_path, packaging_path,
                 continue
             else:
                 # May already be an ESPAException so don't override that
-                raise e
+                raise
         break
 
     return (product_file, cksum_file)
@@ -547,7 +546,6 @@ def distribute_product_local(product_name, source_path, packaging_path):
     sleep_seconds = settings.DEFAULT_SLEEP_SECONDS
     max_number_of_attempts = settings.MAX_DISTRIBUTION_ATTEMPTS
     max_package_attempts = settings.MAX_PACKAGING_ATTEMPTS
-    max_delivery_attempts = settings.MAX_DELIVERY_ATTEMPTS
 
     attempt = 0
     product_file = 'ERROR'
@@ -564,7 +562,7 @@ def distribute_product_local(product_name, source_path, packaging_path):
                      local_cksum_value) = package_product(source_path,
                                                           packaging_path,
                                                           product_name)
-                except Exception as e:
+                except Exception as excep:
                     logger.exception("An exception occurred processing %s"
                                      % product_name)
                     if sub_attempt < max_package_attempts:
@@ -573,14 +571,14 @@ def distribute_product_local(product_name, source_path, packaging_path):
                         continue
                     else:
                         raise ee.ESPAException(ee.ErrorCodes.packaging_product,
-                                               str(e)), None, sys.exc_info()[2]
+                                               str(excep)), None, sys.exc_info()[2]
                 break
 
             # Always log where we placed the files
             logger.info("Delivered product to location %s"
                         " and checksum location %s" % (product_file,
                                                        cksum_file))
-        except Exception as e:
+        except Exception:
             if attempt < max_number_of_attempts:
                 sleep(sleep_seconds)  # sleep before trying again
                 attempt += 1
@@ -589,7 +587,7 @@ def distribute_product_local(product_name, source_path, packaging_path):
                 continue
             else:
                 # May already be an ESPAException so don't override that
-                raise e
+                raise
         break
 
     return (product_file, cksum_file)
@@ -618,9 +616,9 @@ def distribute_statistics(source_path, packaging_path, parms):
         parms - All the user and system defined parameters.
     '''
 
-    e = Environment()
+    env = Environment()
 
-    distribution_method = e.get_distribution_method()
+    distribution_method = env.get_distribution_method()
 
     product_id = parms['product_id']
     order_id = parms['orderid']
@@ -677,9 +675,9 @@ def distribute_product(product_name, source_path, packaging_path, parms):
         parms - All the user and system defined parameters.
     '''
 
-    e = Environment()
+    env = Environment()
 
-    distribution_method = e.get_distribution_method()
+    distribution_method = env.get_distribution_method()
 
     order_id = parms['orderid']
 
