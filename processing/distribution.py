@@ -22,11 +22,11 @@ from argparse import ArgumentParser
 
 # imports from espa_common
 from logger_factory import EspaLogging
-import settings
 import utilities
+import settings
 
 # local objects and methods
-from environment import Environment
+from environment import Environment, DISTRIBUTION_METHOD_LOCAL
 import espa_exception as ee
 import parameters
 import transfer
@@ -629,7 +629,7 @@ def distribute_statistics(source_path, packaging_path, parms):
     product_file = 'ERROR'
     cksum_file = 'ERROR'
 
-    if distribution_method == 'local':
+    if distribution_method == DISTRIBUTION_METHOD_LOCAL:
         # Use the local cache path
         cache_path = os.path.join(settings.ESPA_LOCAL_CACHE_DIRECTORY,
                                   order_id)
@@ -687,7 +687,7 @@ def distribute_product(product_name, source_path, packaging_path, parms):
     product_file = 'ERROR'
     cksum_file = 'ERROR'
 
-    if distribution_method == 'local':
+    if distribution_method == DISTRIBUTION_METHOD_LOCAL:
         # Use the local cache path
         cache_path = os.path.join(settings.ESPA_LOCAL_CACHE_DIRECTORY,
                                   order_id)
