@@ -17,12 +17,12 @@ import errno
 
 # imports from espa_common
 from logger_factory import EspaLogging
-import settings
 import utilities
 
 # local objects and methods
-from environment import Environment
+from environment import Environment, DISTRIBUTION_METHOD_LOCAL
 import espa_exception as ee
+import settings
 import transfer
 
 
@@ -122,7 +122,7 @@ def stage_statistics_data(output_dir, stage_dir, work_dir, parms):
     order_id = parms['orderid']
     options = parms['options']
 
-    if distribution_method == 'local':
+    if distribution_method == DISTRIBUTION_METHOD_LOCAL:
         stage_local_statistics_data(output_dir, work_dir, order_id)
 
     else:
