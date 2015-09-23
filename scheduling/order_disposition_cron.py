@@ -67,7 +67,7 @@ def determine_order_disposition():
 
     # Use order_disposition_enabled to determine if we should be processing
     # or not
-    od_enabled = server.get_configuration('order_disposition_enabled')
+    od_enabled = server.get_configuration('system.order_disposition_enabled')
 
     if not od_enabled.lower() == 'true':
         raise Exception("order disposition disabled... exiting")

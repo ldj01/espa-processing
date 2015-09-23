@@ -91,7 +91,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
         raise Exception(msg)
 
     # Use ondemand_enabled to determine if we should be processing or not
-    ondemand_enabled = server.get_configuration('ondemand_enabled')
+    ondemand_enabled = server.get_configuration('system.ondemand_enabled')
 
     # Determine the appropriate hadoop queue to use
     hadoop_job_queue = settings.HADOOP_QUEUE_MAPPING[queue_priority]
