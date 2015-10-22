@@ -58,7 +58,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
 
     # check the number of hadoop jobs and don't do anything if they 
     # are over a limit
-    job_limit = 150
+    job_limit = settings.HADOOP_MAX_JOBS
     cmd = "hadoop job -list|awk '{print $1}'|grep -c job 2>/dev/null"
     job_count = utilities.execute_cmd(cmd)
     if int(job_count) >= int(job_limit):
