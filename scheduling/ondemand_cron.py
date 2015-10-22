@@ -55,6 +55,17 @@ def process_requests(args, logger_name, queue_priority, request_priority):
     # Get the logger for this task
     logger = EspaLogging.get_logger(logger_name)
 
+
+    # check the number of hadoop jobs and don't do anything if they 
+    # are over a limit
+    job_limit = 150
+    cmd = "hadoop job -list|awk '{print $1}'|grep -c job 2>/dev/null"
+    job_count = utilities.execute_cmd(cmd)
+    if int(job_count) >= int(job_limit):
+        logger.warn('Detected {0} Hadoop jobs running'.format(job_count))
+        logger.warn('No additional jobs will be run until job count is below {0}'.format(job_limit))
+        return
+
     rpcurl = os.environ.get('ESPA_XMLRPC')
     server = None
 
