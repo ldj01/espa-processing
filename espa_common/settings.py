@@ -1,3 +1,6 @@
+# The maximum number of jobs Hadoop should be able to run at once.
+# This is needed so that the job tracker doesn't exceed resource limits.
+HADOOP_MAX_JOBS = 150
 
 # Specifies the buffer length for an order line in the order file
 # The Hadoop File System block size should be a multiple of this value
