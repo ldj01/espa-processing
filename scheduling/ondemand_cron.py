@@ -60,7 +60,15 @@ def process_requests(args, logger_name, queue_priority, request_priority):
     # are over a limit
     job_limit = settings.HADOOP_MAX_JOBS
     cmd = "hadoop job -list|awk '{print $1}'|grep -c job 2>/dev/null"
-    job_count = utilities.execute_cmd(cmd)
+    try:
+        job_count = utilities.execute_cmd(cmd)
+    except Exception, e:
+        errmsg = 'Stdout/Stderr is: 0'
+        if errmsg in e.message:
+            job_count = 0
+        else:
+            raise e
+
     if int(job_count) >= int(job_limit):
         logger.warn('Detected {0} Hadoop jobs running'.format(job_count))
         logger.warn('No additional jobs will be run until job count is below {0}'.format(job_limit))
