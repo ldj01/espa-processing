@@ -47,11 +47,6 @@ DEFAULT_BROWSE_RESOLUTION = 50
 # Default name for the solr collection
 DEFAULT_SOLR_COLLECTION_NAME = 'DEFAULT_COLLECTION'
 
-# The limit value for when to start splitting clouds
-# It is used as a string in the code since it is passed to the cfmask
-# executable
-CFMASK_MAX_CLOUD_PIXELS = '5000000'
-
 # Number of seconds to sleep when errors are encountered before attempting the
 # task again
 DEFAULT_SLEEP_SECONDS = 2
