@@ -7,6 +7,10 @@ USGS Designation: EROS Science Processing Architecture (ESPA)
 This project is hosted by the US Geological Survey (USGS) Earth Resources Observation and Science (EROS) Land Satellite Data Systems (LSDS) Science Research and Development (LSRD) Project. For questions regarding this source code, please contact the Landsat Contact Us page and specify USGS CDR/ECV in the "Regarding" section. https://landsat.usgs.gov/contactus.php
 
 Change Notes
+Version 2.9.3 (October 2015)
+        Accounted for raised exception in ondemand_cron where there are 
+        zero hadoop jobs running
+
 Version 2.9.2 (October 2015)
         Added checks to the ondemand_cron to limit the number of 
         active Hadoop jobs.
