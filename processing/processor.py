@@ -1018,8 +1018,6 @@ class LandsatProcessor(CDRProcessor):
                 options['include_dswe'] or
                 options['include_sr']):
             cmd = ' '.join(['cloud_masking.py', '--verbose',
-                            '--max_cloud_pixels',
-                            settings.CFMASK_MAX_CLOUD_PIXELS,
                             '--xml', self._xml_filename])
 
         # Only if required
