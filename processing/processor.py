@@ -1106,7 +1106,7 @@ class LandsatProcessor(CDRProcessor):
         cmd = None
         if options['include_dswe']:
 
-            cmd = ['do_dynamic_surface_water_extent.py',
+            cmd = ['surface_water_extent.py',
                    '--xml', self._xml_filename,
                    '--dem', self._dem_filename,
                    '--verbose']
