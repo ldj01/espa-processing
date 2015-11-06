@@ -26,6 +26,11 @@ TODO - Need to fill in this section.
 TODO - Need to fill in this section.
 
 ## OLD Release Notes (To be removed ??? TBD)
+Change Notes
+Version 2.9.3 (October 2015)
+        Accounted for raised exception in ondemand_cron where there are 
+        zero hadoop jobs running
+
 Version 2.9.2 (October 2015)
         Added checks to the ondemand_cron to limit the number of 
         active Hadoop jobs.
