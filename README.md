@@ -13,6 +13,7 @@ USGS Designation: EROS Science Processing Architecture (ESPA)
 
 ## Release Notes
   - Added support for Land Surface Temperature products.
+  - Added support for ENVI BIP output products.
   - Modified to call science application specific helper scripts.  These helper scripts determine which sensor specific versions of science applications to call for a product.  In an effort to dumb down and cleanup the code in this project.
 
 ## Supported Science Products
