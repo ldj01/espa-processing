@@ -939,7 +939,7 @@ class LandsatProcessor(CDRProcessor):
 
         options = self._parms['options']
 
-        cmd = ['do_ledaps.py', '--xml', self._xml_filename]
+        cmd = ['surface_reflectance.py', '--xml', self._xml_filename]
 
         execute_do_ledaps = False
 
@@ -1495,7 +1495,7 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
         options = self._parms['options']
 
-        cmd = ['do_l8_sr.py', '--xml', self._xml_filename]
+        cmd = ['surface_reflectance.py', '--xml', self._xml_filename]
 
         execute_do_l8_sr = False
 
