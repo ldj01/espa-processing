@@ -19,6 +19,10 @@ Please see the Release Tags for notes related to past versions.
   - Modified to call science application specific helper scripts.  These helper scripts determine which sensor specific versions of science applications to call for a product.  In an effort to dumb down and cleanup the code in this project.
 
 ## Supported Science Products
+To generate products for a science application, it must be installed on the system and the applications provided must be available on the PATH.  See the respective science projects for installation instructions.
+
+For the core capabilities required by each science application including this project, see  [espa-product-formatter](https://github.com/USGS-EROS/espa-product-formatter).
+
 TODO - Need to fill in this section.
 
 ## Installation Notes
