@@ -1,6 +1,11 @@
 # The maximum number of jobs Hadoop should be able to run at once.
 # This is needed so that the job tracker doesn't exceed resource limits.
-HADOOP_MAX_JOBS = 150
+# This also affects our level of service to end users.
+# We are submitting batches of 25 every minute, so 25 * 50 = 1250 scenes.
+# This means it will take a little over an hour to addres an item ordered
+# because the hadoop queue will be 25 * 50 scenes deep.
+HADOOP_MAX_JOBS = 50 
+
 
 # Specifies the buffer length for an order line in the order file
 # The Hadoop File System block size should be a multiple of this value
