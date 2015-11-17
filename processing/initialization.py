@@ -141,6 +141,14 @@ def create_output_directory(base_path):
 
     if distribution_method == DISTRIBUTION_METHOD_LOCAL:
         linked_path = env.get_distribution_directory()
-        return __create_linked_directory(base_path, linked_path, name)
+        # return __create_linked_directory(base_path, linked_path, name)
+        # Due to a concern with accidental removal of all of the online-cache
+        # during a disk failure.  Assumed to be performed by hadoop.  The
+        # link is being removed from the hadoop controlled directories.  So
+        # we are not creating the link and using the linked_path as the value
+        # of the internal output_dir  variable used by the rest of the code.
+        # Until a later release where distribution of products has gone
+        # through a severely needed re-implementation.
+        return linked_path
     else:
         return __create_local_directory(base_path, name)
