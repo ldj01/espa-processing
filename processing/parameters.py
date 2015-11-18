@@ -24,7 +24,7 @@ import sensor
 valid_landsat_sensors = ['tm', 'etm', 'olitirs', 'oli']
 valid_modis_sensors = ['terra', 'aqua']
 valid_sensors = valid_landsat_sensors + valid_modis_sensors
-valid_output_formats = ['envi', 'gtiff', 'hdf-eos2']
+valid_output_formats = ['envi', 'envi-bip', 'gtiff', 'hdf-eos2']
 
 
 # ============================================================================
