@@ -59,6 +59,21 @@ def package_product(source_directory, destination_directory, product_name):
     filename_parts[-1] = '*'  # Replace the last element of the list
     filename = '-'.join(filename_parts)  # Join with '-'
 
+    # Name of the checksum to be created
+    cksum_filename = '.'.join([product_name, settings.ESPA_CHECKSUM_EXTENSION])
+
+    # Change the attributes on the files so that we can remove them
+    cmd = ' '.join(['sudo', 'chattr', '-if', filename, cksum_filename])
+    output = ''
+    try:
+        output = utilities.execute_cmd(cmd)
+    except Exception:
+        pass
+    finally:
+        if len(output) > 0:
+            logger.info(output)
+
+    # Remove the file first just in-case this is a second run
     cmd = ' '.join(['rm', '-f', filename])
     output = ''
     try:
@@ -114,9 +129,6 @@ def package_product(source_directory, destination_directory, product_name):
             raise ee.ESPAException(ee.ErrorCodes.packaging_product,
                                    str(excep)), None, sys.exc_info()[2]
 
-        # Name of the checksum file created
-        cksum_filename = '.'.join([product_name,
-                                   settings.ESPA_CHECKSUM_EXTENSION])
         # Get the base filename of the file that was checksum'd
         cksum_prod_filename = os.path.basename(product_full_path)
 
@@ -196,6 +208,20 @@ def transfer_product(destination_host, destination_directory,
     remote_filename_parts[-1] = '*'  # Replace the last element of the list
     remote_filename = '-'.join(remote_filename_parts)  # Join with '-'
 
+    # Change the attributes on the files so that we can remove them
+    cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
+                    destination_host, 'sudo', 'chattr', '-if', remote_filename])
+    output = ''
+    try:
+        logger.debug(' '.join(["chattr remote file cmd:", cmd]))
+        output = utilities.execute_cmd(cmd)
+    except Exception:
+        pass
+    finally:
+        if len(output) > 0:
+            logger.info(output)
+
+    # Remove the files on the remote system
     cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
                     destination_host, 'rm', '-f', remote_filename])
     output = ''
@@ -220,6 +246,20 @@ def transfer_product(destination_host, destination_directory,
                            destination_product_file,
                            destination_username=destination_username,
                            destination_pw=destination_pw)
+
+    # Change the attributes on the files so that we can't remove them
+    cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
+                    destination_host, 'sudo', 'chattr', '+i', remote_filename])
+    output = ''
+    try:
+        logger.debug(' '.join(["chattr remote file cmd:", cmd]))
+        output = utilities.execute_cmd(cmd)
+    except Exception as excep:
+        raise ee.ESPAException(ee.ErrorCodes.transfer_product,
+                               str(excep)), None, sys.exc_info()[2]
+    finally:
+        if len(output) > 0:
+            logger.info(output)
 
     # Get the remote checksum value
     cksum_value = ''
@@ -277,8 +317,10 @@ def distribute_statistics_remote(product_id, source_path,
         # Change to the source directory
         os.chdir(source_path)
         try:
+            stats_wildcard = ''.join([product_id, '*'])
             stats_path = os.path.join(destination_path, d_name)
-            stats_files = ''.join([d_name, '/', product_id, '*'])
+            stats_files = os.path.join(d_name, stats_wildcard)
+            remote_stats_wildcard = os.path.join(stats_path, stats_wildcard)
 
             # Create the statistics directory on the destination host
             logger.info("Creating directory {0} on {1}".
@@ -297,10 +339,24 @@ def distribute_statistics_remote(product_id, source_path,
                 if len(output) > 0:
                     logger.info(output)
 
+            # Change the attributes on the files so that we can remove them
+            cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
+                            destination_host, 'sudo', 'chattr', '-if',
+                            remote_stats_wildcard])
+            output = ''
+            try:
+                logger.debug(' '.join(["chattr remote stats cmd:", cmd]))
+                output = utilities.execute_cmd(cmd)
+            except Exception:
+                pass
+            finally:
+                if len(output) > 0:
+                    logger.info(output)
+
             # Remove any pre-existing statistics
             cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
                             destination_host, 'rm', '-f',
-                            os.path.join(stats_path, product_id)])
+                            remote_stats_wildcard])
             output = ''
             try:
                 logger.debug(' '.join(["rm remote stats cmd:", cmd]))
@@ -357,6 +413,22 @@ def distribute_statistics_remote(product_id, source_path,
                                            " %s and %s:%s" % (file_name,
                                                               destination_host,
                                                               remote_file))
+
+            # Change the attributes on the files so that we can't remove them
+            cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
+                            destination_host, 'sudo', 'chattr', '+i',
+                            remote_stats_wildcard])
+            output = ''
+            try:
+                logger.debug(' '.join(["chattr remote stats cmd:", cmd]))
+                output = utilities.execute_cmd(cmd)
+            except Exception as excep:
+                raise ee.ESPAException(ee.ErrorCodes.packaging_product,
+                                       str(excep)), None, sys.exc_info()[2]
+            finally:
+                if len(output) > 0:
+                    logger.info(output)
+
         except Exception as excep:
             logger.exception("An exception occurred processing %s"
                              % product_id)
@@ -403,16 +475,28 @@ def distribute_statistics_local(product_id, source_path, destination_path):
     os.chdir(source_path)
 
     try:
+        stats_wildcard = ''.join([product_id, '*'])
         stats_path = os.path.join(destination_path, d_name)
-        stats_files = ''.join([d_name, '/', product_id, '*'])
+        stats_files = os.path.join(d_name, stats_wildcard)
+        dest_stats_wildcard = os.path.join(stats_path, stats_wildcard)
 
         # Create the statistics directory under the destination path
         logger.info("Creating directory {0}".format(stats_path))
         utilities.create_directory(stats_path)
 
+        # Change the attributes on the files so that we can remove them
+        cmd = ' '.join(['sudo', 'chattr', '-if', dest_stats_wildcard])
+        output = ''
+        try:
+            output = utilities.execute_cmd(cmd)
+        except Exception:
+            pass
+        finally:
+            if len(output) > 0:
+                logger.info(output)
+
         # Remove any pre-existing statistics for this product ID
-        cmd = ' '.join(['rm', '-f', os.path.join(destination_path,
-                                                 stats_files)])
+        cmd = ' '.join(['rm', '-f', dest_stats_wildcard])
         output = ''
         try:
             output = utilities.execute_cmd(cmd)
@@ -430,6 +514,18 @@ def distribute_statistics_local(product_id, source_path, destination_path):
 
             logger.info("Copying {0} to {1}".format(filename, dest_file_path))
             shutil.copyfile(file_path, dest_file_path)
+
+        # Change the attributes on the files so that we can't remove them
+        cmd = ' '.join(['sudo', 'chattr', '+i', dest_stats_wildcard])
+        output = ''
+        try:
+            output = utilities.execute_cmd(cmd)
+        except Exception as excep:
+            raise ee.ESPAException(ee.ErrorCodes.distributing_product,
+                                   str(excep)), None, sys.exc_info()[2]
+        finally:
+            if len(output) > 0:
+                logger.info(output)
 
     except Exception as excep:
         logger.exception("An exception occurred processing {0}".
@@ -562,6 +658,15 @@ def distribute_product_local(product_name, source_path, packaging_path):
                      local_cksum_value) = package_product(source_path,
                                                           packaging_path,
                                                           product_name)
+
+                    # Change the attributes on the files so that we can't
+                    # remove them
+                    cmd = ' '.join(['sudo', 'chattr', '+i', product_file,
+                                    cksum_file])
+                    output = utilities.execute_cmd(cmd)
+                    if len(output) > 0:
+                        logger.info(output)
+
                 except Exception as excep:
                     logger.exception("An exception occurred processing %s"
                                      % product_name)
