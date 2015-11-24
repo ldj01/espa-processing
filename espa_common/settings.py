@@ -43,7 +43,7 @@ MODIS_INPUT_CHECK_PORT = 80
 
 # Path to the completed orders
 ESPA_REMOTE_CACHE_DIRECTORY = '/data2/science_lsrd/LSRD/orders'
-ESPA_LOCAL_CACHE_DIRECTORY = 'LSRD/orders'
+ESPA_LOCAL_CACHE_DIRECTORY = ''
 
 ESPA_EMAIL_ADDRESS = 'espa@usgs.gov'
 
