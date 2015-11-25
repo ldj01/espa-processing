@@ -1,5 +1,6 @@
 
-#This code is just a concept implementation to see if it is worthwhile to pursue
+# This code is just a concept implementation to see if it is worthwhile to
+# pursue
 
 import os
 import sys
@@ -14,10 +15,10 @@ class process_app(object):
         self.execute_app = False
 
     def configure(self, options):
-        pass
+        raise NotImplementedError('Not Implemented')
 
     def execute(self):
-        pass
+        raise NotImplementedError('Not Implemented')
 
 
 class ls_app(process_app):
@@ -104,6 +105,23 @@ class convert(process_app):
             print 'executing --- convert'
 
 
+def initialize(options):
+    # TODO - The smarts to decide what processing steps are required and
+    #        a list of them is returned
+    # TODO - Return them already configured
+
+    # TODO - This is not the smarts required
+    processing_steps = list()
+    processing_steps.append(ls_app())
+    processing_steps.append(ps_app())
+    processing_steps.append(hh_app())
+    processing_steps.append(cleanup())
+    processing_steps.append(warping())
+    processing_steps.append(convert())
+
+    return processing_steps
+
+
 if __name__ == '__main__':
     options = {
         'include_ls': True,
@@ -116,15 +134,8 @@ if __name__ == '__main__':
 
     print options
 
-    # TODO TODO TODO - instead of hardcoding a list here, maybe call some method that just returns the things to execute already configured
-    apps = [ls_app(),
-            ps_app(),
-            hh_app(),
-            cleanup(),
-            warping(),
-            convert()
-           ]
+    processing_steps = initialize(options)
 
-    for app in apps:
-        app.configure(options)
-        app.execute()
+    for p_step in processing_steps:
+        p_step.configure(options)
+        p_step.execute()
