@@ -7,7 +7,9 @@ import sys
 from argparse import ArgumentParser
 
 
-# NOTE - TODO - I am not following proper class names in this example
+# NOTE - TODO - I am not following proper class names in this example.
+#               And each of these classes would probably be implemented in
+#               their own files.
 class process_app(object):
 
     def __init__(self):
