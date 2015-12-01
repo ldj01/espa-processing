@@ -13,6 +13,7 @@
 # NOTE - TODO - Each of these classes would probably be implemented in
 #               their own files.
 
+
 class Processor(object):
     '''Provides the mechanism to run a sequential list of tasks'''
 
@@ -64,6 +65,18 @@ class GenerateSpectralIndices(ProcessingTask):
         print 'executing --- GenerateSpectralIndices'
 
 
+class CleanupIntermediateProducts(ProcessingTask):
+    '''Provides the implementation for customizing the science products'''
+
+    def __init__(self, options):
+        super(CleanupIntermediateProducts, self).__init__()
+
+        # This task is split-up into multiple sub-tasks
+
+    def execute(self):
+        print 'executing --- CleanupIntermediateProducts'
+
+
 class BuildScienceProducts(ProcessingTask):
     '''Provides the implementation for building the science products'''
 
@@ -74,7 +87,11 @@ class BuildScienceProducts(ProcessingTask):
         self.processor = Processor()
 
         if options['include_indices']:
-            self.processor.add(GenerateSpectralIndices(options))
+            task = GenerateSpectralIndices(options)
+            self.processor.add(task)
+
+        # We always cleanup any intermediate science products
+        processor.add(CleanupIntermediateProducts(options))
 
     def execute(self):
         print 'executing --- BuildScienceProducts'
@@ -89,18 +106,6 @@ class CustomizeProducts(ProcessingTask):
 
     def execute(self):
         print 'executing --- CustomizeProducts'
-
-
-class CleanupIntermediateProducts(ProcessingTask):
-    '''Provides the implementation for customizing the science products'''
-
-    def __init__(self, options):
-        super(CleanupIntermediateProducts, self).__init__()
-
-        # This task is split-up into multiple sub-tasks
-
-    def execute(self):
-        print 'executing --- CleanupIntermediateProducts'
 
 
 class PackageProducts(ProcessingTask):
@@ -156,9 +161,6 @@ def initialize(options):
     # products
     if options['include_indices']:
         processor.add(BuildScienceProducts(options))
-
-    # We always cleanup any intermediate science products
-    processor.add(CleanupIntermediateProducts(options))
 
     # If we need to customize the science products, then add the
     # customization task
