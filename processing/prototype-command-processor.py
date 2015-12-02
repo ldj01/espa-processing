@@ -3,6 +3,9 @@
 # pursue
 
 
+import request_validation
+
+
 # The three laws:
 #   1) A processor contains a list of tasks to be executed in the specified
 #      order and must contain one or more tasks.
@@ -19,7 +22,10 @@ class Processor(object):
 
     def __init__(self):
         super(Processor, self).__init__()
+
         self.processing_tasks = list()
+
+        print 'Processor.__init__'
 
     def add(self, processing_task):
         '''Add a task to the task list'''
@@ -91,7 +97,7 @@ class BuildScienceProducts(ProcessingTask):
             self.processor.add(task)
 
         # We always cleanup any intermediate science products
-        processor.add(CleanupIntermediateProducts(options))
+        self.processor.add(CleanupIntermediateProducts(options))
 
     def execute(self):
         print 'executing --- BuildScienceProducts'
@@ -149,38 +155,53 @@ class DistributeProducts(ProcessingTask):
         self.processor.run()
 
 
-def initialize(options):
+class RequestProcessor(object):
     '''Determine processing order and perform initialization of each task'''
 
-    processor = Processor()
+    def __init__(self, options):
+        super(RequestProcessor, self).__init__()
 
-    # We always convert to our internal format
-    processor.add(ConvertToInternalFormat(options))
+        # Validate the request options before anything else
+        request_validation.validate_request(options)
 
-    # If any science products are requested then add the task to build science
-    # products
-    if options['include_indices']:
-        processor.add(BuildScienceProducts(options))
+        self.__dict__ = options
+        self.__setattr__('processor', Processor())
 
-    # If we need to customize the science products, then add the
-    # customization task
-    if options['customize_products']:
-        processor.add(CustomizeProducts(options))
+        print 'RequestProcessor.__init__'
 
-    # We always distribute our science products
-    processor.add(DistributeProducts(options))
+    def initialize(self):
+        # We always convert to our internal format
+        self.processor.add(ConvertToInternalFormat(self.__dict__))
 
-    return processor
+        # If any science products are requested then add the task to build science
+        # products
+#        if self.__dict__['include_indices']:
+#            self.add(BuildScienceProducts(self.__dict__))
+
+        # If we need to customize the science products, then add the
+        # customization task
+#        if self.__dict__['customize_products']:
+#            self.add(CustomizeProducts(self.__dict__))
+
+        # We always distribute our science products
+        self.processor.add(DistributeProducts(self.__dict__))
 
 
 if __name__ == '__main__':
-    processing_options = {
-        'include_indices': True,
-        'customize_products': False,
-        'distribution_mode': 'local'
+#    request_options = {
+#        'include_indices': True,
+#        'customize_products': False,
+#        'distribution_mode': 'local'
+#    }
+
+    request_options = {
+        'products': ['tm_sr', 'tm_toa', 'tm_ndvi'],
+#        'test': [{'a': 5}, {'a': 4}],
+        'customizations': {
+            'projection': {'name': 'utm', 'zone': 16, 'zone_ns': 'north'}
+        }
     }
 
-    print processing_options
-
-    product_processor = initialize(processing_options)
-    product_processor.run()
+#    request_processor = RequestProcessor(request_options)
+#    request_processor.initialize()
+#    request_processor.run()
