@@ -37,21 +37,28 @@ projections = [
 ]
 
 customizations = {
-  'projection': {'type': 'dict', 'oneof': projections}
+    'projection': {'type': 'dict', 'oneof': projections}
 }
 
 
 developer_options = {
-  'keep_directory': {'type': 'boolean'},
-  'keep_intermediate_data': {'type': 'boolean'},
-  'keep_log': {'type': 'boolean'}
+    'keep_directory': {'type': 'boolean'},
+    'keep_intermediate_data': {'type': 'boolean'},
+    'keep_log': {'type': 'boolean'}
+}
+
+input_options = {
+    'order_id': {'type': 'string', 'required': True},
+    'product_id': {'type': 'string', 'required': True},
+    'product_url': {'type': 'string', 'required': True}
 }
 
 
-request_schema = {
-  'products': {'type': 'list', 'required': True, 'oneof': products},
-  'customizations': {'type': 'dict', 'required': False, 'schema': customizations},
-  'developer_options': {'type': 'dict', 'required': False, 'schema': developer_options}
+schema = {
+    'input': {'type': 'dict', 'required': True, 'schema': input_options},
+    'products': {'type': 'list', 'required': True, 'oneof': products},
+    'customizations': {'type': 'dict', 'required': False, 'schema': customizations},
+    'developer_options': {'type': 'dict', 'required': False, 'schema': developer_options}
 }
 
 
@@ -68,13 +75,3 @@ request_schema = {
 #
 #        for product in value:
 #            print product
-
-class RequestValidationError(Exception):
-    pass
-
-def validate_request(order_options):
-    validator = Validator()
-    validator.validate(order_options, request_schema)
-
-    if validator.errors:
-        raise RequestValidationError(validator.errors)
