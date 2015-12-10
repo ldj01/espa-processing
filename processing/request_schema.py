@@ -42,9 +42,10 @@ customizations = {
 
 
 developer_options = {
-    'keep_directory': {'type': 'boolean'},
-    'keep_intermediate_data': {'type': 'boolean'},
-    'keep_log': {'type': 'boolean'}
+    'debug': {'type': 'boolean', 'required': True},
+    'keep_directory': {'type': 'boolean', 'required': True},
+    'keep_intermediate_data': {'type': 'boolean', 'required': True},
+    'keep_log': {'type': 'boolean', 'required': True}
 }
 
 input_options = {

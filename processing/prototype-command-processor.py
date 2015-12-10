@@ -1,12 +1,22 @@
 
-# This code is just a concept implementation to see if it is worthwhile to
-# pursue
+'''
+License: "NASA Open Source Agreement 1.3"
+
+Description:
+    Implements a prototype command processor for the espa-processing system.
+'''
+
 
 import os
+import logging
 from cerberus import Validator
-from dotabledict import DotableDict
+from PropertyDictionary.collection import PropertyDict
 
 import request_schema
+from espa_exceptions import ESPAValidationError, ESPAEnvironmentError
+from reporting import Reporter
+from strategy import Task, TaskChain
+from new_distributing import DISTRIBUTION_METHODS
 
 
 # The three laws:
@@ -18,86 +28,6 @@ import request_schema
 
 # NOTE - TODO - Each of these classes will probably be implemented in
 #               their own files.
-
-
-class ESPAError(Exception):
-    pass
-
-
-class ESPAValidationError(ESPAError):
-    pass
-
-
-class ESPAEnvironmentError(ESPAError):
-    pass
-
-
-class Task(object):
-    '''Provides a consistent api for executing a task'''
-
-    task_schema = None
-    validator = None
-
-    def __init__(self, options):
-        super(Task, self).__init__()
-
-        print 'Initializing', self.__class__.__name__
-
-        if not self.task_schema:
-            self.task_schema = None
-
-        if not self.validator:
-            self.validator = Validator()
-
-        self.options = None
-
-        if options is not None:
-            self.options = DotableDict(options)
-            self.validate()
-
-    def validate(self):
-        '''Validate the provided options'''
-        if self.task_schema is not None:
-            self.validator.validate(dict(self.options), self.task_schema)
-
-            print 'Validating', self.__class__.__name__
-            if self.validator.errors:
-                raise ESPAValidationError(self.validator.errors)
-
-    def execute(self):
-        '''Execute or implement the specific task'''
-        c_name = self.__class__.__name__
-        f_name = 'execute'
-        msg = 'You must implement [{0}.{1}] method'.format(c_name, f_name)
-        raise NotImplementedError(msg)
-
-
-class TaskChain(Task):
-    '''Provides a consistent api for executing sequential list of tasks'''
-
-    def __init__(self, options):
-        super(TaskChain, self).__init__(options)
-
-        self.tasks = list()
-
-    def add(self, task):
-        '''Adds a task to the task list'''
-        self.tasks.append(task)
-
-    def execute(self):
-        '''Execute each task in the order recieved'''
-        output = DotableDict()
-        for task in self.tasks:
-            output.update(task.execute())
-
-        return output
-
-
-# Define the distribution methods allowed
-DISTRIBUTION_METHOD_LOCAL = 'local'
-DISTRIBUTION_METHOD_REMOTE = 'remote'
-DISTRIBUTION_METHODS = [DISTRIBUTION_METHOD_LOCAL,
-                        DISTRIBUTION_METHOD_REMOTE]
 
 
 class RetrieveEnvironment(Task):
@@ -147,7 +77,7 @@ class RetrieveEnvironment(Task):
     def execute(self):
         '''We don't need this to do anything at the moment'''
         print 'executing --- {0}'.format(self.__class__.__name__)
-        output = DotableDict()
+        output = PropertyDict()
         return output
 
 
@@ -177,7 +107,7 @@ class InitializeProcessingDirectories(Task):
 
     def execute(self):
         print 'executing --- {0}'.format(self.__class__.__name__)
-        output = DotableDict()
+        output = PropertyDict()
         # TODO TODO TODO - Do the work
         output.test_output = 'test_output'
         # TODO TODO TODO - Do the work
@@ -247,21 +177,6 @@ class CustomizeProducts(Task):
         print 'executing --- {0}'.format(self.__class__.__name__)
 
 
-class PackageProducts(Task):
-    '''Provides the implementation for packaging the science products'''
-
-    def __init__(self, options, context):
-        self.task_schema = {
-            'something': {'type': 'string', 'required': True},
-            'fun': {'type': 'string', 'required': True}
-        }
-
-        super(PackageProducts, self).__init__()
-
-    def execute(self):
-        print 'executing --- {0}'.format(self.__class__.__name__)
-
-
 class TransferProducts(Task):
     '''Provides the implementation for transferring the package to a remote
        system'''
@@ -286,14 +201,27 @@ class RequestProcessor(TaskChain):
 
         super(RequestProcessor, self).__init__(options)
 
-        # TODO TODO TODO - Turn this environment crap into a task class
-        # Validate the environment
-        # Define the distribution methods allowed
-        DISTRIBUTION_METHOD_LOCAL = 'local'
-        DISTRIBUTION_METHOD_REMOTE = 'remote'
-        DISTRIBUTION_METHODS = [DISTRIBUTION_METHOD_LOCAL,
-                                DISTRIBUTION_METHOD_REMOTE]
+        # Initialize the reporting -------------------------------------------
+        # Figure out filename
+        context.report_filename = ('/tmp/espa-job-{0}-{1}.log'
+                                   .format(options.order_id,
+                                           options.product_id))
 
+        # Figure out reporting level
+        context.reporting_level = logging.INFO
+        if options.developer_options is not None:
+            if options.developer_options.debug:
+                context.reporting_level = logging.DEBUG
+
+        # Configure the reporter
+        Reporter.configure(reporter_name='espa.request',
+                           filename=context.report_filename,
+                           level=context.reporting_level)
+
+        # Set the reporter
+        context.reporter = Reporter.reporter('espa.request')
+
+        # Validate the environment -------------------------------------------
         task_options = {
             'dist_method': {'name': 'ESPA_DISTRIBUTION_METHOD',
                             'required': True,
@@ -310,6 +238,7 @@ class RequestProcessor(TaskChain):
         }
         self.add(RetrieveEnvironment(task_options, context))
 
+        # Initiali processing directories ------------------------------------
         bwd = context.base_work_dir
 
         # Finalize the base working directory in the context
@@ -349,11 +278,18 @@ if __name__ == '__main__':
         'products': ['tm_sr', 'tm_toa', 'tm_ndvi'],
         'customizations': {
             'projection': {'name': 'utm', 'zone': 16, 'zone_ns': 'north'}
+        },
+        'developer_options': {
+            'debug': True,
+            'keep_directory': True,
+            'keep_intermediate_data': True,
+            'keep_log': True
         }
+
     }
 
-    context = DotableDict()
-    request_processor = RequestProcessor(request_options, context)
-    output = DotableDict()
+    context = PropertyDict()
+    request_processor = RequestProcessor(PropertyDict(request_options), context)
+    output = PropertyDict()
     output.update(request_processor.execute())
     print output
