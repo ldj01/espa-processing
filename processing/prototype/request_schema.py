@@ -3,10 +3,22 @@ from cerberus import Validator
 
 
 products = [
-    {'type': 'list', 'allowed': ['tm_sr', 'tm_toa', 'tm_l1', 'tm_ndvi', 'tm_ndsi']},
-    {'type': 'list', 'allowed': ['etm_sr', 'etm_toa', 'etm_l1']},
-    {'type': 'list', 'allowed': ['olitirs_sr', 'olitirs_toa', 'olitirs_l1']},
-    {'type': 'list', 'allowed': ['oli_l1']}
+    {'type': 'list', 'allowed': ['tm_l1', 'tm_l1_metadata', 'tm_l1_customized', 'tm_toa', 'tm_bt', 'tm_sr', 'tm_cfmask', 'tm_dswe', 'tm_lst',
+                                 'tm_toa_evi', 'tm_toa_msavi', 'tm_toa_nbr', 'tm_toa_nbr2', 'tm_toa_ndmi', 'tm_toa_ndvi', 'tm_toa_savi',
+                                 'tm_sr_evi', 'tm_sr_msavi', 'tm_sr_nbr', 'tm_sr_nbr2', 'tm_sr_ndmi', 'tm_sr_ndvi', 'tm_sr_savi', 'tm_statistics']},
+
+    {'type': 'list', 'allowed': ['etm_l1', 'etm_l1_metadata', 'etm_l1_customized', 'etm_toa', 'etm_bt', 'etm_sr', 'etm_cfmask', 'etm_dswe', 'etm_lst',
+                                 'etm_toa_evi', 'etm_toa_msavi', 'etm_toa_nbr', 'etm_toa_nbr2', 'etm_toa_ndmi', 'etm_toa_ndvi', 'etm_toa_savi',
+                                 'etm_sr_evi', 'etm_sr_msavi', 'etm_sr_nbr', 'etm_sr_nbr2', 'etm_sr_ndmi', 'etm_sr_ndvi', 'etm_sr_savi', 'etm_statistics']},
+
+    {'type': 'list', 'allowed': ['olitirs_l1', 'olitirs_l1_metadata', 'olitirs_l1_customized', 'olitirs_toa', 'olitirs_bt', 'olitirs_sr', 'olitirs_cfmask', 'olitirs_dswe', 'olitirs_lst',
+                                 'olitirs_toa_evi', 'olitirs_toa_msavi', 'olitirs_toa_nbr', 'olitirs_toa_nbr2', 'olitirs_toa_ndmi', 'olitirs_toa_ndvi', 'olitirs_toa_savi',
+                                 'olitirs_sr_evi', 'olitirs_sr_msavi', 'olitirs_sr_nbr', 'olitirs_sr_nbr2', 'olitirs_sr_ndmi', 'olitirs_sr_ndvi', 'olitirs_sr_savi', 'olitirs_statistics']},
+
+    {'type': 'list', 'allowed': ['oli_l1', 'oli_l1_metadata', 'oli_l1_customized', 'oli_toa', 'oli_cfmask',
+                                 'oli_toa_evi', 'oli_toa_msavi', 'oli_toa_nbr', 'oli_toa_nbr2', 'oli_toa_ndmi', 'oli_toa_ndvi', 'oli_toa_savi', 'oli_statistics']},
+
+    {'type': 'list', 'allowed': ['tirs_l1', 'tirs_l1_metadata', 'tirs_l1_customized', 'tirs_bt', 'tirs_statistics']}
 ]
 
 

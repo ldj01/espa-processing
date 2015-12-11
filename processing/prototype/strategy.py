@@ -11,6 +11,9 @@ from cerberus import Validator
 from PropertyDictionary.collection import PropertyDict
 
 
+from espa_exceptions import ESPAValidationError
+
+
 class Task(object):
     '''Provides a consistent api for executing a task'''
 
@@ -19,8 +22,6 @@ class Task(object):
 
     def __init__(self, options):
         super(Task, self).__init__()
-
-        print 'Initializing', self.__class__.__name__
 
         if not self.task_schema:
             self.task_schema = None
@@ -39,11 +40,10 @@ class Task(object):
         if self.task_schema is not None:
             self.validator.validate(dict(self.options), self.task_schema)
 
-            print 'Validating', self.__class__.__name__
             if self.validator.errors:
                 raise ESPAValidationError(self.validator.errors)
 
-    def execute(self):
+    def execute(self, ctx):
         '''Execute or implement the specific task'''
         c_name = self.__class__.__name__
         f_name = 'execute'
@@ -63,12 +63,10 @@ class TaskChain(Task):
         '''Adds a task to the task list'''
         self.tasks.append(task)
 
-    def execute(self):
+    def execute(self, ctx):
         '''Execute each task in the order recieved'''
         output = PropertyDict()
         for task in self.tasks:
-            output.update(task.execute())
+            output.update(task.execute(ctx))
 
         return output
-
-

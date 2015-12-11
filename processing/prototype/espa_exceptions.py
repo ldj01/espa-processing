@@ -1,4 +1,11 @@
 
+'''
+License: "NASA Open Source Agreement 1.3"
+
+Description:
+    Provides the exceptions used in the espa-processor.
+'''
+
 
 class ESPAException(Exception):
     '''Base ESPA exception'''

@@ -1,4 +1,12 @@
 
+'''
+License: "NASA Open Source Agreement 1.3"
+
+Description:
+    Provides the reporting/logging configuration and creation for the
+    espa-processing system.
+'''
+
 
 import logging
 import logging.config
@@ -122,24 +130,40 @@ class Reporter(object):
             logging.config.dictConfig(dict(cls.config))
 
     @classmethod
-    def reporter(cls, reporter_name):
-        '''Returns an already configured reporter from the python logging
-           module'''
+    def check_configured(cls, reporter_name):
+        '''Checks is a reporter has been configured'''
 
         name = reporter_name.lower()
         if name not in cls.config.loggers:
             msg = '[{0}] is not a configured reporter'.format(name)
             raise ESPAReporterError(msg)
 
+    @classmethod
+    def reporter(cls, reporter_name):
+        '''Returns an already configured reporter from the python logging
+           module'''
+
+        name = reporter_name.lower()
+        cls.check_configured(name)
+
         return logging.getLogger(name)
 
+    @classmethod
+    def read_reported_data(cls, reporter_name):
+        '''Reads the contents of a log file into memory
+           If the reporter logs to a file and after verifying existence of
+           the log file
+           An empty string is returned if the reporter is not a FileHandler'''
 
-def read_file(filename):
-    '''Reads the contents of the file into memory, after verifying existence'''
+        name = reporter_name.lower()
+        cls.check_configured(name)
 
-    file_data = ''
-    if os.path.exists(filename):
-        with open(filename, 'r') as fd:
-            file_data = fd.read()
+        data = ''
+        if (cls.config.handlers[name]['class'] == 'logging.FileHandler' and
+                os.path.exists(cls.config.handlers[name].filename)):
 
-    return file_data
+            if os.path.exists(filename):
+                with open(filename, 'r') as fd:
+                    data = fd.read()
+
+        return data
