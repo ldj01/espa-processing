@@ -1089,7 +1089,7 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     # -------------------------------------------
-    def dswe_command_line(self):
+    def surface_water_extent_command_line(self):
         '''
         Description:
             Returns the command line required to generate Dynamic Surface
@@ -1116,18 +1116,19 @@ class LandsatProcessor(CDRProcessor):
         return cmd
 
     # -------------------------------------------
-    def generate_dswe(self):
+    def generate_surface_water_extent(self):
         '''
         Description:
             Generates the Dynamic Surface Water Extent product.
         '''
 
-        cmd = self.dswe_command_line()
+        cmd = self.surface_water_extent_command_line()
 
         # Only if required
         if cmd is not None:
 
-            self._logger.info(' '.join(['DSWE COMMAND:', cmd]))
+            self._logger.info(' '.join(['SURFACE WATER EXTENT COMMAND:',
+                                        cmd]))
 
             output = ''
             try:
@@ -1208,7 +1209,7 @@ class LandsatProcessor(CDRProcessor):
 
             self.generate_spectral_indices()
 
-            self.generate_dswe()
+            self.generate_surface_water_extent()
 
             self.generate_land_surface_temperature()
 
