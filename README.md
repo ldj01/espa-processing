@@ -18,6 +18,7 @@ Please see the Release Tags for notes related to past versions.
   - Moved old example code to the espa-junk-drawer project
   - Moved solr code to the espa-junk-drawer project.  Also removed all references to solr from the processing code.
   - Moved browse code to the espa-junk-drawer project.  Also removed all references to browse from the processing code.
+  - Removed an old docs directory.
 
 ## Supported Science Products
 To generate products for a science application, it must be installed on the system and the applications provided must be available on the PATH.  See the respective science projects for installation instructions and auxiliary data requirements.
