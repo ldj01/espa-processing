@@ -16,7 +16,6 @@ History:
                                                Most of the code was taken from
                                                the previous implementation
                                                code/modules.
-
 '''
 
 
@@ -704,11 +703,9 @@ class LandsatProcessor(CDRProcessor):
                              'include_customized_source_data',
                              'include_dswe',
                              'include_lst',
-                             'include_solr_index',
                              'include_source_data',
                              'include_source_metadata',
                              'include_sr',
-                             'include_sr_browse',
                              'include_sr_evi',
                              'include_sr_msavi',
                              'include_sr_nbr',
@@ -726,33 +723,11 @@ class LandsatProcessor(CDRProcessor):
                                      " False" % parameter)
                 options[parameter] = False
 
-        # Determine if browse was requested and specify the default
-        # resolution if a resolution was not specified
-        if options['include_sr_browse']:
-            if not parameters.test_for_parameter(options, 'browse_resolution'):
-                self._logger.warning("'browse_resolution' parameter missing"
-                                     " defaulting to %d"
-                                     % settings.DEFAULT_BROWSE_RESOLUTION)
-                options['browse_resolution'] = \
-                    settings.DEFAULT_BROWSE_RESOLUTION
-
-        # TODO TODO TODO - Shouldn't this really be it's own processor
-        # Determine if SOLR was requested and specify the default collection
-        # name if a collection name was not specified
-        if options['include_solr_index']:
-            if not parameters.test_for_parameter(options, 'collection_name'):
-                self._logger.warning("'collection_name' parameter missing"
-                                     " defaulting to %s"
-                                     % settings.DEFAULT_SOLR_COLLECTION_NAME)
-                options['collection_name'] = \
-                    settings.DEFAULT_SOLR_COLLECTION_NAME
-
         # Determine if we need to build products
         if (not options['include_customized_source_data'] and
                 not options['include_sr'] and
                 not options['include_sr_toa'] and
                 not options['include_sr_thermal'] and
-                not options['include_sr_browse'] and
                 not options['include_cfmask'] and
                 not options['include_sr_nbr'] and
                 not options['include_sr_nbr2'] and
@@ -762,8 +737,7 @@ class LandsatProcessor(CDRProcessor):
                 not options['include_sr_msavi'] and
                 not options['include_sr_evi'] and
                 not options['include_dswe'] and
-                not options['include_lst'] and
-                not options['include_solr_index']):
+                not options['include_lst']):
 
             self._logger.info("***NO SCIENCE PRODUCTS CHOSEN***")
             self._build_products = False
@@ -945,7 +919,6 @@ class LandsatProcessor(CDRProcessor):
 
         # Check to see if SR is required
         if (options['include_sr'] or
-                options['include_sr_browse'] or
                 options['include_sr_nbr'] or
                 options['include_sr_nbr2'] or
                 options['include_sr_ndvi'] or
@@ -1202,10 +1175,6 @@ class LandsatProcessor(CDRProcessor):
             self.generate_sr_products()
 
             self.generate_cloud_masking()
-
-            # TODO - Today we do not do this anymore so code it back in
-            #        if/when it is required
-            # self.generate_sr_browse_data()
 
             self.generate_spectral_indices()
 
@@ -1471,7 +1440,6 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
         cmd = None
         if (options['include_sr'] or
-                options['include_sr_browse'] or
                 options['include_sr_nbr'] or
                 options['include_sr_nbr2'] or
                 options['include_sr_ndvi'] or
@@ -1502,7 +1470,6 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
         # Check to see if SR is required
         if (options['include_sr'] or
-                options['include_sr_browse'] or
                 options['include_sr_nbr'] or
                 options['include_sr_nbr2'] or
                 options['include_sr_ndvi'] or

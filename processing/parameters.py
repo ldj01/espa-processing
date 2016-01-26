@@ -164,11 +164,6 @@ def add_science_product_parameters(parser):
                         default=False,
                         help="build SR thermal product")
 
-    parser.add_argument('--include_sr_browse',
-                        action='store_true', dest='include_sr_browse',
-                        default=False,
-                        help="build SR browse product")
-
     parser.add_argument('--include_cfmask',
                         action='store_true', dest='include_cfmask',
                         default=False,
@@ -213,11 +208,6 @@ def add_science_product_parameters(parser):
                         action='store_true', dest='include_dswe',
                         default=False,
                         help="build surface water extent product")
-
-    parser.add_argument('--include_solr_index',
-                        action='store_true', dest='include_solr_index',
-                        default=False,
-                        help="build SOLR index product")
 # END - add_science_product_parameters
 
 

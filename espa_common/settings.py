@@ -49,12 +49,6 @@ ESPA_EMAIL_ADDRESS = 'espa@usgs.gov'
 
 ESPA_EMAIL_SERVER = 'gssdsflh01.cr.usgs.gov'
 
-# Default resolution for browse generation
-DEFAULT_BROWSE_RESOLUTION = 50
-
-# Default name for the solr collection
-DEFAULT_SOLR_COLLECTION_NAME = 'DEFAULT_COLLECTION'
-
 # Number of seconds to sleep when errors are encountered before attempting the
 # task again
 DEFAULT_SLEEP_SECONDS = 2
