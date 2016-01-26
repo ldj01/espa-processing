@@ -9,6 +9,7 @@ This project contains the code for processing a single input dataset to the fina
 Authors: David V. Hill, SGT and Ron Dilley, Innovate!
 
 License: NASA Open Source Agreement 1.3
+
 USGS Designation: EROS Science Processing Architecture (ESPA)
 
 ## Release Notes
