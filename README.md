@@ -1,5 +1,5 @@
 ## ESPA Processing Version 2.10.1 Release Notes
-Release Date: March XX, 2016
+Release Date: March 2016
 
 See git tag [espa-2.10.1-release]
 
