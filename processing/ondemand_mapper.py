@@ -34,7 +34,6 @@ import settings
 import sensor
 
 # local objects and methods
-import espa_exception as ee
 import parameters
 import processor
 
@@ -243,115 +242,11 @@ def process(args):
             # Reset back to the base logger
             logger = EspaLogging.get_logger('base')
 
-        except ee.ESPAException, e:
+        except Exception as excep:
 
             # First log the exception
-            if hasattr(e, 'output'):
-                logger.error("Code [%s]" % str(e.error_code))
-            if hasattr(e, 'output'):
-                logger.error("Output [%s]" % e.output)
-            logger.exception("Exception encountered and follows")
-
-            # Log the error information to the server
-            # Depending on the error_code do something different
-            # TODO - Today we are failing everything, but some things could be
-            #        made recovereable in the future.
-            #        So this code seems a bit ridiculous.
-            status = False
-            if server is not None:
-                try:
-                    if (e.error_code == ee.ErrorCodes.creating_stage_dir or
-                            (e.error_code ==
-                             ee.ErrorCodes.creating_work_dir) or
-                            (e.error_code ==
-                             ee.ErrorCodes.creating_output_dir)):
-
-                        status = set_product_error(server,
-                                                   order_id,
-                                                   product_id,
-                                                   processing_location)
-
-                    elif (e.error_code == ee.ErrorCodes.staging_data or
-                          e.error_code == ee.ErrorCodes.unpacking):
-
-                        status = set_product_error(server,
-                                                   order_id,
-                                                   product_id,
-                                                   processing_location)
-
-                    elif (e.error_code == ee.ErrorCodes.metadata or
-                          e.error_code == ee.ErrorCodes.surface_reflectance or
-                          e.error_code == ee.ErrorCodes.spectral_indices or
-                          e.error_code == ee.ErrorCodes.create_dem or
-                          e.error_code == ee.ErrorCodes.cloud_masking or
-                          e.error_code == ee.ErrorCodes.dswe or
-                          e.error_code ==
-                          ee.ErrorCodes.land_surface_temperature or
-                          e.error_code == ee.ErrorCodes.cleanup_work_dir or
-                          e.error_code == ee.ErrorCodes.remove_products):
-
-                        status = set_product_error(server,
-                                                   order_id,
-                                                   product_id,
-                                                   processing_location)
-
-                    elif e.error_code == ee.ErrorCodes.warping:
-
-                        status = set_product_error(server,
-                                                   order_id,
-                                                   product_id,
-                                                   processing_location)
-
-                    elif e.error_code == ee.ErrorCodes.reformat:
-
-                        status = set_product_error(server,
-                                                   order_id,
-                                                   product_id,
-                                                   processing_location)
-
-                    elif e.error_code == ee.ErrorCodes.statistics:
-
-                        status = set_product_error(server,
-                                                   order_id,
-                                                   product_id,
-                                                   processing_location)
-
-                    elif (e.error_code == ee.ErrorCodes.packaging_product or
-                          (e.error_code ==
-                           ee.ErrorCodes.distributing_product) or
-                          (e.error_code ==
-                           ee.ErrorCodes.verifying_checksum)):
-
-                        status = set_product_error(server,
-                                                   order_id,
-                                                   product_id,
-                                                   processing_location)
-
-                    else:
-                        # Catch all remaining errors
-                        status = set_product_error(server,
-                                                   order_id,
-                                                   product_id,
-                                                   processing_location)
-
-                    if status and not mapper_keep_log:
-                        try:
-                            # Cleanup the log file
-                            EspaLogging. \
-                                delete_logger_file(settings.PROCESSING_LOGGER)
-                        except Exception:
-                            logger.exception("Exception encountered"
-                                             " stacktrace follows")
-
-                except Exception:
-                    logger.exception("Exception encountered and follows")
-            # END - if server is not None
-
-        except Exception, e:
-
-            # First log the exception
-            if hasattr(e, 'output'):
-                logger.error("Output [%s]" % e.output)
+            if hasattr(excep, 'output'):
+                logger.error("Output [%s]" % excep.output)
             logger.exception("Exception encountered stacktrace follows")
 
             if server is not None:
