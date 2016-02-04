@@ -37,7 +37,6 @@ def add_orderid_parameter(parser):
     parser.add_argument('--orderid',
                         action='store', dest='orderid', required=True,
                         help="order ID associated with this request")
-# END - add_orderid_parameter
 
 
 # ============================================================================
@@ -50,7 +49,6 @@ def add_scene_parameter(parser):
     parser.add_argument('--scene',
                         action='store', dest='scene', required=True,
                         help="scene ID to process")
-# END - add_scene_parameter
 
 
 # ============================================================================
@@ -63,7 +61,6 @@ def add_product_type_parameter(parser):
     parser.add_argument('--product_type',
                         action='store', dest='product_type', required=True,
                         help="the type of product to process")
-# END - add_product_type_parameter
 
 
 # ============================================================================
@@ -77,7 +74,6 @@ def add_work_directory_parameter(parser):
                         action='store', dest='work_directory',
                         default=os.curdir,
                         help="work directory on the localhost")
-# END - add_work_directory_parameter
 
 
 # ============================================================================
@@ -90,7 +86,6 @@ def add_debug_parameter(parser):
     parser.add_argument('--debug',
                         action='store_true', dest='debug', default=False,
                         help="turn debug logging on")
-# END - add_debug_parameter
 
 
 # ============================================================================
@@ -104,8 +99,6 @@ def add_keep_log_parameter(parser):
                         action='store_true', dest='keep_log', default=False,
                         help="keep the log file")
 
-# END - add_keep_log_parameter
-
 
 # ============================================================================
 def add_include_source_data_parameter(parser):
@@ -118,7 +111,6 @@ def add_include_source_data_parameter(parser):
                         action='store_true', dest='include_source_data',
                         default=False,
                         help="include source data in final product")
-# END - add_include_source_data_parameter
 
 
 # ============================================================================
@@ -133,7 +125,6 @@ def add_include_source_metadata_parameter(parser):
                         action='store_true', dest='include_source_metadata',
                         default=False,
                         help="include source metadata in final product")
-# END - add_include_source_metadata_parameter
 
 
 # ============================================================================
@@ -208,7 +199,6 @@ def add_science_product_parameters(parser):
                         action='store_true', dest='include_dswe',
                         default=False,
                         help="build surface water extent product")
-# END - add_science_product_parameters
 
 
 # ============================================================================
@@ -223,7 +213,6 @@ def add_include_statistics_parameter(parser):
                         default=False,
                         help="compute minimum, maximum, mean, and stddev"
                              " values for each appropriate science product")
-# END - add_include_statistics_parameter
 
 
 # ============================================================================
@@ -239,7 +228,6 @@ def add_output_format_parameter(parser, output_formats):
                         default='envi',
                         choices=output_formats,
                         help="one of %s" % ', '.join(output_formats))
-# END - add_output_format_parameter
 
 
 # ============================================================================
@@ -269,7 +257,6 @@ def add_source_parameters(parser):
                         action='store', dest='source_directory',
                         default=None,
                         help="directory on the source host")
-# END - add_source_parameters
 
 
 # ============================================================================
@@ -294,7 +281,6 @@ def add_destination_parameters(parser):
                         action='store', dest='destination_directory',
                         default=os.curdir,
                         help="directory on the destination host")
-# END - add_destination_parameters
 
 
 # ============================================================================
@@ -318,8 +304,6 @@ def add_std_plotting_parameters(parser, bg_color, marker, marker_size):
                         action='store', dest='marker_size',
                         default=marker_size,
                         help="marker size specification for plotted points")
-
-# END - add_std_plotting_parameters
 
 
 # ============================================================================
@@ -429,7 +413,6 @@ def add_reprojection_parameters(parser, projection_values, ns_values,
                         action='store', dest='resample_method', default='near',
                         choices=resample_methods,
                         help="one of (%s)" % ', '.join(resample_methods))
-# END - add_reprojection_parameters
 
 
 # ============================================================================
@@ -448,7 +431,6 @@ def test_for_parameter(parms, key):
         return False
 
     return True
-# END - test_for_parameter
 
 
 # ============================================================================
@@ -480,7 +462,6 @@ def convert_to_command_line_options(parms):
             cmd_line.extend(['--%s' % key, '\"%s\"' % str(value)])
 
     return cmd_line
-# END - convert_parms_to_command_line_options
 
 
 # ============================================================================
@@ -742,4 +723,3 @@ def validate_reprojection_parameters(parms, scene, projections, ns_values,
                        " reprojection or image extents"
                        " (Defaulting pixel_size(%f) and pixel_size_units(%s)"
                        % (parms['pixel_size'], parms['pixel_size_units']))
-# END - validate_reprojection_parameters
