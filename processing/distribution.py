@@ -5,12 +5,6 @@ License:
 
 Description:
   Provides methods for creating and distributing products.
-
-History:
-  Original Development (cdr_ecv.py) by David V. Hill, USGS/EROS
-  Created Jan/2014 by Ron Dilley, USGS/EROS
-    - Gutted the original implementation from cdr_ecv.py and placed it in this
-      file.
 '''
 
 import os
@@ -27,7 +21,6 @@ import settings
 # local objects and methods
 from environment import Environment, DISTRIBUTION_METHOD_LOCAL
 from espa_exception import ESPAException
-import parameters
 import transfer
 
 
@@ -36,9 +29,10 @@ def package_product(source_directory, destination_directory, product_name):
     '''
     Description:
       Package the contents of the source directory into a gzipped tarball
-      located in the destination directory and generates a checksum file for it
+      located in the destination directory and generates a checksum file for
+      it.
 
-      The filename will be prefixed with the specified product name
+      The filename will be prefixed with the specified product name.
 
     Returns:
       product_full_path - The full path to the product including filename
@@ -147,7 +141,6 @@ def package_product(source_directory, destination_directory, product_name):
         os.chdir(current_directory)
 
     return (product_full_path, cksum_full_path, cksum_value)
-# END - package_product
 
 
 # ============================================================================
@@ -198,7 +191,8 @@ def transfer_product(destination_host, destination_directory,
 
     # Change the attributes on the files so that we can remove them
     cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
-                    destination_host, 'sudo', 'chattr', '-if', remote_filename])
+                    destination_host, 'sudo', 'chattr', '-if',
+                    remote_filename])
     output = ''
     try:
         logger.debug(' '.join(["chattr remote file cmd:", cmd]))
