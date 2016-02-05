@@ -20,7 +20,6 @@ import utilities
 
 # local objects and methods
 from environment import Environment, DISTRIBUTION_METHOD_LOCAL
-import espa_exception as ee
 import settings
 import transfer
 
