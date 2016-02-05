@@ -55,7 +55,6 @@ DEFAULT_PIXEL_SIZE = {
 }
 
 
-
 class ProductNotImplemented(NotImplementedError):
     '''Exception to be thrown when trying to instantiate an unsupported
     product'''
