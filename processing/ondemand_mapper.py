@@ -190,9 +190,8 @@ def process(args):
 
             if product_id != 'plot':
                 # Make sure we can process the sensor
-                sensor_name = sensor.instance(product_id).sensor_name
-                if sensor_name not in parameters.valid_sensors:
-                    raise ValueError("Invalid Sensor %s" % sensor_name)
+                tmp_inst = sensor.instance(product_id)
+                del tmp_inst
 
                 # Make sure we have a valid output format
                 if not parameters.test_for_parameter(options, 'output_format'):
