@@ -1083,7 +1083,8 @@ class LandsatProcessor(CDRProcessor):
         if options['include_lst']:
 
             cmd = ['land_surface_temperature.py',
-                   '--xml', self._xml_filename]
+                   '--xml', self._xml_filename,
+                   '--keep-lst-temp-data']
 
             cmd = ' '.join(cmd)
 
