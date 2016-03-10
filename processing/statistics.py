@@ -103,55 +103,49 @@ def generate_statistics(work_directory, files_to_search_for):
         stats_output_path = 'stats'
         try:
             os.makedirs(stats_output_path)
-        except OSError as exc:  # Python >2.5
-            if exc.errno == errno.EEXIST and os.path.isdir(stats_output_path):
+        except OSError as excep:  # Python >2.5
+            if excep.errno == errno.EEXIST and os.path.isdir(stats_output_path):
                 pass
             else:
-                raise ee.ESPAException(ee.ErrorCodes.statistics,
-                                       str(exc)), None, sys.exc_info()[2]
+                raise
 
-        try:
-            # Build the list of files to process
-            file_names = dict()
-            for band_type in files_to_search_for:
-                file_names[band_type] = list()
-                for search in files_to_search_for[band_type]:
-                    file_names[band_type].extend(glob.glob(search))
+        # Build the list of files to process
+        file_names = dict()
+        for band_type in files_to_search_for:
+            file_names[band_type] = list()
+            for search in files_to_search_for[band_type]:
+                file_names[band_type].extend(glob.glob(search))
 
-            # Generate the requested statistics for each tile
-            for band_type in file_names:
-                for file_name in file_names[band_type]:
+        # Generate the requested statistics for each tile
+        for band_type in file_names:
+            for file_name in file_names[band_type]:
 
-                    logger.info("Generating statistics for: %s" % file_name)
+                logger.info("Generating statistics for: %s" % file_name)
 
-                    (minimum, maximum, mean, stddev,
-                     valid) = get_statistics(file_name, band_type)
+                (minimum, maximum, mean, stddev,
+                 valid) = get_statistics(file_name, band_type)
 
-                    # Drop the filename extention so we can replace it with
-                    # 'stats'
-                    base = os.path.splitext(file_name)[0]
-                    base_name = '.'.join([base, 'stats'])
+                # Drop the filename extention so we can replace it with
+                # 'stats'
+                base = os.path.splitext(file_name)[0]
+                base_name = '.'.join([base, 'stats'])
 
-                    # Figure out the full path filename
-                    stats_output_file = os.path.join(stats_output_path,
-                                                     base_name)
+                # Figure out the full path filename
+                stats_output_file = os.path.join(stats_output_path,
+                                                 base_name)
 
-                    # Buffer the stats
-                    data_io = StringIO()
-                    data_io.write("FILENAME=%s\n" % file_name)
-                    data_io.write("MINIMUM=%f\n" % minimum)
-                    data_io.write("MAXIMUM=%f\n" % maximum)
-                    data_io.write("MEAN=%f\n" % mean)
-                    data_io.write("STDDEV=%f\n" % stddev)
-                    data_io.write("VALID=%s\n" % valid)
+                # Buffer the stats
+                data_io = StringIO()
+                data_io.write("FILENAME=%s\n" % file_name)
+                data_io.write("MINIMUM=%f\n" % minimum)
+                data_io.write("MAXIMUM=%f\n" % maximum)
+                data_io.write("MEAN=%f\n" % mean)
+                data_io.write("STDDEV=%f\n" % stddev)
+                data_io.write("VALID=%s\n" % valid)
 
-                    # Create the stats file
-                    with open(stats_output_file, 'w+') as stat_fd:
-                        stat_fd.write(data_io.getvalue())
-            # END - for tile
-        except Exception as excep:
-            raise ee.ESPAException(ee.ErrorCodes.statistics,
-                                   str(excep)), None, sys.exc_info()[2]
+                # Create the stats file
+                with open(stats_output_file, 'w+') as stat_fd:
+                    stat_fd.write(data_io.getvalue())
 
     finally:
         # Change back to the previous directory
@@ -191,9 +185,7 @@ if __name__ == '__main__':
 
     try:
         generate_statistics('.', files_to_search_for)
-    except Exception as excep:
-        if hasattr(excep, 'output'):
-            logger.error("Output [%s]" % excep.output)
+    except Exception:
         logger.exception("Processing failed")
         sys.exit(EXIT_FAILURE)
 

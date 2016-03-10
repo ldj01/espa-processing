@@ -45,16 +45,6 @@ MODIS_INPUT_CHECK_PORT = 80
 ESPA_REMOTE_CACHE_DIRECTORY = '/data2/science_lsrd/LSRD/orders'
 ESPA_LOCAL_CACHE_DIRECTORY = ''
 
-ESPA_EMAIL_ADDRESS = 'espa@usgs.gov'
-
-ESPA_EMAIL_SERVER = 'gssdsflh01.cr.usgs.gov'
-
-# Default resolution for browse generation
-DEFAULT_BROWSE_RESOLUTION = 50
-
-# Default name for the solr collection
-DEFAULT_SOLR_COLLECTION_NAME = 'DEFAULT_COLLECTION'
-
 # Number of seconds to sleep when errors are encountered before attempting the
 # task again
 DEFAULT_SLEEP_SECONDS = 2
@@ -135,82 +125,6 @@ BAND_TYPE_STAT_RANGES = {
     }
 }
 
-'''Resolves system-wide identification of sensor name based on three letter
-   prefix
-'''
-
-SENSOR_INFO = {
-    'LO8': {'name': 'oli', 'lta_name': 'LANDSAT_8'},
-    'LC8': {'name': 'olitirs', 'lta_name': 'LANDSAT_8'},
-    'LE7': {'name': 'etm', 'lta_name': 'LANDSAT_ETM_PLUS'},
-    'LT4': {'name': 'tm', 'lta_name': 'LANDSAT_TM'},
-    'LT5': {'name': 'tm', 'lta_name': 'LANDSAT_TM'},
-    'MYD': {'name': 'aqua'},
-    'MOD': {'name': 'terra'}
-}
-
-'''Default pixel sizes based on the input products'''
-DEFAULT_PIXEL_SIZE = {
-    'meters': {
-        '09A1': 500,
-        '09GA': 500,
-        '09GQ': 250,
-        '09Q1': 250,
-        '13Q1': 250,
-        '13A3': 1000,
-        '13A2': 1000,
-        '13A1': 500,
-        'LC8': 30,
-        'LO8': 30,
-        'LE7': 30,
-        'LT4': 30,
-        'LT5': 30
-    },
-    'dd': {
-        '09A1': 0.00449155,
-        '09GA': 0.00449155,
-        '09GQ': 0.002245775,
-        '09Q1': 0.002245775,
-        '13Q1': 0.002245775,
-        '13A3': 0.0089831,
-        '13A2': 0.0089831,
-        '13A1': 0.00449155,
-        'LC8': 0.0002695,
-        'LO8': 0.0002695,
-        'LE7': 0.0002695,
-        'LT4': 0.0002695,
-        'LT5': 0.0002695
-        }
-}
-
-''' Constant dictionary to hold the cache keys used in Django
- caching/memcached'''
-CACHE_KEYS = {
-
-
-}
-
-''' SOAP client configuration parameters '''
-# timeout is in seconds
-SOAP_CLIENT_TIMEOUT = 60 * 30
-
-# location where the WSDLS should be cached
-SOAP_CACHE_LOCATION = '/tmp/suds'
-
-
-''' Dictionary containing retry timeouts in seconds'''
-RETRY = {
-    'http_errors': {'timeout': 60 * 15, 'retry_limit': 10},
-    'ftp_errors': {'timeout': 60 * 15, 'retry_limit': 10},
-    'gzip_errors': {'timeout': 60 * 60 * 6, 'retry_limit': 10},
-    'network_errors': {'timeout': 60 * 2, 'retry_limit': 5},
-    'db_lock_timeout': {'timeout': 60 * 5, 'retry_limit': 10},
-    'lta_soap_errors': {'timeout': 60 * 60, 'retry_limit': 12},
-    'missing_aux_data': {'timeout': 60 * 60 * 24, 'retry_limit': 5},
-    'retry_missing_l1': {'timeout': 60 * 60, 'retry_limit': 8},
-    'ssh_errors': {'timeout': 60 * 5, 'retry_limit': 3},
-    'sixs_errors': {'timeout': 60, 'retry_limit': 3}
-}
 
 '''
 LOGGING DEFINITIONS
@@ -222,7 +136,7 @@ LOGGER_CONFIG = {
     'disable_existing_loggers': False,
     'formatters': {
         'espa.standard': {
-            # Used by the processing and web systems
+            # Used by the processing system
             'format': ('%(asctime)s.%(msecs)03d %(process)d'
                        ' %(levelname)-8s'
                        ' %(filename)s:%(lineno)d:%(funcName)s'
@@ -313,13 +227,6 @@ LOGGER_CONFIG = {
             'formatter': 'espa.standard',
             'filename': '/tmp/espa-processing.log',
             'mode': 'a'
-        },
-        'espa.web': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'formatter': 'espa.standard',
-            'filename': '/tmp/espa-web.log',
-            'mode': 'a'
         }
     },
     'loggers': {
@@ -367,18 +274,6 @@ LOGGER_CONFIG = {
             'level': 'INFO',
             'propagate': False,
             'handlers': ['espa.processing']
-        },
-        'espa.web': {
-            # To be used by the web system
-            'level': 'INFO',
-            'propagate': False,
-            'handlers': ['espa.web']
-        },
-        'django.request': {
-            # To be used by django
-            'level': 'ERROR',
-            'propagate': False,
-            'handlers': ['espa.web'],
         }
     }
 }

@@ -194,14 +194,13 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                                   'lib.NLineInputFormat'),
                  '-file', '%s/espa-site/processing/%s' % (home_dir, mapper),
                  '-file', '%s/espa-site/processing/processor.py' % home_dir,
-                 '-file', '%s/espa-site/processing/browse.py' % home_dir,
-                 '-file', '%s/espa-site/processing/distribution.py' % home_dir,
+                 '-file', ('%s/espa-site/processing/distribution.py'
+                           % home_dir),
                  '-file', ('%s/espa-site/processing/espa_exception.py'
                            % home_dir),
                  '-file', '%s/espa-site/processing/metadata.py' % home_dir,
                  '-file', '%s/espa-site/processing/parameters.py' % home_dir,
                  '-file', '%s/espa-site/processing/sensor.py' % home_dir,
-                 '-file', '%s/espa-site/processing/solr.py' % home_dir,
                  '-file', '%s/espa-site/processing/staging.py' % home_dir,
                  '-file', '%s/espa-site/processing/statistics.py' % home_dir,
                  '-file', '%s/espa-site/processing/environment.py' % home_dir,

@@ -20,7 +20,6 @@ import utilities
 
 # local objects and methods
 from environment import Environment, DISTRIBUTION_METHOD_LOCAL
-import espa_exception as ee
 import settings
 import transfer
 
@@ -49,7 +48,7 @@ def untar_data(source_file, destination_directory):
     try:
         output = utilities.execute_cmd(cmd)
     except Exception:
-        logger.error("Failed to unpack data")
+        logger.exception("Failed to unpack data")
         raise
     finally:
         if len(output) > 0:
@@ -68,13 +67,9 @@ def stage_local_statistics_data(output_dir, work_dir, order_id):
     cache_dir = os.path.join(cache_dir, 'stats')
     cache_files = os.path.join(cache_dir, '*')
 
-    try:
-        stats_files = glob.glob(cache_files)
+    stats_files = glob.glob(cache_files)
 
-        transfer.copy_files_to_directory(stats_files, work_dir)
-    except Exception as excep:
-        raise ee.ESPAException(ee.ErrorCodes.staging_data, str(excep)), \
-            None, sys.exc_info()[2]
+    transfer.copy_files_to_directory(stats_files, work_dir)
 
 
 # ============================================================================
@@ -89,21 +84,13 @@ def stage_remote_statistics_data(stage_dir, work_dir, order_id):
     cache_dir = os.path.join(cache_dir, 'stats')
 
     # Transfer the directory using scp
-    try:
-        transfer.scp_transfer_directory(cache_host, cache_dir,
-                                        'localhost', stage_dir)
-    except Exception as excep:
-        raise ee.ESPAException(ee.ErrorCodes.staging_data, str(excep)), \
-            None, sys.exc_info()[2]
+    transfer.scp_transfer_directory(cache_host, cache_dir,
+                                    'localhost', stage_dir)
 
     # Move the staged data to the work directory
-    try:
-        stats_files = glob.glob(os.path.join(stage_dir, 'stats/*'))
+    stats_files = glob.glob(os.path.join(stage_dir, 'stats/*'))
 
-        transfer.move_files_to_directory(stats_files, work_dir)
-    except Exception as excep:
-        raise ee.ESPAException(ee.ErrorCodes.unpacking, str(excep)), \
-            None, sys.exc_info()[2]
+    transfer.move_files_to_directory(stats_files, work_dir)
 
 
 # ============================================================================

@@ -16,7 +16,6 @@ History:
                                                Most of the code was taken from
                                                the previous implementation
                                                code/modules.
-
 '''
 
 
@@ -207,28 +206,16 @@ class ProductProcessor(object):
         shutil.rmtree(self._product_dir, ignore_errors=True)
 
         # Create each of the sub-directories
-        try:
-            self._stage_dir = \
-                initialization.create_stage_directory(self._product_dir)
-        except Exception as excep:
-            raise ee.ESPAException(ee.ErrorCodes.creating_stage_dir,
-                                   str(excep)), None, sys.exc_info()[2]
+        self._stage_dir = \
+            initialization.create_stage_directory(self._product_dir)
         self._logger.info("Created directory [{0}]".format(self._stage_dir))
 
-        try:
-            self._work_dir = \
-                initialization.create_work_directory(self._product_dir)
-        except Exception as excep:
-            raise ee.ESPAException(ee.ErrorCodes.creating_work_dir,
-                                   str(excep)), None, sys.exc_info()[2]
+        self._work_dir = \
+            initialization.create_work_directory(self._product_dir)
         self._logger.info("Created directory [{0}]".format(self._work_dir))
 
-        try:
-            self._output_dir = \
-                initialization.create_output_directory(self._product_dir)
-        except Exception as excep:
-            raise ee.ESPAException(ee.ErrorCodes.creating_output_dir,
-                                   str(excep)), None, sys.exc_info()[2]
+        self._output_dir = \
+            initialization.create_output_directory(self._product_dir)
         self._logger.info("Created directory [{0}]".format(self._output_dir))
 
     # -------------------------------------------
@@ -565,10 +552,10 @@ class CDRProcessor(CustomizationProcessor):
                     with open(self._xml_filename, 'w') as xml_fd:
                         metadata_api.export(xml_fd, espa_xml)
 
-                except Exception as excep:
-                    raise ee.ESPAException(ee.ErrorCodes.remove_products,
-                                           str(excep)), None, sys.exc_info()[2]
-            # END - if file_names
+                except Exception:
+                    self._logger.exception('An exception occurred validating'
+                                           ' metadata XML')
+                    raise
 
             # Cleanup
             del bands
@@ -704,11 +691,9 @@ class LandsatProcessor(CDRProcessor):
                              'include_customized_source_data',
                              'include_dswe',
                              'include_lst',
-                             'include_solr_index',
                              'include_source_data',
                              'include_source_metadata',
                              'include_sr',
-                             'include_sr_browse',
                              'include_sr_evi',
                              'include_sr_msavi',
                              'include_sr_nbr',
@@ -726,33 +711,11 @@ class LandsatProcessor(CDRProcessor):
                                      " False" % parameter)
                 options[parameter] = False
 
-        # Determine if browse was requested and specify the default
-        # resolution if a resolution was not specified
-        if options['include_sr_browse']:
-            if not parameters.test_for_parameter(options, 'browse_resolution'):
-                self._logger.warning("'browse_resolution' parameter missing"
-                                     " defaulting to %d"
-                                     % settings.DEFAULT_BROWSE_RESOLUTION)
-                options['browse_resolution'] = \
-                    settings.DEFAULT_BROWSE_RESOLUTION
-
-        # TODO TODO TODO - Shouldn't this really be it's own processor
-        # Determine if SOLR was requested and specify the default collection
-        # name if a collection name was not specified
-        if options['include_solr_index']:
-            if not parameters.test_for_parameter(options, 'collection_name'):
-                self._logger.warning("'collection_name' parameter missing"
-                                     " defaulting to %s"
-                                     % settings.DEFAULT_SOLR_COLLECTION_NAME)
-                options['collection_name'] = \
-                    settings.DEFAULT_SOLR_COLLECTION_NAME
-
         # Determine if we need to build products
         if (not options['include_customized_source_data'] and
                 not options['include_sr'] and
                 not options['include_sr_toa'] and
                 not options['include_sr_thermal'] and
-                not options['include_sr_browse'] and
                 not options['include_cfmask'] and
                 not options['include_sr_nbr'] and
                 not options['include_sr_nbr2'] and
@@ -762,8 +725,7 @@ class LandsatProcessor(CDRProcessor):
                 not options['include_sr_msavi'] and
                 not options['include_sr_evi'] and
                 not options['include_dswe'] and
-                not options['include_lst'] and
-                not options['include_solr_index']):
+                not options['include_lst']):
 
             self._logger.info("***NO SCIENCE PRODUCTS CHOSEN***")
             self._build_products = False
@@ -785,28 +747,15 @@ class LandsatProcessor(CDRProcessor):
         staged_file = os.path.join(self._stage_dir, file_name)
 
         # Download the source data
-        try:
-            transfer.download_file_url(download_url, staged_file)
-        except Exception as excep:
-            raise ee.ESPAException(ee.ErrorCodes.staging_data, str(excep)), \
-                None, sys.exc_info()[2]
+        transfer.download_file_url(download_url, staged_file)
 
         # Un-tar the input data to the work directory
-        try:
-            staging.untar_data(staged_file, self._work_dir)
-            os.unlink(staged_file)
+        staging.untar_data(staged_file, self._work_dir)
+        os.unlink(staged_file)
 
-            # Figure out the metadata filename
-            try:
-                self._metadata_filename = \
-                    metadata.get_landsat_metadata(self._work_dir, product_id)
-            except Exception as excep:
-                raise ee.ESPAException(ee.ErrorCodes.metadata,
-                                       str(excep)), None, sys.exc_info()[2]
-
-        except Exception as excep:
-            raise ee.ESPAException(ee.ErrorCodes.unpacking, str(excep)), \
-                None, sys.exc_info()[2]
+        # Figure out the metadata filename
+        self._metadata_filename = \
+            metadata.get_landsat_metadata(self._work_dir, product_id)
 
     # -------------------------------------------
     def convert_to_raw_binary(self):
@@ -832,9 +781,6 @@ class LandsatProcessor(CDRProcessor):
         output = ''
         try:
             output = utilities.execute_cmd(cmd)
-        except Exception as e:
-            raise ee.ESPAException(ee.ErrorCodes.reformat,
-                                   str(e)), None, sys.exc_info()[2]
         finally:
             if len(output) > 0:
                 self._logger.info(output)
@@ -882,9 +828,6 @@ class LandsatProcessor(CDRProcessor):
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as excep:
-                raise ee.ESPAException(ee.ErrorCodes.reformat,
-                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     self._logger.info(output)
@@ -917,9 +860,6 @@ class LandsatProcessor(CDRProcessor):
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as excep:
-                raise ee.ESPAException(ee.ErrorCodes.surface_reflectance,
-                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     self._logger.info(output)
@@ -945,7 +885,6 @@ class LandsatProcessor(CDRProcessor):
 
         # Check to see if SR is required
         if (options['include_sr'] or
-                options['include_sr_browse'] or
                 options['include_sr_nbr'] or
                 options['include_sr_nbr2'] or
                 options['include_sr_ndvi'] or
@@ -998,9 +937,6 @@ class LandsatProcessor(CDRProcessor):
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as excep:
-                raise ee.ESPAException(ee.ErrorCodes.surface_reflectance,
-                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     self._logger.info(output)
@@ -1028,9 +964,6 @@ class LandsatProcessor(CDRProcessor):
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as excep:
-                raise ee.ESPAException(ee.ErrorCodes.cloud_masking,
-                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     self._logger.info(output)
@@ -1081,15 +1014,12 @@ class LandsatProcessor(CDRProcessor):
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as excep:
-                raise ee.ESPAException(ee.ErrorCodes.spectral_indices,
-                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     self._logger.info(output)
 
     # -------------------------------------------
-    def dswe_command_line(self):
+    def surface_water_extent_command_line(self):
         '''
         Description:
             Returns the command line required to generate Dynamic Surface
@@ -1116,25 +1046,23 @@ class LandsatProcessor(CDRProcessor):
         return cmd
 
     # -------------------------------------------
-    def generate_dswe(self):
+    def generate_surface_water_extent(self):
         '''
         Description:
             Generates the Dynamic Surface Water Extent product.
         '''
 
-        cmd = self.dswe_command_line()
+        cmd = self.surface_water_extent_command_line()
 
         # Only if required
         if cmd is not None:
 
-            self._logger.info(' '.join(['DSWE COMMAND:', cmd]))
+            self._logger.info(' '.join(['SURFACE WATER EXTENT COMMAND:',
+                                        cmd]))
 
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as excep:
-                raise ee.ESPAException(ee.ErrorCodes.dswe,
-                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     self._logger.info(output)
@@ -1155,7 +1083,8 @@ class LandsatProcessor(CDRProcessor):
         if options['include_lst']:
 
             cmd = ['land_surface_temperature.py',
-                   '--xml', self._xml_filename]
+                   '--xml', self._xml_filename,
+                   '--keep-lst-temp-data']
 
             cmd = ' '.join(cmd)
 
@@ -1167,9 +1096,6 @@ class LandsatProcessor(CDRProcessor):
             output = ''
             try:
                 output = utilities.execute_cmd(cmd)
-            except Exception as excep:
-                raise ee.ESPAException(ee.ErrorCodes.land_surface_temperature,
-                                       str(excep)), None, sys.exc_info()[2]
             finally:
                 if len(output) > 0:
                     self._logger.info(output)
@@ -1202,13 +1128,9 @@ class LandsatProcessor(CDRProcessor):
 
             self.generate_cloud_masking()
 
-            # TODO - Today we do not do this anymore so code it back in
-            #        if/when it is required
-            # self.generate_sr_browse_data()
-
             self.generate_spectral_indices()
 
-            self.generate_dswe()
+            self.generate_surface_water_extent()
 
             self.generate_land_surface_temperature()
 
@@ -1284,18 +1206,11 @@ class LandsatProcessor(CDRProcessor):
                 output = ''
                 try:
                     output = utilities.execute_cmd(cmd)
-                except Exception as excep:
-                    raise ee.ESPAException(ee.ErrorCodes.cleanup_work_dir,
-                                           str(excep)), None, sys.exc_info()[2]
                 finally:
                     if len(output) > 0:
                         self._logger.info(output)
 
-            try:
-                self.remove_products_from_xml()
-            except Exception as excep:
-                raise ee.ESPAException(ee.ErrorCodes.remove_products,
-                                       str(excep)), None, sys.exc_info()[2]
+            self.remove_products_from_xml()
 
         finally:
             # Change back to the previous directory
@@ -1470,7 +1385,6 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
         cmd = None
         if (options['include_sr'] or
-                options['include_sr_browse'] or
                 options['include_sr_nbr'] or
                 options['include_sr_nbr2'] or
                 options['include_sr_ndvi'] or
@@ -1501,7 +1415,6 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
         # Check to see if SR is required
         if (options['include_sr'] or
-                options['include_sr_browse'] or
                 options['include_sr_nbr'] or
                 options['include_sr_nbr2'] or
                 options['include_sr_ndvi'] or
@@ -1673,22 +1586,14 @@ class ModisProcessor(CDRProcessor):
         staged_file = os.path.join(self._stage_dir, file_name)
 
         # Download the source data
-        try:
-            transfer.download_file_url(download_url, staged_file)
-        except Exception as excep:
-            raise ee.ESPAException(ee.ErrorCodes.staging_data, str(excep)), \
-                None, sys.exc_info()[2]
+        transfer.download_file_url(download_url, staged_file)
 
         self._hdf_filename = os.path.basename(staged_file)
         work_file = os.path.join(self._work_dir, self._hdf_filename)
 
         # Copy the staged data to the work directory
-        try:
-            shutil.copyfile(staged_file, work_file)
-            os.unlink(staged_file)
-        except Exception as excep:
-            raise ee.ESPAException(ee.ErrorCodes.unpacking, str(excep)), \
-                None, sys.exc_info()[2]
+        shutil.copyfile(staged_file, work_file)
+        os.unlink(staged_file)
 
     # -------------------------------------------
     def convert_to_raw_binary(self):
@@ -1714,9 +1619,6 @@ class ModisProcessor(CDRProcessor):
         output = ''
         try:
             output = utilities.execute_cmd(cmd)
-        except Exception as excep:
-            raise ee.ESPAException(ee.ErrorCodes.reformat,
-                                   str(excep)), None, sys.exc_info()[2]
         finally:
             if len(output) > 0:
                 self._logger.info(output)
