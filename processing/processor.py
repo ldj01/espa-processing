@@ -1,21 +1,11 @@
 
 '''
 License:
-  "NASA Open Source Agreement 1.3"
+    NASA Open Source Agreement 1.3
 
 Description:
-  Implements the processors which generate the products the system is capable
-  of producing.
-
-History:
-  Created Oct/2014 by Ron Dilley, USGS/EROS
-
-    Date              Programmer               Reason
-    ----------------  ------------------------ -------------------------------
-    Oct/2014          Ron Dilley               Initial implementation
-                                               Most of the code was taken from
-                                               the previous implementation
-                                               code/modules.
+    Implements the processors which generate the products the system is
+    capable of producing.
 '''
 
 
@@ -83,14 +73,14 @@ class ProductProcessor(object):
         if isinstance(parms, dict):
             self._parms = parms
         else:
-            raise Exception("Input parameters was of type {0},"
-                            " where dict is required".format(type(parms)))
+            raise Exception('Input parameters was of type [{0}],'
+                            ' where dict is required'.format(type(parms)))
 
         # Create an environment object (which also validates it)
         self._environment = Environment()
 
         # Log the distribution method that will be used
-        self._logger.info("Using distribution method '{0}'".
+        self._logger.info('Using distribution method [{0}]'.
                           format(self._environment.get_distribution_method()))
 
         # Validate the parameters
@@ -519,6 +509,9 @@ class CDRProcessor(CustomizationProcessor):
             products_to_remove.append(
                 order2xml_mapping['keep_intermediate_data'])
 
+        # Always remove the elevation data
+        products_to_remove.append('elevation')
+
         if products_to_remove is not None:
             espa_xml = metadata_api.parse(self._xml_filename, silence=True)
             bands = espa_xml.get_bands()
@@ -666,8 +659,10 @@ class LandsatProcessor(CDRProcessor):
 
         product_id = self._parms['product_id']
 
-        # Setup the dem filename, even though we may not need it
-        self._dem_filename = "%s_dem.img" % product_id
+        # Setup the elevation filename, even though we may not need it
+        # TODO TODO TODO - This is only needed because DSWE isn't
+        #                  automatically looking for it
+        self._elevation_filename = '{0}_elevation.img'.format(product_id)
 
         self._metadata_filename = None
 
@@ -786,10 +781,11 @@ class LandsatProcessor(CDRProcessor):
                 self._logger.info(output)
 
     # -------------------------------------------
-    def dem_command_line(self):
+    def elevation_command_line(self):
         '''
         Description:
-            Returns the command line required to generate the DEM product.
+            Returns the command line required to generate the elevation
+            product.
             Evaluates the options requested by the user to define the command
             line string to use, or returns None indicating nothing todo.
 
@@ -802,9 +798,8 @@ class LandsatProcessor(CDRProcessor):
         cmd = None
         if options['include_dswe'] or options['include_lst']:
 
-            cmd = ['do_create_dem.py',
-                   '--mtl', self._metadata_filename,
-                   '--dem', self._dem_filename]
+            cmd = ['build_elevation_band.py',
+                   '--xml', self._xml_filename]
 
             # Turn the list into a string
             cmd = ' '.join(cmd)
@@ -812,18 +807,19 @@ class LandsatProcessor(CDRProcessor):
         return cmd
 
     # -------------------------------------------
-    def generate_dem_product(self):
+    def generate_elevation_product(self):
         '''
         Description:
-            Generates a DEM product using the metadata from the input data.
+            Generates an elevation product using the metadata from the source
+            data.
         '''
 
-        cmd = self.dem_command_line()
+        cmd = self.elevation_command_line()
 
         # Only if required
         if cmd is not None:
 
-            self._logger.info(' '.join(['DEM COMMAND:', cmd]))
+            self._logger.info(' '.join(['ELEVATION COMMAND:', cmd]))
 
             output = ''
             try:
@@ -1038,7 +1034,7 @@ class LandsatProcessor(CDRProcessor):
 
             cmd = ['surface_water_extent.py',
                    '--xml', self._xml_filename,
-                   '--dem', self._dem_filename,
+                   '--dem', self._elevation_filename,
                    '--verbose']
 
             cmd = ' '.join(cmd)
@@ -1120,7 +1116,7 @@ class LandsatProcessor(CDRProcessor):
         try:
             self.convert_to_raw_binary()
 
-            self.generate_dem_product()
+            self.generate_elevation_product()
 
             self.generate_land_water_mask()
 
@@ -1156,7 +1152,7 @@ class LandsatProcessor(CDRProcessor):
             'lndcal.*.txt',
             'LogReport*',
             '*_MTL.txt.old',
-            '*_dem.*',
+            '*_elevation.*',
             '%s_land_water_mask.*' % product_id
         ]
 
