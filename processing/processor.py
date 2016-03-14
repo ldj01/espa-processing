@@ -659,11 +659,6 @@ class LandsatProcessor(CDRProcessor):
 
         product_id = self._parms['product_id']
 
-        # Setup the elevation filename, even though we may not need it
-        # TODO TODO TODO - This is only needed because DSWE isn't
-        #                  automatically looking for it
-        self._elevation_filename = '{0}_elevation.img'.format(product_id)
-
         self._metadata_filename = None
 
     # -------------------------------------------
@@ -1034,7 +1029,6 @@ class LandsatProcessor(CDRProcessor):
 
             cmd = ['surface_water_extent.py',
                    '--xml', self._xml_filename,
-                   '--dem', self._elevation_filename,
                    '--verbose']
 
             cmd = ' '.join(cmd)
