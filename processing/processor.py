@@ -1357,10 +1357,6 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
         options = self._parms['options']
 
-        if options['include_dswe'] is True:
-            raise Exception("include_dswe is an unavailable product option"
-                            " for OLITIRS")
-
     # -------------------------------------------
     def land_water_mask_command_line(self):
         '''
@@ -1484,6 +1480,14 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
         if options['include_sr_thermal'] is True:
             raise Exception("include_sr_thermal is an unavailable product"
                             " option for OLI-Only data")
+
+        if options['include_cfmask'] is True:
+            raise Exception("include_cfmask is an unavailable product option"
+                            " for OLI-Only data")
+
+        if options['include_dswe'] is True:
+            raise Exception("include_dswe is an unavailable product option"
+                            " for OLI-Only data")
 
     # -------------------------------------------
     def land_water_mask_command_line(self):
