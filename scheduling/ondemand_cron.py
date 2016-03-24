@@ -22,8 +22,9 @@ from datetime import datetime
 from argparse import ArgumentParser
 
 
-# imports from espa/espa_common
-from espa_common import settings, utilities
+import settings
+
+from espa_common import utilities
 from espa_common.logger_factory import EspaLogging as EspaLogging
 
 
