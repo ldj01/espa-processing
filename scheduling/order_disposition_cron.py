@@ -14,27 +14,24 @@
 
 import os
 import sys
+import logging
 import xmlrpclib
 
 
-# imports from espa/espa_common
-from espa_common.logger_factory import EspaLogging
-
-
 LOGGER_NAME = 'espa.cron.orderdisp'
+LOGGER_FILENAME = '/tmp/espa-order-disposition-cron.log'
 
 
-# ============================================================================
 def determine_order_disposition():
-    '''
-    Description:
-      Interact with the web service to accomplish order finalization tasks
+    """Accomplishes order dispossition tasks
+
+      Interact with the web service to accomplish order dispossition tasks
       along with sending the initial emails out to the users after their
       order has been accepted.
-    '''
+    """
 
     # Get the logger for this task
-    logger = EspaLogging.get_logger(LOGGER_NAME)
+    logger = logging.get_logger(LOGGER_NAME)
 
     rpcurl = os.environ.get('ESPA_XMLRPC')
     server = None
@@ -46,45 +43,46 @@ def determine_order_disposition():
 
         server = xmlrpclib.ServerProxy(rpcurl)
     else:
-        raise Exception("Missing or invalid environment variable ESPA_XMLRPC")
+        raise Exception('Missing or invalid environment variable ESPA_XMLRPC')
 
     # Verify xmlrpc server
     if server is None:
-        msg = "xmlrpc server was None... exiting"
-        raise Exception(msg)
+        raise Exception('xmlrpc server was None... exiting')
 
     # Use order_disposition_enabled to determine if we should be processing
     # or not
     od_enabled = server.get_configuration('system.order_disposition_enabled')
 
     if not od_enabled.lower() == 'true':
-        raise Exception("order disposition disabled... exiting")
+        raise Exception('order disposition disabled... exiting')
 
     try:
         if not server.handle_orders():
-            msg = "server.handle_orders() was not successful"
-            raise Exception(msg)
+            raise Exception('server.handle_orders() was not successful')
 
     except xmlrpclib.ProtocolError:
-        logger.exception("A protocol error occurred")
+        logger.exception('A protocol error occurred')
 
     except Exception:
-        logger.exception("An error occurred finalizing orders")
+        logger.exception('An error occurred finalizing orders')
 
     finally:
         server = None
 
 
-# ============================================================================
-if __name__ == '__main__':
-    '''
-    Description:
-      Execute the order disposition determination routine.
-    '''
+def main():
+    """Execute the order disposition determination routine"""
 
     # Configure and get the logger for this task
-    EspaLogging.configure(LOGGER_NAME)
-    logger = EspaLogging.get_logger(LOGGER_NAME)
+    logging.basicConfig(format=('%(asctime)s.%(msecs)03d %(process)d'
+                                ' %(levelname)-8s'
+                                ' %(filename)s:%(lineno)d:'
+                                '%(funcName)s -- %(message)s'),
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=logging.INFO,
+                        filename=LOGGER_FILENAME)
+
+    logger = logging.get_logger(LOGGER_NAME)
 
     # Check required variables that this script should fail on if they are not
     # defined
@@ -93,13 +91,17 @@ if __name__ == '__main__':
         if (env_var not in os.environ or os.environ.get(env_var) is None or
                 len(os.environ.get(env_var)) < 1):
 
-            logger.critical("$%s is not defined... exiting" % env_var)
-            sys.exit(1)
+            logger.critical('${0} is not defined... exiting'.format(env_var))
+            sys.exit(1)  # EXIT_FAILURE
 
     try:
         determine_order_disposition()
     except Exception:
-        logger.exception("Processing failed")
-        sys.exit(1)
+        logger.exception('Processing failed')
+        sys.exit(1)  # EXIT_FAILURE
 
-    sys.exit(0)
+    sys.exit(0)  # EXIT_SUCCESS
+
+
+if __name__ == '__main__':
+    main()
