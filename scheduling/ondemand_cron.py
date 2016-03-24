@@ -72,7 +72,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
         raise Exception('Missing or invalid environment variable ESPA_XMLRPC')
 
     home_dir = os.environ.get('HOME')
-    hadoop_executable = '%s/bin/hadoop/bin/hadoop' % home_dir
+    hadoop_executable = os.path.join(home_dir, 'bin/hadoop/bin/hadoop')
 
     # Verify xmlrpc server
     if server is None:
@@ -120,7 +120,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
             logger.info(' '.join(['Found requests to process,',
                                   'generating job name:', job_name]))
 
-            job_filename = '%s%s' % (job_name, '.txt')
+            job_filename = '{0}{1}'.format(job_name, '.txt')
             job_filepath = os.path.join('/tmp', job_filename)
 
             # Create the order file full of all the scenes requested
@@ -156,49 +156,50 @@ def process_requests(args, logger_name, queue_priority, request_priority):
             # END - with espa_fd
 
             # Specify the location of the order file on the hdfs
-            hdfs_target = 'requests/%s' % job_filename
-
-            # Specify the mapper application
-            mapper = "ondemand_mapper.py"
+            hdfs_target = os.path.join('requests', job_filename)
 
             # Define command line to store the job file in hdfs
             hadoop_store_command = [hadoop_executable, 'dfs',
                                     '-copyFromLocal', job_filepath,
                                     hdfs_target]
 
-            jars = os.path.join(home_dir, 'bin/hadoop/contrib/streaming',
-                                'hadoop-streaming*.jar')
+            jars_path = os.path.join(home_dir, 'bin/hadoop/contrib/streaming',
+                                     'hadoop-streaming*.jar')
+
+            code_dir = os.path.join(home_dir, 'espa-site/processing')
+            common_dir = os.path.join(home_dir, 'espa-site/espa_common')
+
+            # Specify the mapper application
+            mapper_path = os.path.join(code_dir, 'ondemand_mapper.py')
+
             # Define command line to execute the hadoop job
             # Be careful it is possible to have conflicts between module names
             hadoop_run_command = \
-                [hadoop_executable, 'jar', jars,
-                 '-D', 'mapred.task.timeout=%s' % settings.HADOOP_TIMEOUT,
+                [hadoop_executable, 'jar', jars_path,
+                 '-D', ('mapred.task.timeout={0}'
+                        .format(settings.HADOOP_TIMEOUT)),
                  '-D', 'mapred.reduce.tasks=0',
-                 '-D', 'mapred.job.queue.name=%s' % hadoop_job_queue,
-                 '-D', 'mapred.job.name="%s"' % job_name,
+                 '-D', 'mapred.job.queue.name={0}'.format(hadoop_job_queue),
+                 '-D', 'mapred.job.name="{0}"'.format(job_name),
                  '-inputformat', ('org.apache.hadoop.mapred.'
                                   'lib.NLineInputFormat'),
-                 '-file', '%s/espa-site/processing/%s' % (home_dir, mapper),
-                 '-file', '%s/espa-site/processing/processor.py' % home_dir,
-                 '-file', ('%s/espa-site/processing/distribution.py'
-                           % home_dir),
-                 '-file', ('%s/espa-site/processing/espa_exception.py'
-                           % home_dir),
-                 '-file', '%s/espa-site/processing/metadata.py' % home_dir,
-                 '-file', '%s/espa-site/processing/parameters.py' % home_dir,
-                 '-file', '%s/espa-site/processing/sensor.py' % home_dir,
-                 '-file', '%s/espa-site/processing/staging.py' % home_dir,
-                 '-file', '%s/espa-site/processing/statistics.py' % home_dir,
-                 '-file', '%s/espa-site/processing/environment.py' % home_dir,
-                 '-file', ('%s/espa-site/processing/initialization.py'
-                           % home_dir),
-                 '-file', '%s/espa-site/processing/transfer.py' % home_dir,
-                 '-file', '%s/espa-site/processing/warp.py' % home_dir,
-                 '-file', ('%s/espa-site/espa_common/logger_factory.py'
-                           % home_dir),
-                 '-file', '%s/espa-site/processing/settings.py' % home_dir,
-                 '-file', '%s/espa-site/processing/utilities.py' % home_dir,
-                 '-mapper', '%s/espa-site/processing/%s' % (home_dir, mapper),
+                 '-file', mapper_path,
+                 '-file', os.path.join(code_dir, 'distribution.py'),
+                 '-file', os.path.join(code_dir, 'environment.py'),
+                 '-file', os.path.join(code_dir, 'espa_exception.py'),
+                 '-file', os.path.join(code_dir, 'metadata.py'),
+                 '-file', os.path.join(code_dir, 'initialization.py'),
+                 '-file', os.path.join(code_dir, 'parameters.py'),
+                 '-file', os.path.join(code_dir, 'processor.py'),
+                 '-file', os.path.join(code_dir, 'sensor.py'),
+                 '-file', os.path.join(code_dir, 'staging.py'),
+                 '-file', os.path.join(code_dir, 'statistics.py'),
+                 '-file', os.path.join(code_dir, 'settings.py'),
+                 '-file', os.path.join(code_dir, 'transfer.py'),
+                 '-file', os.path.join(code_dir, 'utilities.py'),
+                 '-file', os.path.join(code_dir, 'warp.py'),
+                 '-file', os.path.join(common_dir, 'logger_factory.py'),
+                 '-mapper', mapper_path,
                  '-cmdenv', 'ESPA_WORK_DIR=$ESPA_WORK_DIR',
                  '-cmdenv', 'HOME=$HOME',
                  '-cmdenv', 'USER=$USER',
@@ -219,7 +220,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
             output = ''
             try:
                 cmd = ' '.join(hadoop_store_command)
-                logger.info("Store cmd:%s" % cmd)
+                logger.info('Store cmd:{0}'.format(cmd))
 
                 output = utilities.execute_cmd(cmd)
             except Exception:
@@ -229,8 +230,8 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                 if len(output) > 0:
                     logger.info(output)
 
-                logger.info('Deleting local request file copy [%s]'
-                            % job_filepath)
+                logger.info('Deleting local request file copy [{0}]'
+                            .format(job_filepath))
                 os.unlink(job_filepath)
 
             try:
@@ -243,8 +244,8 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                     sceneid = request['scene']
                     product_list.append((orderid, sceneid))
 
-                    logger.info('Adding scene:%s orderid:%s to queued list'
-                                % (sceneid, orderid))
+                    logger.info('Adding scene:{0} orderid:{1} to queued list'
+                                .format(sceneid, orderid))
 
                 server.queue_products(product_list, 'CDR_ECV cron driver',
                                       job_name)
@@ -254,7 +255,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                 output = ''
                 try:
                     cmd = ' '.join(hadoop_run_command)
-                    logger.info("Run cmd:%s" % cmd)
+                    logger.info('Run cmd:{0}'.format(cmd))
 
                     output = utilities.execute_cmd(cmd)
                 except Exception:
@@ -320,7 +321,8 @@ if __name__ == '__main__':
                         action='store', dest='priority', required=True,
                         choices=valid_priorities,
                         help='only process requests with this priority:'
-                             ' one of (%s)' % ', '.join(valid_priorities))
+                             ' one of [{0}]'
+                             .format(', '.join(valid_priorities)))
 
     parser.add_argument('--product-types',
                         action='store', dest='product_types', required=True,
@@ -365,7 +367,7 @@ if __name__ == '__main__':
         if (env_var not in os.environ or os.environ.get(env_var) is None or
                 len(os.environ.get(env_var)) < 1):
 
-            logger.critical('$%s is not defined... exiting' % env_var)
+            logger.critical('${0} is not defined... exiting'.format(env_var))
             sys.exit(1)
 
     # Determine the appropriate priority value to use for the queue and request
