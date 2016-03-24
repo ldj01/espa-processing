@@ -11,21 +11,6 @@
              (LSRD) at the USGS EROS
 
     LICENSE: NASA Open Source Agreement 1.3
-
-    HISTORY:
-
-    Date              Programmer               Reason
-    ----------------  ------------------------ -------------------------------
-    09/12/2013        David V. Hill            Initial implementation
-    Jan/2014          Ron Dilley               Updated for recent processing
-                                               enhancements.
-    Sept/2014         Ron Dilley               Updated to use espa_common and
-                                               our python logging setup
-    Oct/2014          Ron Dilley               Renamed and incorporates all of
-                                               our ondemand cron processing
-    July/2015         Ron Dilley               Removed dependencies on
-                                               installation of the
-                                               espa-product-formatter.
 '''
 
 import os
