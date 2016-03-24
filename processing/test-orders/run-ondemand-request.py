@@ -56,29 +56,7 @@ def build_argument_parser():
     return parser
 
 
-def get_satellite_sensor_code(product_id):
-    """Returns the satellite-sensor code if known"""
-
-    old_prefixes = ['LT4', 'LT5', 'LE7',
-                    'LT8', 'LC8', 'LO8',
-                    'MOD', 'MYD']
-    collection_prefixes = ['LT04', 'LT05', 'LE07',
-                           'LT08', 'LC08', 'LO08']
-
-    satellite_sensor_code = product_id[0:3]
-    if satellite_sensor_code in old_prefixes:
-        return satellite_sensor_code
-
-    satellite_sensor_code = product_id[0:4]
-    if satellite_sensor_code in collection_prefixes:
-        return satellite_sensor_code
-
-    raise Exception('Satellite-Sensor code ({0}) not understood'
-                    .format(satellite_sensor_code))
-
-
-# ============================================================================
-def process_test_order(request_file, products_file, env_vars,
+def process_test_order(request, request_file, products_file, env_vars,
                        keep_log, plot, pre, post):
     """Process the test order file"""
 
@@ -89,7 +67,7 @@ def process_test_order(request_file, products_file, env_vars,
 
     tmp_order = 'tmp-test-order'
 
-    order_id = (request_file.split('.json')[0]).replace("'", '')
+    order_id = request
 
     if pre:
         order_id = ''.join([order_id, '-PRE'])
@@ -297,7 +275,7 @@ def main():
     # Parse the command line arguments
     args = parser.parse_args()
 
-    request_file = '{0}.json'.format(args.request.replace("'", "\'"))
+    request_file = os.path.join(args.request, 'order.json')
     if not os.path.isfile(request_file):
         logger.critical('Request file [{0}] does not exist'
                         .format(request_file))
@@ -305,11 +283,11 @@ def main():
 
     products_file = None
     if not args.plot:
-        products_file = '{0}.products'.format(args.request)
+        products_file = os.path.join(args.request, 'order.products')
 
         if args.master:
             # Use the master file instead
-            products_file = '{0}.master.products'.format(args.request)
+            products_file = os.path.join(args.request, 'master.products')
 
         if not os.path.isfile(products_file):
             logger.critical('No products file exists for [{0}]'
@@ -319,9 +297,11 @@ def main():
     # Avoid the creation of the *.pyc files
     os.environ['PYTHONDONTWRITEBYTECODE'] = '1'
 
-    if not process_test_order(request_file, products_file, env_vars,
-                              args.keep_log, args.plot, args.pre, args.post):
-        logger.critical('Request [{0}] failed to process'.format(args.request))
+    if not process_test_order(args.request, request_file, products_file,
+                              env_vars, args.keep_log, args.plot, args.pre,
+                              args.post):
+        logger.critical('Request [{0}] failed to process'
+                        .format(args.request))
         sys.exit(1)  # EXIT_FAILURE
 
     sys.exit(0)  # EXIT_SUCCESS
