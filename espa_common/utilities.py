@@ -25,7 +25,7 @@ import settings
 def date_from_doy(year, doy):
     '''Returns a python date object given a year and day of year'''
 
-    d = datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(doy) - 1)
+    d = datetime.date(int(year), 1, 1) + datetime.timedelta(int(doy) - 1)
 
     if int(d.year) != int(year):
         raise Exception("doy [%s] must fall within the specified year [%s]" %
