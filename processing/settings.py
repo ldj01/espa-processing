@@ -1,38 +1,7 @@
-# The maximum number of jobs Hadoop should be able to run at once.
-# This is needed so that the job tracker doesn't exceed resource limits.
-# This also affects our level of service to end users.
-# We are submitting batches of 25 every minute, so 25 * 50 = 1250 scenes.
-# This means it will take a little over an hour to addres an item ordered
-# because the hadoop queue will be 25 * 50 scenes deep.
-HADOOP_MAX_JOBS = 50
-
-
-# Specifies the buffer length for an order line in the order file
-# The Hadoop File System block size should be a multiple of this value
-ORDER_BUFFER_LENGTH = 2048
-
-# Set the hadoop timeouts to a ridiculous number so jobs don't get killed
-# before they are done
-HADOOP_TIMEOUT = 172800000  # which is 2 days
-
-# Specifies the hadoop queue to use based on priority
-# 'all' must be present as it is used in the cron code to pass 'None' instead
-HADOOP_QUEUE_MAPPING = {
-    'all': 'ondemand',
-    'low': 'ondemand-low',
-    'normal': 'ondemand',
-    'high': 'ondemand-high'
-}
-
-# filename extension for landsat input products
+# Filename extension for Landsat based input products
 LANDSAT_INPUT_FILENAME_EXTENSION = '.tar.gz'
 
-# Path to the MODIS Terra source data location
-TERRA_BASE_SOURCE_PATH = '/MOLT'
-# Path to the MODIS Aqua source data location
-AQUA_BASE_SOURCE_PATH = '/MOLA'
-
-# file extension for modis input products
+# Filename extension for Modis based input products
 MODIS_INPUT_FILENAME_EXTENSION = '.hdf'
 
 # Path to the completed orders
@@ -59,9 +28,7 @@ ESPA_CACHE_HOST_LIST = ['edclxs67p', 'edclxs140p']
 ESPA_CHECKSUM_TOOL = 'md5sum'
 ESPA_CHECKSUM_EXTENSION = 'md5'
 
-# Where to place the temporary scene processing log files
-LOGFILE_PATH = '/tmp'
-
+# Plotting defaults
 PLOT_BG_COLOR = '#f3f3f3'  # A light gray
 PLOT_MARKER = (1, 3, 0)    # Better circle than 'o'
 PLOT_MARKER_SIZE = 5.0     # A good size for the circle or diamond
