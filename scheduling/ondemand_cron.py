@@ -195,8 +195,8 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                  '-file', '%s/espa-site/processing/warp.py' % home_dir,
                  '-file', ('%s/espa-site/espa_common/logger_factory.py'
                            % home_dir),
-                 '-file', '%s/espa-site/espa_common/settings.py' % home_dir,
-                 '-file', '%s/espa-site/espa_common/utilities.py' % home_dir,
+                 '-file', '%s/espa-site/processing/settings.py' % home_dir,
+                 '-file', '%s/espa-site/processing/utilities.py' % home_dir,
                  '-mapper', '%s/espa-site/processing/%s' % (home_dir, mapper),
                  '-cmdenv', 'ESPA_WORK_DIR=$ESPA_WORK_DIR',
                  '-cmdenv', 'HOME=$HOME',
