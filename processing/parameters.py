@@ -431,37 +431,6 @@ def test_for_parameter(parms, key):
 
 
 # ============================================================================
-def convert_to_command_line_options(parms):
-    '''
-    Description:
-      As simply stated in the routine name... Convert the JSON dictionary
-      version of the parameters into command line parameters to use with the
-      executables that will be called.
-    '''
-
-    cmd_line = ['--orderid', '\"%s\"' % parms['orderid']]
-
-    if test_for_parameter(parms, 'scene'):
-        cmd_line.extend(['--scene', '\"%s\"' % parms['scene']])
-
-    if test_for_parameter(parms, 'product_type'):
-        p_type = parms['product_type']
-        if p_type != 'plot':
-            cmd_line.extend(['--product_type', '\"%s\"' % p_type])
-        else:
-            # Plotting doesn't need this command line parameter
-            pass
-
-    for (key, value) in parms['options'].items():
-        if value is True:
-            cmd_line.append('--%s' % key)
-        elif value is not False and value is not None:
-            cmd_line.extend(['--%s' % key, '\"%s\"' % str(value)])
-
-    return cmd_line
-
-
-# ============================================================================
 def validate_reprojection_parameters(parms, scene, projections, ns_values,
                                      pixel_size_units, image_extents_units,
                                      resample_methods, datum_values):
