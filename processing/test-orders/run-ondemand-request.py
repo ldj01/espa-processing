@@ -14,11 +14,8 @@ import logging
 import json
 from argparse import ArgumentParser
 
-import settings
 import sensor
 import utilities
-
-import parameters
 
 
 MODIS_HOST = 'e4ftl01.cr.usgs.gov'
@@ -186,9 +183,9 @@ def process_test_order(request_file, products_file, env_vars,
 
                 elif not plot:
                     if sensor_code == 'MOD':
-                        base_source_path = settings.TERRA_BASE_SOURCE_PATH
+                        base_source_path = '/MOLT'
                     else:
-                        base_source_path = settings.AQUA_BASE_SOURCE_PATH
+                        base_source_path = '/MOLA'
 
                     short_name = sensor.instance(product_id).short_name
                     version = sensor.instance(product_id).version
@@ -233,7 +230,6 @@ def process_test_order(request_file, products_file, env_vars,
 
                 # Validate again, since we modified it
                 parms = json.loads(tmp_line)
-                # parms = parameters.instance(json.loads(tmp_line))
                 print(json.dumps(parms, indent=4, sort_keys=True))
 
             # END - with tmp_order
