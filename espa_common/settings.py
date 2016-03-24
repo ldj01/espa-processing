@@ -4,7 +4,7 @@
 # We are submitting batches of 25 every minute, so 25 * 50 = 1250 scenes.
 # This means it will take a little over an hour to addres an item ordered
 # because the hadoop queue will be 25 * 50 scenes deep.
-HADOOP_MAX_JOBS = 50 
+HADOOP_MAX_JOBS = 50
 
 
 # Specifies the buffer length for an order line in the order file
@@ -35,12 +35,6 @@ AQUA_BASE_SOURCE_PATH = '/MOLA'
 # file extension for modis input products
 MODIS_INPUT_FILENAME_EXTENSION = '.hdf'
 
-# host for modis input checks
-MODIS_INPUT_CHECK_HOST = 'e4ftl01.cr.usgs.gov'
-
-# port for modis input checks
-MODIS_INPUT_CHECK_PORT = 80
-
 # Path to the completed orders
 ESPA_REMOTE_CACHE_DIRECTORY = '/data2/science_lsrd/LSRD/orders'
 ESPA_LOCAL_CACHE_DIRECTORY = ''
@@ -60,9 +54,6 @@ MAX_SET_SCENE_ERROR_ATTEMPTS = 5
 # List of hostnames to choose from for the access to the online cache
 # Runs over 10Gb line
 ESPA_CACHE_HOST_LIST = ['edclxs67p', 'edclxs140p']
-
-# The external name for the online cache.  Runs over 1Gb line.
-EXTERNAL_CACHE_HOST = 'edclpdsftp.cr.usgs.gov'
 
 # Specify the checksum tool and filename extension
 ESPA_CHECKSUM_TOOL = 'md5sum'
