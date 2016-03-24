@@ -1,24 +1,31 @@
-'''module to extract embedded information from product names and supply
-configured values for each product
+
 '''
+    Module to extract embedded information from product names and supply
+    configured values for each product'''
 
 import settings
 import utilities
 import re
+import datetime
+
 
 '''Resolves system-wide identification of sensor name based on three letter
-   prefix
-'''
-
+   prefix'''
 SENSOR_INFO = {
-    'LO8': {'name': 'oli', 'lta_name': 'LANDSAT_8'},
-    'LC8': {'name': 'olitirs', 'lta_name': 'LANDSAT_8'},
-    'LE7': {'name': 'etm', 'lta_name': 'LANDSAT_ETM_PLUS'},
-    'LT4': {'name': 'tm', 'lta_name': 'LANDSAT_TM'},
-    'LT5': {'name': 'tm', 'lta_name': 'LANDSAT_TM'},
+    'LO8': {'name': 'oli'},
+    'LO08': {'name': 'oli'},
+    'LC8': {'name': 'olitirs'},
+    'LC08': {'name': 'olitirs'},
+    'LE7': {'name': 'etm'},
+    'LE07': {'name': 'etm'},
+    'LT4': {'name': 'tm'},
+    'LT04': {'name': 'tm'},
+    'LT5': {'name': 'tm'},
+    'LT05': {'name': 'tm'},
     'MYD': {'name': 'aqua'},
     'MOD': {'name': 'terra'}
 }
+
 
 '''Default pixel sizes based on the input products'''
 DEFAULT_PIXEL_SIZE = {
@@ -34,8 +41,11 @@ DEFAULT_PIXEL_SIZE = {
         'LC8': 30,
         'LO8': 30,
         'LE7': 30,
+        'LE07': 30,
+        'LT5': 30,
+        'LT05': 30,
         'LT4': 30,
-        'LT5': 30
+        'LT04': 30
     },
     'dd': {
         '09A1': 0.00449155,
@@ -49,27 +59,18 @@ DEFAULT_PIXEL_SIZE = {
         'LC8': 0.0002695,
         'LO8': 0.0002695,
         'LE7': 0.0002695,
+        'LE07': 0.0002695,
+        'LT5': 0.0002695,
+        'LT05': 0.0002695,
         'LT4': 0.0002695,
-        'LT5': 0.0002695
+        'LT04': 0.0002695
         }
 }
 
 
 class ProductNotImplemented(NotImplementedError):
-    '''Exception to be thrown when trying to instantiate an unsupported
-    product'''
-
-    def __init__(self, product_id, *args, **kwargs):
-        '''Constructor for the product not implemented
-
-        Keyword args:
-        product_id -- The product id of that is not implemented
-
-        Return:
-        None
-        '''
-        self.product_id = product_id
-        super(ProductNotImplemented, self).__init__(*args, **kwargs)
+    '''Thrown when trying to instantiate an unsupported product'''
+    pass
 
 
 class SensorProduct(object):
@@ -108,15 +109,38 @@ class SensorProduct(object):
         None
         '''
 
+        super(SensorProduct, self).__init__()
+
+        # Set the Product ID and determine the Sensor Code
         self.product_id = product_id
-        self.sensor_code = product_id[0:3]
+        self.sensor_code = self.get_satellite_sensor_code(product_id)
 
-        self.sensor_info = SENSOR_INFO[self.sensor_code.upper()]
+        if self.sensor_code not in SENSOR_INFO:
+            raise ProductNotImplemented('Unsupported Sensor Code [{0}]'
+                                        .format(self.sensor_code))
 
-        self.sensor_name = self.sensor_info['name']
+        self.sensor_name = SENSOR_INFO[self.sensor_code]['name']
 
-        if 'lta_name' in self.sensor_info:
-            self.lta_name = self.sensor_info['lta_name']
+    @classmethod
+    def get_satellite_sensor_code(cls, product_id):
+        '''Returns the satellite-sensor code if known'''
+
+        old_prefixes = ['LT4', 'LT5', 'LE7',
+                        'LT8', 'LC8', 'LO8',
+                        'MOD', 'MYD']
+        collection_prefixes = ['LT04', 'LT05', 'LE07',
+                               'LT08', 'LC08', 'LO08']
+
+        satellite_sensor_code = product_id[0:3].upper()
+        if satellite_sensor_code in old_prefixes:
+            return satellite_sensor_code
+
+        satellite_sensor_code = product_id[0:4].upper()
+        if satellite_sensor_code in collection_prefixes:
+            return satellite_sensor_code
+
+        raise ProductNotImplemented('Unknown Sensor Code [{0}] or [{1}]'
+                                    .format(product_id[0:3], product_id[0:4]))
 
 
 class Modis(SensorProduct):
@@ -256,7 +280,7 @@ class ModisAqua13Q1(Aqua):
 
 
 class Landsat(SensorProduct):
-    ''' Superclass for all landsat based products '''
+    ''' Superclass for all Landsat based products '''
 
     def __init__(self, product_id):
 
@@ -278,11 +302,9 @@ class Landsat(SensorProduct):
         self.day = date.day
 
         # set the default pixel sizes
-        _pixels = DEFAULT_PIXEL_SIZE
+        _meters = DEFAULT_PIXEL_SIZE['meters'][self.sensor_code]
 
-        _meters = _pixels['meters'][self.sensor_code.upper()]
-
-        _dd = _pixels['dd'][self.sensor_code.upper()]
+        _dd = DEFAULT_PIXEL_SIZE['dd'][self.sensor_code]
 
         self.default_pixel_size = {'meters': _meters, 'dd': _dd}
 
@@ -311,22 +333,68 @@ class LandsatOLI(Landsat):
         super(LandsatOLI, self).__init__(product_id)
 
 
+class LandsatCollection(SensorProduct):
+    ''' Superclass for all Landsat collection based products '''
+
+    def __init__(self, product_id):
+
+        product_id = product_id.strip()
+
+        super(LandsatCollection, self).__init__(product_id)
+
+        parts = product_id.split('_')
+
+        self.path = utilities.strip_zeros(parts[2][0:3])
+        self.row = utilities.strip_zeros(parts[2][4:])
+
+        self.year = parts[3][0:4]
+        self.month = parts[3][4:6]
+        self.day = parts[3][6:]
+
+        # Now that we have the year, month, and day, we can get the day of year
+        dt = datetime.date(int(self.year), int(self.month), int(self.day))
+        self.doy = dt.timetuple().tm_yday
+
+        # set the default pixel sizes
+        _meters = DEFAULT_PIXEL_SIZE['meters'][self.sensor_code]
+
+        _dd = DEFAULT_PIXEL_SIZE['dd'][self.sensor_code]
+
+        self.default_pixel_size = {'meters': _meters, 'dd': _dd}
+
+
+class LandsatTMCollection(LandsatCollection):
+    ''' Models Thematic Mapper based products '''
+    def __init__(self, product_id):
+        super(LandsatTMCollection, self).__init__(product_id)
+
+
+class LandsatETMCollection(LandsatCollection):
+    ''' Models Enhanced Thematic Mapper Plus based products '''
+    def __init__(self, product_id):
+        super(LandsatETMCollection, self).__init__(product_id)
+
+
 def instance(product_id):
-    '''
-    Supported MODIS products
-    MOD09A1 MOD09GA MOD09GQ MOD09Q1 MYD09A1 MYD09GA MYD09GQ MYD09Q1
-    MOD13A1 MOD13A2 MOD13A3 MOD13Q1 MYD13A1 MYD13A2 MYD13A3 MYD13Q1
+    """
+    MODIS:
+        Supported Products:
+            MOD09A1 MOD09GA MOD09GQ MOD09Q1 MYD09A1 MYD09GA MYD09GQ MYD09Q1
+            MOD13A1 MOD13A2 MOD13A3 MOD13Q1 MYD13A1 MYD13A2 MYD13A3 MYD13Q1
 
-    MODIS FORMAT:   MOD09GQ.A2000072.h02v09.005.2008237032813
+        Product ID Format: MOD09GQ.A2000072.h02v09.005.2008237032813
 
-    Supported LANDSAT products
-    LT4 LT5 LE7 LC8
+    LANDSAT:
+        Supported Products:
+            LT4 LT5 LE7 LC8 LO8
+            LT04 LT05 LE07 LC08 LO08
 
-    LANDSAT FORMAT: LE72181092013069PFS00
-    '''
+        Product ID Format: LE72181092013069PFS00
+        Collection Product ID Format: LT05_L1T_038038_19950624_20160302_01_T1
+    """
 
-    # remove known file extensions before comparison
-    # do not alter the case of the actual product_id!
+    # Remove known file extensions before comparison
+    # Do not alter the case of the actual product_id!
     _id = product_id.lower().strip()
 
     if _id.endswith(settings.MODIS_INPUT_FILENAME_EXTENSION):
@@ -342,16 +410,28 @@ def instance(product_id):
         _id = _id[0:index]
 
     instances = {
-        'tm': (r'^lt[4|5]\d{3}\d{3}\d{4}\d{3}[a-z]{3}[a-z0-9]{2}$',
-               LandsatTM),
+        'lt4': (r'^lt4\d{3}\d{3}\d{4}\d{3}[a-z]{3}[a-z0-9]{2}$',
+                LandsatTM),
 
-        'etm': (r'^le7\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
+        'lt04': (r'^lt04_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
+                 LandsatTMCollection),
+
+        'lt5': (r'^lt5\d{3}\d{3}\d{4}\d{3}[a-z]{3}[a-z0-9]{2}$',
+                LandsatTM),
+
+        'lt05': (r'^lt05_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
+                 LandsatTMCollection),
+
+        'le7': (r'^le7\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
                 LandsatETM),
 
-        'olitirs': (r'^lc8\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
-                    LandsatOLITIRS),
+        'le07': (r'^le07_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
+                 LandsatETMCollection),
 
-        'oli': (r'^lo8\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
+        'lc8': (r'^lc8\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
+                LandsatOLITIRS),
+
+        'lo8': (r'^lo8\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
                 LandsatOLI),
 
         'mod09a1': (r'^mod09a1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
@@ -407,5 +487,5 @@ def instance(product_id):
         if re.match(instances[key][0], _id):
             return instances[key][1](product_id.strip())
 
-    msg = "[%s] is not a supported sensor product" % product_id
-    raise ProductNotImplemented(product_id, msg)
+    raise ProductNotImplemented('[{0}] is not a supported product'
+                                .format(product_id))
