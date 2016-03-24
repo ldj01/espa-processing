@@ -288,8 +288,8 @@ class Landsat(SensorProduct):
 
         super(Landsat, self).__init__(product_id)
 
-        self.path = utilities.strip_zeros(product_id[3:6])
-        self.row = utilities.strip_zeros(product_id[6:9])
+        self.path = product_id[3:6].lstrip('0')
+        self.row = product_id[6:9].lstrip('0')
         self.year = product_id[9:13]
         self.doy = product_id[13:16]
         self.station = product_id[16:19]
@@ -344,8 +344,8 @@ class LandsatCollection(SensorProduct):
 
         parts = product_id.split('_')
 
-        self.path = utilities.strip_zeros(parts[2][0:3])
-        self.row = utilities.strip_zeros(parts[2][4:])
+        self.path = parts[2][0:3].lstrip('0')
+        self.row = parts[2][4:].lstrip('0')
 
         self.year = parts[3][0:4]
         self.month = parts[3][4:6]

@@ -1,15 +1,10 @@
 
 '''
 License:
-  "NASA Open Source Agreement 1.3"
+  NASA Open Source Agreement 1.3
 
 Description:
-  Utility module for ESPA project.
-  This is a shared module to hold simple utility functions.
-
-History:
-  Original implementation by David V. Hill, USGS/EROS
-  Updated Jan/2014 by Ron Dilley, USGS/EROS
+  Utility module for espa-processing.
 '''
 
 import os
@@ -18,7 +13,7 @@ import datetime
 import commands
 import random
 
-# local objects and methods
+
 import settings
 
 
@@ -32,23 +27,6 @@ def date_from_doy(year, doy):
                         (doy, year))
     else:
         return d
-
-
-def is_number(s):
-    '''Determines if a string value is a float or int.
-
-    Keyword args:
-    s -- A string possibly containing a float or int
-
-    Return:
-    True if s is a float or int
-    False if s is not a float or int
-    '''
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
 
 
 def execute_cmd(cmd):
@@ -85,17 +63,6 @@ def execute_cmd(cmd):
         raise Exception(message)
 
     return output
-
-
-def strip_zeros(value):
-    '''
-    Description:
-      Removes all leading zeros from a string
-    '''
-
-    while value.startswith('0'):
-        value = value[1:len(value)]
-    return value
 
 
 def get_cache_hostname():
