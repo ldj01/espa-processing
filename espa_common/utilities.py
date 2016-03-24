@@ -231,26 +231,3 @@ def gzip_files(file_list):
             msg = ' '.join([msg, "NO STDOUT/STDERR"])
         # Raise and retain the callstack
         raise Exception(msg)
-
-
-def checksum_local_file(filename):
-    '''
-    Description:
-      Create a checksum for the specified file.
-    '''
-
-    cmd = ' '.join([settings.ESPA_CHECKSUM_TOOL, filename])
-
-    cksum_result = ''
-    try:
-        cksum_result = execute_cmd(cmd)
-    except Exception:
-        msg = "Error encountered generating checksum: Stdout/Stderr:"
-        if len(cksum_result) > 0:
-            msg = ' '.join([msg, cksum_result])
-        else:
-            msg = ' '.join([msg, "NO STDOUT/STDERR"])
-        # Raise and retain the callstack
-        raise Exception(msg)
-
-    return cksum_result
