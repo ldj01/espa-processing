@@ -244,8 +244,6 @@ def process(args):
         except Exception as excep:
 
             # First log the exception
-            if hasattr(excep, 'output'):
-                logger.error("Output [%s]" % excep.output)
             logger.exception("Exception encountered stacktrace follows")
 
             if server is not None:
