@@ -1062,9 +1062,6 @@ class LandsatProcessor(CDRProcessor):
         '''
         Description:
             Generates the Land Surface Temperature product.
-
-        Note: Land Surface Temperature processing is only implemented for
-              L5 and L7
         '''
 
         options = self._parms['options']
@@ -1261,11 +1258,18 @@ class LandsatProcessor(CDRProcessor):
             year = sensor_inst.year
             doy = sensor_inst.doy
 
-            product_name = '%s%s%s%s%s-SC%s%s%s%s%s%s' \
-                % (sensor_code, path.zfill(3), row.zfill(3), year.zfill(4),
-                   doy.zfill(3), str(ts.year).zfill(4), str(ts.month).zfill(2),
-                   str(ts.day).zfill(2), str(ts.hour).zfill(2),
-                   str(ts.minute).zfill(2), str(ts.second).zfill(2))
+            product_name = ('{0}{1}{2}{3}{4}-SC{5}{6}{7}{8}{9}{10}'
+                            .format(sensor_code,
+                                    str(path).zfill(3),
+                                    str(row).zfill(3),
+                                    str(year).zfill(4),
+                                    str(doy).zfill(3),
+                                    str(ts.year).zfill(4),
+                                    str(ts.month).zfill(2),
+                                    str(ts.day).zfill(2),
+                                    str(ts.hour).zfill(2),
+                                    str(ts.minute).zfill(2),
+                                    str(ts.second).zfill(2)))
 
             self._product_name = product_name
 
@@ -1302,18 +1306,6 @@ class Landsat4TMProcessor(LandsatTMProcessor):
     # -------------------------------------------
     def __init__(self, parms):
         super(Landsat4TMProcessor, self).__init__(parms)
-
-    # -------------------------------------------
-    def generate_land_surface_temperature(self):
-        '''
-        Description:
-            Generates the Land Surface Temperature product.
-
-        Note: Land Surface Temperature processing is only implemented for
-              L5 and L7
-        '''
-
-        pass
 
 
 # ===========================================================================
@@ -1434,18 +1426,6 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
             cmd = ' '.join(cmd)
 
         return cmd
-
-    # -------------------------------------------
-    def generate_land_surface_temperature(self):
-        '''
-        Description:
-            Generates the Land Surface Temperature product.
-
-        Note: Land Surface Temperature processing is only implemented for
-              L5 and L7
-        '''
-
-        pass
 
 
 # ===========================================================================
@@ -2839,9 +2819,15 @@ def get_instance(parms):
 
     if sensor_code == 'lt4':
         return Landsat4TMProcessor(parms)
+    elif sensor_code == 'lt04':
+        return LandsatTMProcessor(parms)
     elif sensor_code == 'lt5':
         return LandsatTMProcessor(parms)
+    elif sensor_code == 'lt05':
+        return LandsatTMProcessor(parms)
     elif sensor_code == 'le7':
+        return LandsatETMProcessor(parms)
+    elif sensor_code == 'le07':
         return LandsatETMProcessor(parms)
     elif sensor_code == 'lo8':
         return LandsatOLIProcessor(parms)
