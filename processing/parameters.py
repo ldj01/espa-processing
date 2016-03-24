@@ -20,145 +20,16 @@ import settings
 import sensor
 
 
-# This contains the valid sensors and data types which are supported
-valid_output_formats = ['envi', 'envi-bip', 'gtiff', 'hdf-eos2']
+# Settings for what is supported
+VALID_OUTPUT_FORMATS = ['envi', 'envi-bip', 'gtiff', 'hdf-eos2']
+VALID_RESAMPLE_METHODS = ['near', 'bilinear', 'cubic', 'cubicspline',
+                          'lanczos']
+VALID_PIXEL_SIZE_UNITS = ['meters', 'dd']
+VALID_IMAGE_EXTENTS_UNITS = ['meters', 'dd']
+VALID_PROJECTIONS = ['sinu', 'aea', 'utm', 'ps', 'lonlat']
+VALID_NS = ['north', 'south']
 
 
-# ============================================================================
-def add_work_directory_parameter(parser):
-    '''
-    Description:
-      Adds the work_directory parameter to the command line parameters
-    '''
-
-    parser.add_argument('--work_directory',
-                        action='store', dest='work_directory',
-                        default=os.curdir,
-                        help="work directory on the localhost")
-
-
-# ============================================================================
-def add_debug_parameter(parser):
-    '''
-    Description:
-      Adds the debug parameter to the command line parameters
-    '''
-
-    parser.add_argument('--debug',
-                        action='store_true', dest='debug', default=False,
-                        help="turn debug logging on")
-
-
-# ============================================================================
-def add_reprojection_parameters(parser, projection_values, ns_values,
-                                pixel_size_units, image_extents_units,
-                                resample_methods, datum_values):
-    '''
-    Description:
-      Adds the reprojection parameters to the command line parameters
-    '''
-
-    parser.add_argument('--projection',
-                        action='store', dest='projection', default=None,
-                        help="proj.4 string for desired output product"
-                             " projection")
-
-    parser.add_argument('--reproject',
-                        action='store_true', dest='reproject', default=False,
-                        help="perform reprojection on the products")
-
-    parser.add_argument('--target_projection',
-                        action='store', dest='target_projection',
-                        choices=projection_values,
-                        help="one of (%s)" % ', '.join(projection_values))
-
-    parser.add_argument('--utm_zone',
-                        action='store', dest='utm_zone',
-                        help="UTM zone to use")
-    parser.add_argument('--utm_north_south',
-                        action='store', dest='utm_north_south',
-                        choices=ns_values,
-                        help="one of (%s)" % ', '.join(ns_values))
-
-    # Default to the first entry which should be WGS84
-    parser.add_argument('--datum',
-                        action='store', dest='datum', default=datum_values[0],
-                        help=("one of (%s), only used with albers projection"
-                              % ', '.join(datum_values)))
-
-    parser.add_argument('--longitude_pole',
-                        action='store', dest='longitude_pole',
-                        help="longitude of the pole projection parameter")
-
-    parser.add_argument('--latitude_true_scale',
-                        action='store', dest='latitude_true_scale',
-                        help="latitude true of scale projection parameter")
-
-    parser.add_argument('--origin_lat',
-                        action='store', dest='origin_lat',
-                        help="origin of latitude projection parameter")
-
-    parser.add_argument('--central_meridian',
-                        action='store', dest='central_meridian',
-                        help="central meridian projection parameter")
-
-    parser.add_argument('--std_parallel_1',
-                        action='store', dest='std_parallel_1',
-                        help="first standard parallel projection parameter")
-    parser.add_argument('--std_parallel_2',
-                        action='store', dest='std_parallel_2',
-                        help="second standard parallel projection parameter")
-
-    parser.add_argument('--false_northing',
-                        action='store', dest='false_northing',
-                        help="false northing projection parameter")
-    parser.add_argument('--false_easting',
-                        action='store', dest='false_easting',
-                        help="false easting projection parameter")
-
-    parser.add_argument('--resize',
-                        action='store_true', dest='resize', default=False,
-                        help="perform resizing of the pixels on the products")
-    parser.add_argument('--pixel_size',
-                        action='store', dest='pixel_size',
-                        help="desired pixel size for output products")
-    parser.add_argument('--pixel_size_units',
-                        action='store', dest='pixel_size_units',
-                        choices=pixel_size_units,
-                        help=("units pixel size is specified in: one of (%s)"
-                              % ', '.join(pixel_size_units)))
-
-    parser.add_argument('--image_extents',
-                        action='store_true', dest='image_extents',
-                        default=False,
-                        help="specify desired output image extents")
-    parser.add_argument('--image_extents_units',
-                        action='store', dest='image_extents_units',
-                        choices=pixel_size_units,
-                        help=("units image extents are specified in:"
-                              " one of (%s)"
-                              % ', '.join(image_extents_units)))
-
-    parser.add_argument('--minx',
-                        action='store', dest='minx',
-                        help="minimum X for the image extent")
-    parser.add_argument('--miny',
-                        action='store', dest='miny',
-                        help="minimum Y for the image extent")
-    parser.add_argument('--maxx',
-                        action='store', dest='maxx',
-                        help="maximum X for the image extent")
-    parser.add_argument('--maxy',
-                        action='store', dest='maxy',
-                        help="maximum Y for the image extent")
-
-    parser.add_argument('--resample_method',
-                        action='store', dest='resample_method', default='near',
-                        choices=resample_methods,
-                        help="one of (%s)" % ', '.join(resample_methods))
-
-
-# ============================================================================
 def test_for_parameter(parms, key):
     '''
     Description:
@@ -176,10 +47,7 @@ def test_for_parameter(parms, key):
     return True
 
 
-# ============================================================================
-def validate_reprojection_parameters(parms, scene, projections, ns_values,
-                                     pixel_size_units, image_extents_units,
-                                     resample_methods, datum_values):
+def validate_reprojection_parameters(parms, scene, datum_values):
     '''
     Description:
       Perform a check on the possible reprojection parameters
@@ -220,10 +88,12 @@ def validate_reprojection_parameters(parms, scene, projections, ns_values,
             parms['target_projection'] = target_projection
 
             # Verify a valid projection
-            if target_projection not in projections:
-                raise ValueError("Invalid target_projection [%s]:"
-                                 " Argument must be one of (%s)"
-                                 % (target_projection, ', '.join(projections)))
+            if target_projection not in VALID_PROJECTIONS:
+                msg = ('Invalid target_projection [{0}]:'
+                       ' Argument must be one of ({1})'
+                       .format(target_projection,
+                               ', '.join(VALID_PROJECTIONS)))
+                raise ValueError(msg)
 
             # ................................................................
             if target_projection == "sinu":
@@ -296,11 +166,11 @@ def validate_reprojection_parameters(parms, scene, projections, ns_values,
                     parms['utm_zone'] = zone
                 if not test_for_parameter(parms, 'utm_north_south'):
                     raise RuntimeError("Missing utm_north_south parameter")
-                elif parms['utm_north_south'] not in ns_values:
+                elif parms['utm_north_south'] not in VALID_NS:
                     raise ValueError("Invalid utm_north_south [%s]:"
                                      " Argument must be one of (%s)"
                                      % (parms['utm_north_south'],
-                                        ', '.join(ns_values)))
+                                        ', '.join(VALID_NS)))
 
                 if not test_for_parameter(parms, 'datum'):
                     parms['datum'] = None
@@ -358,22 +228,22 @@ def validate_reprojection_parameters(parms, scene, projections, ns_values,
                     parms['datum'] = None
 
     # ------------------------------------------------------------------------
-    if parms['resample_method'] not in resample_methods:
+    if parms['resample_method'] not in VALID_RESAMPLE_METHODS:
         raise ValueError("Invalid resample_method [%s]:"
                          " Argument must be one of (%s)"
                          % (parms['resample_method'],
-                            ', '.join(resample_methods)))
+                            ', '.join(VALID_RESAMPLE_METHODS)))
 
     # ------------------------------------------------------------------------
     if parms['image_extents']:
         if not test_for_parameter(parms, 'image_extents_units'):
             raise RuntimeError("Missing image_extents_units parameter")
         else:
-            if parms['image_extents_units'] not in image_extents_units:
+            if parms['image_extents_units'] not in VALID_IMAGE_EXTENTS_UNITS:
                 raise ValueError("Invalid image_extents_units [%s]:"
                                  " Argument must be one of (%s)"
                                  % (parms['image_extents_units'],
-                                    ', '.join(image_extents_units)))
+                                    ', '.join(VALID_IMAGE_EXTENTS_UNITS)))
         if not test_for_parameter(parms, 'minx'):
             raise RuntimeError("Missing minx parameter")
         else:
@@ -407,11 +277,11 @@ def validate_reprojection_parameters(parms, scene, projections, ns_values,
         if not test_for_parameter(parms, 'pixel_size_units'):
             raise RuntimeError("Missing pixel_size_units parameter")
         else:
-            if parms['pixel_size_units'] not in pixel_size_units:
+            if parms['pixel_size_units'] not in VALID_PIXEL_SIZE_UNITS:
                 raise ValueError("Invalid pixel_size_units [%s]:"
                                  " Argument must be one of (%s)"
                                  % (parms['pixel_size_units'],
-                                    ', '.join(pixel_size_units)))
+                                    ', '.join(VALID_PIXEL_SIZE_UNITS)))
     else:
         # Default this
         parms['pixel_size'] = None

@@ -328,13 +328,6 @@ class CustomizationProcessor(ProductProcessor):
     # -------------------------------------------
     def __init__(self, parms):
 
-        self._valid_projections = ['sinu', 'aea', 'utm', 'ps', 'lonlat']
-        self._valid_ns = ['north', 'south']
-        self._valid_resample_methods = ['near', 'bilinear', 'cubic',
-                                        'cubicspline', 'lanczos']
-        self._valid_pixel_size_units = ['meters', 'dd']
-        self._valid_image_extents_units = ['meters', 'dd']
-
         self._build_products = False
 
         super(CustomizationProcessor, self).__init__(parms)
@@ -357,11 +350,6 @@ class CustomizationProcessor(ProductProcessor):
         parameters. \
             validate_reprojection_parameters(options,
                                              product_id,
-                                             self._valid_projections,
-                                             self._valid_ns,
-                                             self._valid_pixel_size_units,
-                                             self._valid_image_extents_units,
-                                             self._valid_resample_methods,
                                              settings.VALID_DATUMS)
 
         # Update the xml filename to be correct

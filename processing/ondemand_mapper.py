@@ -200,7 +200,7 @@ def process(args):
                     options['output_format'] = 'envi'
 
                 if (options['output_format']
-                        not in parameters.valid_output_formats):
+                        not in parameters.VALID_OUTPUT_FORMATS):
 
                     raise ValueError("Invalid Output format %s"
                                      % options['output_format'])
