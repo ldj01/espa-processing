@@ -47,7 +47,7 @@ def test_for_parameter(parms, key):
     return True
 
 
-def validate_reprojection_parameters(parms, scene, datum_values):
+def validate_reprojection_parameters(parms, scene):
     '''
     Description:
       Perform a check on the possible reprojection parameters
@@ -148,11 +148,11 @@ def validate_reprojection_parameters(parms, scene, datum_values):
                     raise RuntimeError("Missing datum parameter")
                 else:
                     parms['datum'] = parms['datum'].upper()
-                if parms['datum'] not in datum_values:
+                if parms['datum'] not in settings.VALID_DATUMS:
                     raise ValueError("Invalid datum [%s]:"
                                      " Argument must be one of (%s)"
                                      % (parms['datum'],
-                                        ', '.join(datum_values)))
+                                        ', '.join(settings.VALID_DATUMS)))
 
             # ................................................................
             if target_projection == 'utm':

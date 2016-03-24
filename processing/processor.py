@@ -347,10 +347,7 @@ class CustomizationProcessor(ProductProcessor):
 
         self._logger.info("Validating [CustomizationProcessor] parameters")
 
-        parameters. \
-            validate_reprojection_parameters(options,
-                                             product_id,
-                                             settings.VALID_DATUMS)
+        parameters. validate_reprojection_parameters(options, product_id)
 
         # Update the xml filename to be correct
         self._xml_filename = '.'.join([product_id, 'xml'])
