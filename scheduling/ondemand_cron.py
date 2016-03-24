@@ -40,8 +40,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
     # Get the logger for this task
     logger = EspaLogging.get_logger(logger_name)
 
-
-    # check the number of hadoop jobs and don't do anything if they 
+    # check the number of hadoop jobs and don't do anything if they
     # are over a limit
     job_limit = settings.HADOOP_MAX_JOBS
     cmd = "hadoop job -list|awk '{print $1}'|grep -c job 2>/dev/null"
@@ -56,7 +55,8 @@ def process_requests(args, logger_name, queue_priority, request_priority):
 
     if int(job_count) >= int(job_limit):
         logger.warn('Detected {0} Hadoop jobs running'.format(job_count))
-        logger.warn('No additional jobs will be run until job count is below {0}'.format(job_limit))
+        logger.warn('No additional jobs will be run until job count'
+                    ' is below {0}'.format(job_limit))
         return
 
     rpcurl = os.environ.get('ESPA_XMLRPC')
@@ -69,29 +69,29 @@ def process_requests(args, logger_name, queue_priority, request_priority):
 
         server = xmlrpclib.ServerProxy(rpcurl, allow_none=True)
     else:
-        raise Exception("Missing or invalid environment variable ESPA_XMLRPC")
+        raise Exception('Missing or invalid environment variable ESPA_XMLRPC')
 
     home_dir = os.environ.get('HOME')
-    hadoop_executable = "%s/bin/hadoop/bin/hadoop" % home_dir
+    hadoop_executable = '%s/bin/hadoop/bin/hadoop' % home_dir
 
     # Verify xmlrpc server
     if server is None:
-        msg = "xmlrpc server was None... exiting"
+        msg = 'xmlrpc server was None... exiting'
         raise Exception(msg)
 
     user = server.get_configuration('landsatds.username')
     if len(user) == 0:
-        msg = "landsatds.username is not defined... exiting"
+        msg = 'landsatds.username is not defined... exiting'
         raise Exception(msg)
 
     password = urllib.quote(server.get_configuration('landsatds.password'))
     if len(password) == 0:
-        msg = "landsatds.password is not defined... exiting"
+        msg = 'landsatds.password is not defined... exiting'
         raise Exception(msg)
 
     host = server.get_configuration('landsatds.host')
     if len(host) == 0:
-        msg = "landsatds.host is not defined... exiting"
+        msg = 'landsatds.host is not defined... exiting'
         raise Exception(msg)
 
     # Use ondemand_enabled to determine if we should be processing or not
@@ -101,10 +101,10 @@ def process_requests(args, logger_name, queue_priority, request_priority):
     hadoop_job_queue = settings.HADOOP_QUEUE_MAPPING[queue_priority]
 
     if not ondemand_enabled.lower() == 'true':
-        raise Exception("on demand disabled... exiting")
+        raise Exception('on demand disabled... exiting')
 
     try:
-        logger.info("Checking for requests to process...")
+        logger.info('Checking for requests to process...')
         requests = server.get_scenes_to_process(int(args.limit), args.user,
                                                 request_priority,
                                                 list(args.product_types))
@@ -117,8 +117,8 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                            str(stamp.minute), str(stamp.second),
                            str(queue_priority)))
 
-            logger.info(' '.join(["Found requests to process,",
-                                  "generating job name:", job_name]))
+            logger.info(' '.join(['Found requests to process,',
+                                  'generating job name:', job_name]))
 
             job_filename = '%s%s' % (job_name, '.txt')
             job_filepath = os.path.join('/tmp', job_filename)
@@ -162,8 +162,9 @@ def process_requests(args, logger_name, queue_priority, request_priority):
             mapper = "ondemand_mapper.py"
 
             # Define command line to store the job file in hdfs
-            hadoop_store_command = [hadoop_executable, 'dfs', '-copyFromLocal',
-                                    job_filepath, hdfs_target]
+            hadoop_store_command = [hadoop_executable, 'dfs',
+                                    '-copyFromLocal', job_filepath,
+                                    hdfs_target]
 
             jars = os.path.join(home_dir, 'bin/hadoop/contrib/streaming',
                                 'hadoop-streaming*.jar')
@@ -214,7 +215,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                                               '-rmr', hdfs_target + '-out']
 
             # ----------------------------------------------------------------
-            logger.info("Storing request file to hdfs...")
+            logger.info('Storing request file to hdfs...')
             output = ''
             try:
                 cmd = ' '.join(hadoop_store_command)
@@ -222,13 +223,13 @@ def process_requests(args, logger_name, queue_priority, request_priority):
 
                 output = utilities.execute_cmd(cmd)
             except Exception:
-                msg = "Error storing files to HDFS... exiting"
+                msg = 'Error storing files to HDFS... exiting'
                 raise Exception(msg)
             finally:
                 if len(output) > 0:
                     logger.info(output)
 
-                logger.info("Deleting local request file copy [%s]"
+                logger.info('Deleting local request file copy [%s]'
                             % job_filepath)
                 os.unlink(job_filepath)
 
@@ -242,14 +243,14 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                     sceneid = request['scene']
                     product_list.append((orderid, sceneid))
 
-                    logger.info("Adding scene:%s orderid:%s to queued list"
+                    logger.info('Adding scene:%s orderid:%s to queued list'
                                 % (sceneid, orderid))
 
                 server.queue_products(product_list, 'CDR_ECV cron driver',
                                       job_name)
 
                 # ------------------------------------------------------------
-                logger.info("Running hadoop job...")
+                logger.info('Running hadoop job...')
                 output = ''
                 try:
                     cmd = ' '.join(hadoop_run_command)
@@ -257,14 +258,14 @@ def process_requests(args, logger_name, queue_priority, request_priority):
 
                     output = utilities.execute_cmd(cmd)
                 except Exception:
-                    logger.exception("Error running Hadoop job...")
+                    logger.exception('Error running Hadoop job...')
                 finally:
                     if len(output) > 0:
                         logger.info(output)
 
             finally:
                 # ------------------------------------------------------------
-                logger.info("Deleting hadoop job request file from hdfs....")
+                logger.info('Deleting hadoop job request file from hdfs....')
                 output = ''
                 try:
                     cmd = ' '.join(hadoop_delete_request_command1)
@@ -276,25 +277,25 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                         logger.info(output)
 
                 # ------------------------------------------------------------
-                logger.info("Deleting hadoop job output...")
+                logger.info('Deleting hadoop job output...')
                 output = ''
                 try:
                     cmd = ' '.join(hadoop_delete_request_command2)
                     output = utilities.execute_cmd(cmd)
                 except Exception:
-                    logger.exception("Error deleting hadoop job output")
+                    logger.exception('Error deleting hadoop job output')
                 finally:
                     if len(output) > 0:
                         logger.info(output)
 
         else:
-            logger.info("No requests to process....")
+            logger.info('No requests to process....')
 
     except xmlrpclib.ProtocolError:
-        logger.exception("A protocol error occurred")
+        logger.exception('A protocol error occurred')
 
     except Exception:
-        logger.exception("Error Processing Ondemand Requests")
+        logger.exception('Error Processing Ondemand Requests')
 
     finally:
         server = None
@@ -308,8 +309,8 @@ if __name__ == '__main__':
     '''
 
     # Create a command line argument parser
-    description = ("Builds and kicks-off hadoop jobs for the espa processing"
-                   " system (to process product requests)")
+    description = ('Builds and kicks-off hadoop jobs for the espa processing'
+                   ' system (to process product requests)')
     parser = ArgumentParser(description=description)
 
     # Add parameters
@@ -318,24 +319,24 @@ if __name__ == '__main__':
     parser.add_argument('--priority',
                         action='store', dest='priority', required=True,
                         choices=valid_priorities,
-                        help="only process requests with this priority:"
-                             " one of (%s)" % ', '.join(valid_priorities))
+                        help='only process requests with this priority:'
+                             ' one of (%s)' % ', '.join(valid_priorities))
 
     parser.add_argument('--product-types',
                         action='store', dest='product_types', required=True,
                         nargs='+', metavar='PRODUCT_TYPE',
-                        help=("only process requests for the specified"
-                              " product type(s)"))
+                        help=('only process requests for the specified'
+                              ' product type(s)'))
 
     parser.add_argument('--limit',
                         action='store', dest='limit', required=False,
                         default='500',
-                        help="specify the max number of requests to process")
+                        help='specify the max number of requests to process')
 
     parser.add_argument('--user',
                         action='store', dest='user', required=False,
                         default=None,
-                        help="only process requests for the specified user")
+                        help='only process requests for the specified user')
 
     # Parse the command line arguments
     args = parser.parse_args()
@@ -344,8 +345,8 @@ if __name__ == '__main__':
     if ((set(['landsat', 'plot']) == set(args.product_types)) or
             (set(['modis', 'plot']) == set(args.product_types)) or
             (set(['landsat', 'modis', 'plot']) == set(args.product_types))):
-        print("Invalid --product-types: 'plot' cannot be combined with any"
-              " other product types")
+        print('Invalid --product-types: [plot] cannot be combined with any'
+              ' other product types')
         sys.exit(1)
 
     # Configure and get the logger for this task
@@ -364,7 +365,7 @@ if __name__ == '__main__':
         if (env_var not in os.environ or os.environ.get(env_var) is None or
                 len(os.environ.get(env_var)) < 1):
 
-            logger.critical("$%s is not defined... exiting" % env_var)
+            logger.critical('$%s is not defined... exiting' % env_var)
             sys.exit(1)
 
     # Determine the appropriate priority value to use for the queue and request
@@ -385,7 +386,7 @@ if __name__ == '__main__':
     try:
         process_requests(args, logger_name, queue_priority, request_priority)
     except Exception:
-        logger.exception("Processing failed")
+        logger.exception('Processing failed')
         sys.exit(1)
 
     sys.exit(0)
