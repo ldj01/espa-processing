@@ -16,6 +16,7 @@
 
 import os
 import sys
+import logging
 import json
 import xmlrpclib
 import urllib
@@ -25,7 +26,8 @@ from argparse import ArgumentParser
 
 import settings
 
-from espa_common.logger_factory import EspaLogging as EspaLogging
+
+LOGGER_NAME 'espa.cron.ondemand'
 
 
 def execute_cmd(cmd):
@@ -64,7 +66,7 @@ def execute_cmd(cmd):
     return output
 
 
-def process_requests(args, logger_name, queue_priority, request_priority):
+def process_requests(args, queue_priority, request_priority):
     """Retrieves and kicks off processes
 
     Queries the xmlrpc service to see if there are any requests that need
@@ -74,7 +76,6 @@ def process_requests(args, logger_name, queue_priority, request_priority):
 
     Args:
         args (struct): The arguments retireved from the command line.
-        logger_name (str): The name of the logger to use for reporting.
         queue_priority (str): The queue to use or None.
         request_priority (str): The request to use or None.
 
@@ -86,7 +87,7 @@ def process_requests(args, logger_name, queue_priority, request_priority):
     """
 
     # Get the logger for this task
-    logger = EspaLogging.get_logger(logger_name)
+    logger = logging.get_logger(LOGGER_NAME)
 
     # check the number of hadoop jobs and don't do anything if they
     # are over a limit
@@ -380,13 +381,22 @@ def main():
         sys.exit(1)  # EXIT_FAILURE
 
     # Configure and get the logger for this task
+    logger_filename = '/tmp/espa-cron.log'
     if 'plot' in args.product_types:
-        logger_name = 'espa.cron.plot'
         logger_filename = '/tmp/espa-plot-cron.log'
-    else:
-        logger_name = '.'.join(['espa.cron', args.priority.lower()])
-    EspaLogging.configure(logger_name)
-    logger = EspaLogging.get_logger(logger_name)
+
+    logger_format = ('%(asctime)s.%(msecs)03d %(process)d'
+                     ' %(levelname)-8s {0:>6}'
+                     ' %(filename)s:%(lineno)d:%(funcName)s'
+                     ' -- %(message)s'.format(args.priority.lower()))
+
+    # Setup the default logger format and level.  Log to STDOUT.
+    logging.basicConfig(format=logger_format,
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=logging.INFO,
+                        filename=logger_filename)
+
+    logger = logging.get_logger(LOGGER_NAME)
 
     # Check required variables that this script should fail on if they are not
     # defined
@@ -415,7 +425,7 @@ def main():
 
     # Setup and submit products to hadoop for processing
     try:
-        process_requests(args, logger_name, queue_priority, request_priority)
+        process_requests(args, queue_priority, request_priority)
     except Exception:
         logger.exception('Processing failed')
         sys.exit(1)  # EXIT_FAILURE
