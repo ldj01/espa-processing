@@ -14,13 +14,10 @@ import os
 import sys
 import glob
 
-# imports from espa_common
-from logger_factory import EspaLogging
-import utilities
-
-# local objects and methods
-from environment import Environment, DISTRIBUTION_METHOD_LOCAL
 import settings
+import utilities
+from logging_tools import EspaLogging
+from environment import Environment, DISTRIBUTION_METHOD_LOCAL
 import transfer
 
 

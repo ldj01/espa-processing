@@ -24,14 +24,13 @@ from matplotlib import lines as mpl_lines
 from matplotlib.ticker import MaxNLocator
 import numpy as np
 
-# imports from espa_common
-from logger_factory import EspaLogging
+# local objects and methods
 import settings
 import utilities
-
-# local objects and methods
+from logging_tools import EspaLogging
 from environment import Environment
 import espa_exception as ee
+import sensor
 import initialization
 import parameters
 import metadata
@@ -41,7 +40,6 @@ import staging
 import statistics
 import transfer
 import distribution
-import sensor
 
 
 # ===========================================================================

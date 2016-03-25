@@ -6,9 +6,6 @@ License:
 Description:
   This module provides routines to be used for analyzing and manipulating tile
   data.
-
-History:
-  Created Jan/2014 by Ron Dilley, USGS/EROS
 '''
 
 import os
@@ -18,15 +15,8 @@ import errno
 from cStringIO import StringIO
 import numpy as np
 
-# espa-common objects and methods
-from espa_constants import EXIT_FAILURE
-from espa_constants import EXIT_SUCCESS
-
-# imports from espa_common
-from logger_factory import EspaLogging
 import settings
-
-# local objects and methods
+from logging_tools import EspaLogging
 import espa_exception as ee
 
 
@@ -187,6 +177,6 @@ if __name__ == '__main__':
         generate_statistics('.', files_to_search_for)
     except Exception:
         logger.exception("Processing failed")
-        sys.exit(EXIT_FAILURE)
+        sys.exit(1)  # EXIT_FAILURE
 
-    sys.exit(EXIT_SUCCESS)
+    sys.exit(0)  # EXIT_SUCCESS

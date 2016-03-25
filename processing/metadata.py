@@ -16,10 +16,8 @@ import shutil
 import glob
 from cStringIO import StringIO
 
-# imports from espa_common
-from logger_factory import EspaLogging
 import settings
-
+from logging_tools import EspaLogging
 
 # ============================================================================
 def get_landsat_metadata(work_dir, product_id):

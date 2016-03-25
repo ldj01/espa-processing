@@ -13,12 +13,9 @@ import shutil
 import glob
 from time import sleep
 
-# imports from espa_common
-from logger_factory import EspaLogging
-import utilities
 import settings
-
-# local objects and methods
+import utilities
+from logging_tools import EspaLogging
 from environment import Environment, DISTRIBUTION_METHOD_LOCAL
 from espa_exception import ESPAException
 import transfer

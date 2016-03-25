@@ -6,19 +6,6 @@ License:
 
 Description:
   Read all lines from STDIN and process them.
-
-History:
-  Created Jan/2014 by Ron Dilley, USGS/EROS
-
-    Date              Programmer               Reason
-    ----------------  ------------------------ -------------------------------
-    Jan/2014          Ron Dilley               Initial implementation
-    Sept/2014         Ron Dilley               Updated to use espa_common and
-                                               our python logging setup
-                                               Updated to use Hadoop
-    Oct/2014          Ron Dilley               Renamed to ondemand and updated
-                                               to perform all of our ondemand
-                                               map operations
 '''
 
 import sys
@@ -28,12 +15,10 @@ import xmlrpclib
 from time import sleep
 from argparse import ArgumentParser
 
-# imports from espa_common
-from logger_factory import EspaLogging
+# local objects and methods
 import settings
 import sensor
-
-# local objects and methods
+from logging_tools import EspaLogging
 import parameters
 import processor
 
@@ -264,7 +249,6 @@ def process(args):
                 except Exception:
                     logger.exception("Exception encountered stacktrace"
                                      " follows")
-    # END - for line in STDIN
 
 
 # ============================================================================

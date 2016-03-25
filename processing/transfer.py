@@ -17,10 +17,9 @@ import urllib2
 import requests
 from time import sleep
 
-# imports from espa_common
-from logger_factory import EspaLogging
-import utilities
 import settings
+import utilities
+from logging_tools import EspaLogging
 
 
 # ============================================================================
