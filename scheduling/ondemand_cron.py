@@ -13,6 +13,7 @@
     LICENSE: NASA Open Source Agreement 1.3
 '''
 
+
 import os
 import sys
 import json
@@ -24,19 +25,65 @@ from argparse import ArgumentParser
 
 import settings
 
-from espa_common import utilities
 from espa_common.logger_factory import EspaLogging as EspaLogging
 
 
-# ============================================================================
+def execute_cmd(cmd):
+    """Execute a system command line
+
+    Args:
+        cmd (str): The command line to execute.
+
+    Returns:
+        output (str): The stdout and/or stderr from the executed command.
+
+    Raises:
+        Exception(message)
+    """
+
+    output = ''
+    (status, output) = commands.getstatusoutput(cmd)
+
+    message = ''
+    if status < 0:
+        message = 'Application terminated by signal [{0}]'.format(cmd)
+
+    if status != 0:
+        message = 'Application failed to execute [{0}]'.format(cmd)
+
+    if os.WEXITSTATUS(status) != 0:
+        message = ('Application [{0}] returned error code [{1}]'
+                   .format(cmd, os.WEXITSTATUS(status)))
+
+    if len(message) > 0:
+        if len(output) > 0:
+            # Add the output to the exception message
+            message = ' Stdout/Stderr is: '.join([message, output])
+        raise Exception(message)
+
+    return output
+
+
 def process_requests(args, logger_name, queue_priority, request_priority):
-    '''
-    Description:
-      Queries the xmlrpc service to see if there are any requests that need
-      to be processed with the specified type, priority and/or user.  If there
-      are, this method builds and executes a hadoop job and updates the status
-      for each request through the xmlrpc service."
-    '''
+    """Retrieves and kicks off processes
+
+    Queries the xmlrpc service to see if there are any requests that need
+    to be processed with the specified type, priority and/or user.  If there
+    are, this method builds and executes a hadoop job and updates the status
+    for each request through the xmlrpc service."
+
+    Args:
+        args (struct): The arguments retireved from the command line.
+        logger_name (str): The name of the logger to use for reporting.
+        queue_priority (str): The queue to use or None.
+        request_priority (str): The request to use or None.
+
+    Returns:
+        Nothing is returned.
+
+    Raises:
+        Exception(message)
+    """
 
     # Get the logger for this task
     logger = EspaLogging.get_logger(logger_name)
@@ -46,8 +93,8 @@ def process_requests(args, logger_name, queue_priority, request_priority):
     job_limit = settings.HADOOP_MAX_JOBS
     cmd = "hadoop job -list|awk '{print $1}'|grep -c job 2>/dev/null"
     try:
-        job_count = utilities.execute_cmd(cmd)
-    except Exception, e:
+        job_count = execute_cmd(cmd)
+    except Exception as e:
         errmsg = 'Stdout/Stderr is: 0'
         if errmsg in e.message:
             job_count = 0
@@ -77,23 +124,19 @@ def process_requests(args, logger_name, queue_priority, request_priority):
 
     # Verify xmlrpc server
     if server is None:
-        msg = 'xmlrpc server was None... exiting'
-        raise Exception(msg)
+        raise Exception('xmlrpc server was None... exiting')
 
     user = server.get_configuration('landsatds.username')
     if len(user) == 0:
-        msg = 'landsatds.username is not defined... exiting'
-        raise Exception(msg)
+        raise Exception('landsatds.username is not defined... exiting')
 
     password = urllib.quote(server.get_configuration('landsatds.password'))
     if len(password) == 0:
-        msg = 'landsatds.password is not defined... exiting'
-        raise Exception(msg)
+        raise Exception('landsatds.password is not defined... exiting')
 
     host = server.get_configuration('landsatds.host')
     if len(host) == 0:
-        msg = 'landsatds.host is not defined... exiting'
-        raise Exception(msg)
+        raise Exception('landsatds.host is not defined... exiting')
 
     # Use ondemand_enabled to determine if we should be processing or not
     ondemand_enabled = server.get_configuration('system.ondemand_enabled')
@@ -121,28 +164,23 @@ def process_requests(args, logger_name, queue_priority, request_priority):
             logger.info(' '.join(['Found requests to process,',
                                   'generating job name:', job_name]))
 
-            job_filename = '{0}{1}'.format(job_name, '.txt')
+            job_filename = '{0}.txt'.format(job_name)
             job_filepath = os.path.join('/tmp', job_filename)
 
             # Create the order file full of all the scenes requested
             with open(job_filepath, 'w+') as espa_fd:
                 for request in requests:
-                    (orderid, options) = (request['orderid'],
-                                          request['options'])
-
                     request['xmlrpcurl'] = rpcurl
 
-                    # Log the requested options before passwords are added
+                    # Log the request before passwords are added
                     line_entry = json.dumps(request)
                     logger.info(line_entry)
 
                     # Add the usernames and passwords to the options
-                    options['source_username'] = user
-                    options['destination_username'] = user
-                    options['source_pw'] = password
-                    options['destination_pw'] = password
-
-                    request['options'] = options
+                    request['options']['source_username'] = user
+                    request['options']['destination_username'] = user
+                    request['options']['source_pw'] = password
+                    request['options']['destination_pw'] = password
 
                     # Need to refresh since we added password stuff that
                     # could not be logged
@@ -153,8 +191,6 @@ def process_requests(args, logger_name, queue_priority, request_priority):
 
                     # Write out the request line
                     espa_fd.write(request_line)
-                # END - for scene
-            # END - with espa_fd
 
             # Specify the location of the order file on the hdfs
             hdfs_target = os.path.join('requests', job_filename)
@@ -216,14 +252,13 @@ def process_requests(args, logger_name, queue_priority, request_priority):
             hadoop_delete_request_command2 = [hadoop_executable, 'dfs',
                                               '-rmr', hdfs_target + '-out']
 
-            # ----------------------------------------------------------------
             logger.info('Storing request file to hdfs...')
             output = ''
             try:
                 cmd = ' '.join(hadoop_store_command)
                 logger.info('Store cmd:{0}'.format(cmd))
 
-                output = utilities.execute_cmd(cmd)
+                output = execute_cmd(cmd)
             except Exception:
                 msg = 'Error storing files to HDFS... exiting'
                 raise Exception(msg)
@@ -236,29 +271,26 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                 os.unlink(job_filepath)
 
             try:
-                # ------------------------------------------------------------
                 # Update the scene list as queued so they don't get pulled
                 # down again now that these jobs have been stored in hdfs
                 product_list = list()
                 for request in requests:
-                    orderid = request['orderid']
-                    sceneid = request['scene']
-                    product_list.append((orderid, sceneid))
+                    product_list.append((request['orderid'],
+                                         request['scene']))
 
                     logger.info('Adding scene:{0} orderid:{1} to queued list'
-                                .format(sceneid, orderid))
+                                .format(request['scene'], request['orderid']))
 
                 server.queue_products(product_list, 'CDR_ECV cron driver',
                                       job_name)
 
-                # ------------------------------------------------------------
                 logger.info('Running hadoop job...')
                 output = ''
                 try:
                     cmd = ' '.join(hadoop_run_command)
                     logger.info('Run cmd:{0}'.format(cmd))
 
-                    output = utilities.execute_cmd(cmd)
+                    output = execute_cmd(cmd)
                 except Exception:
                     logger.exception('Error running Hadoop job...')
                 finally:
@@ -266,24 +298,22 @@ def process_requests(args, logger_name, queue_priority, request_priority):
                         logger.info(output)
 
             finally:
-                # ------------------------------------------------------------
                 logger.info('Deleting hadoop job request file from hdfs....')
                 output = ''
                 try:
                     cmd = ' '.join(hadoop_delete_request_command1)
-                    output = utilities.execute_cmd(cmd)
+                    output = execute_cmd(cmd)
                 except Exception:
                     logger.exception("Error deleting hadoop job request file")
                 finally:
                     if len(output) > 0:
                         logger.info(output)
 
-                # ------------------------------------------------------------
                 logger.info('Deleting hadoop job output...')
                 output = ''
                 try:
                     cmd = ' '.join(hadoop_delete_request_command2)
-                    output = utilities.execute_cmd(cmd)
+                    output = execute_cmd(cmd)
                 except Exception:
                     logger.exception('Error deleting hadoop job output')
                 finally:
@@ -303,12 +333,8 @@ def process_requests(args, logger_name, queue_priority, request_priority):
         server = None
 
 
-# ============================================================================
-if __name__ == '__main__':
-    '''
-    Description:
-      Execute the core processing routine.
-    '''
+def main():
+    """Execute the core processing routine"""
 
     # Create a command line argument parser
     description = ('Builds and kicks-off hadoop jobs for the espa processing'
@@ -318,6 +344,7 @@ if __name__ == '__main__':
     # Add parameters
     valid_priorities = sorted(settings.HADOOP_QUEUE_MAPPING.keys())
     valid_product_types = ['landsat', 'modis', 'plot']
+
     parser.add_argument('--priority',
                         action='store', dest='priority', required=True,
                         choices=valid_priorities,
@@ -350,11 +377,12 @@ if __name__ == '__main__':
             (set(['landsat', 'modis', 'plot']) == set(args.product_types))):
         print('Invalid --product-types: [plot] cannot be combined with any'
               ' other product types')
-        sys.exit(1)
+        sys.exit(1)  # EXIT_FAILURE
 
     # Configure and get the logger for this task
     if 'plot' in args.product_types:
         logger_name = 'espa.cron.plot'
+        logger_filename = '/tmp/espa-plot-cron.log'
     else:
         logger_name = '.'.join(['espa.cron', args.priority.lower()])
     EspaLogging.configure(logger_name)
@@ -369,7 +397,7 @@ if __name__ == '__main__':
                 len(os.environ.get(env_var)) < 1):
 
             logger.critical('${0} is not defined... exiting'.format(env_var))
-            sys.exit(1)
+            sys.exit(1)  # EXIT_FAILURE
 
     # Determine the appropriate priority value to use for the queue and request
     queue_priority = args.priority.lower()
@@ -390,6 +418,10 @@ if __name__ == '__main__':
         process_requests(args, logger_name, queue_priority, request_priority)
     except Exception:
         logger.exception('Processing failed')
-        sys.exit(1)
+        sys.exit(1)  # EXIT_FAILURE
 
-    sys.exit(0)
+    sys.exit(0)  # EXIT_SUCCESS
+
+
+if __name__ == '__main__':
+    main()
