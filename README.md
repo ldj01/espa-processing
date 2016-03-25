@@ -15,8 +15,12 @@ USGS Designation: EROS Science Processing Architecture (ESPA)
 ## Release Notes
 Please see the Release Tags for notes related to past versions.
 
-  - Updated elevation generation to support the new generation executable
-  - Updated surface water extent processing to be allowed for OLITIRS dat
+  - Updated elevation generation to support the new generation executable.
+  - Updated surface water extent processing to be allowed for L8 OLITIRS data.
+  - Updated land surface temperature processing to be allowed for L4 TM and L8 OLITIRS data.
+  - Modified the scheduling code to be self contained within the scheduling directory.
+  - Modified the processing code to be self contained within the processing directory.
+  - Added support for L4, 5, 7 collection processing.
 
 ## Supported Science Products
 To generate products for a science application, it must be installed on the system and the applications provided must be available on the PATH.  See the respective science projects for installation instructions and auxiliary data requirements.
@@ -41,4 +45,4 @@ Observation and Science (EROS) Land Satellite Data Systems (LSDS) Science
 Research and Development (LSRD) Project. For questions regarding products
 produced by this source code, please contact the Landsat Contact Us page and
 specify USGS CDR/ECV in the "Regarding" section.
-https://landsat.usgs.gov/contactus.php 
+https://landsat.usgs.gov/contactus.php
