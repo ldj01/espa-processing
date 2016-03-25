@@ -101,30 +101,6 @@ LOGGER_CONFIG = {
                        ' -- %(message)s'),
             'datefmt': '%Y-%m-%d %H:%M:%S'
         },
-        'espa.standard.low': {
-            # Provided so 'low' is added to the log message
-            'format': ('%(asctime)s.%(msecs)03d %(process)d'
-                       ' %(levelname)-8s    low '
-                       ' %(filename)s:%(lineno)d:%(funcName)s'
-                       ' -- %(message)s'),
-            'datefmt': '%Y-%m-%d %H:%M:%S'
-        },
-        'espa.standard.normal': {
-            # Provided so 'normal' is added to the log message
-            'format': ('%(asctime)s.%(msecs)03d %(process)d'
-                       ' %(levelname)-8s normal '
-                       ' %(filename)s:%(lineno)d:%(funcName)s'
-                       ' -- %(message)s'),
-            'datefmt': '%Y-%m-%d %H:%M:%S'
-        },
-        'espa.standard.high': {
-            # Provided so 'high' is added to the log message
-            'format': ('%(asctime)s.%(msecs)03d %(process)d'
-                       ' %(levelname)-8s   high '
-                       ' %(filename)s:%(lineno)d:%(funcName)s'
-                       ' -- %(message)s'),
-            'datefmt': '%Y-%m-%d %H:%M:%S'
-        },
         'espa.thread': {
             # An example for threading, not currently used
             'format': ('%(asctime)s.%(msecs)03d %(process)d'
@@ -137,48 +113,6 @@ LOGGER_CONFIG = {
     },
     'handlers': {
         # All espa.* handler names need to match the espa.* logger names
-        'espa.cron.all': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'formatter': 'espa.standard',
-            'filename': '/tmp/espa-cron.log',
-            'mode': 'a'
-        },
-        'espa.cron.low': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'formatter': 'espa.standard.low',
-            'filename': '/tmp/espa-cron.log',
-            'mode': 'a'
-        },
-        'espa.cron.normal': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'formatter': 'espa.standard.normal',
-            'filename': '/tmp/espa-cron.log',
-            'mode': 'a'
-        },
-        'espa.cron.high': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'formatter': 'espa.standard.high',
-            'filename': '/tmp/espa-cron.log',
-            'mode': 'a'
-        },
-        'espa.cron.plot': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'formatter': 'espa.standard',
-            'filename': '/tmp/espa-plot-cron.log',
-            'mode': 'a'
-        },
-        'espa.cron.orderdisp': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'formatter': 'espa.standard',
-            'filename': '/tmp/espa-order-disposition-cron.log',
-            'mode': 'a'
-        },
         'espa.processing': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
@@ -189,44 +123,6 @@ LOGGER_CONFIG = {
     },
     'loggers': {
         # All espa.* logger names need to match the espa.* handler names
-        # All espa.cron.<priority> must match the priority levels defined in
-        # settings.HADOOP_QUEUE_MAPPING above
-        'espa.cron.all': {
-            # To be used by the 'all' cron
-            'level': 'INFO',
-            'propagate': False,
-            'handlers': ['espa.cron.all']
-        },
-        'espa.cron.low': {
-            # To be used by the 'low' cron
-            'level': 'INFO',
-            'propagate': False,
-            'handlers': ['espa.cron.low']
-        },
-        'espa.cron.normal': {
-            # To be used by the 'normal' cron
-            'level': 'INFO',
-            'propagate': False,
-            'handlers': ['espa.cron.normal']
-        },
-        'espa.cron.high': {
-            # To be used by the 'high' cron
-            'level': 'INFO',
-            'propagate': False,
-            'handlers': ['espa.cron.high']
-        },
-        'espa.cron.plot': {
-            # To be used by the 'lpcs' cron
-            'level': 'INFO',
-            'propagate': False,
-            'handlers': ['espa.cron.plot']
-        },
-        'espa.cron.orderdisp': {
-            # To be used by the order disposition cron
-            'level': 'INFO',
-            'propagate': False,
-            'handlers': ['espa.cron.orderdisp']
-        },
         'espa.processing': {
             # To be used by the processing system
             'level': 'INFO',
