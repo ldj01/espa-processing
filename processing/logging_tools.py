@@ -1,4 +1,11 @@
 
+'''
+Description: Provides the logging tools.
+
+License: NASA Open Source Agreement 1.3
+'''
+
+
 import os
 import logging
 import logging.config
@@ -7,10 +14,8 @@ import settings
 
 
 class EspaLoggerException(Exception):
-    '''
-    Description:
-        An exception just for the EspaLogging class.
-    '''
+    """An exception just for the EspaLogging class
+    """
     pass
 
 
@@ -20,19 +25,20 @@ class EspaLogging(object):
 
     @classmethod
     def check_logger_configured(cls, logger_name):
-        '''
-        Description:
-          Checks to see if a logger has been configured.
+        """Checks to see if a logger has been configured
 
-        On error raises:
-          EspaLoggerException
-        '''
+        Args:
+            logger_name (str): The name of the logger to use.
+
+        Raises:
+            EspaLoggerException
+        """
 
         logger_name = logger_name.lower()
 
         if logger_name not in cls.my_config['loggers']:
-            msg = ("Reporter [%s] is not configured" % logger_name)
-            raise EspaLoggerException(msg)
+            raise EspaLoggerException('Reporter [{0}] is not configured'
+                                      .format(logger_name))
 
     @classmethod
     def configure_base_logger(cls,
@@ -43,6 +49,14 @@ class EspaLogging(object):
                                       ' -- %(message)s'),
                               datefmt='%Y-%m-%d %H:%M:%S',
                               level=logging.DEBUG):
+        """Configures the base logger
+
+        Args:
+            filename (str): The name of the file to contain the log.
+            format (str): The formatting to use withiin the logfile.
+            date (str): The format for the date strings.
+            level (flag): The base level of errors to log to the file.
+        """
 
         if not cls.basic_logger_configured:
             # Setup a base logger so that we can use it for errors
@@ -53,21 +67,28 @@ class EspaLogging(object):
 
     @classmethod
     def configure(cls, logger_name, order=None, product=None, debug=False):
-        '''
-        Description:
-          Adds a configured logger from settings to the logging configured
-          for this python execution instance.
+        """Adds a configured logger python execution instance
 
-        On error raises:
-          EspaLoggerException
-        '''
+        Adds a configured logger from settings to the logging configured for
+        this python execution instance.
+
+        Args:
+            logger_name (str): The name of the logger to define/configure.
+            order (str): The Order ID to use for log name formatting.
+            product (str): The Product ID to use for log name formatting.
+            debug (bool): Should debug level log messages be reported in
+                          the log file.
+
+        Raises:
+            EspaLoggerException
+        """
 
         logger_name = logger_name.lower()
 
         if logger_name not in settings.LOGGER_CONFIG['loggers']:
-            msg = ("Reporter [%s] is not a configured logger in settings.py"
-                   % logger_name)
-            raise EspaLoggerException(msg)
+            raise EspaLoggerException('Reporter [{0}] is not a configured'
+                                      ' logger in settings.py'
+                                      .format(logger_name))
 
         if (logger_name == 'espa.processing' and
                 (order is None or product is None)):
@@ -123,7 +144,7 @@ class EspaLogging(object):
                 config_handler = cls.my_config['handlers'][handler_name]
 
                 # Override the logger path and name
-                filename = '/tmp/espa-job-%s-%s.log' % (order, product)
+                filename = '/tmp/espa-job-{0}-{1}.log'.format(order, product)
                 config_handler['filename'] = filename
 
             # Now configure the python logging module
@@ -131,14 +152,14 @@ class EspaLogging(object):
 
     @classmethod
     def get_filename(cls, logger_name):
-        '''
-        Description:
-          Returns the full path and name of the file used for the specified
-          logger.
+        """Returns the full path and name of the logfile
 
-        On error raises:
-          EspaLoggerException
-        '''
+        Args:
+            logger_name (str): The name of the logger to get the filename for.
+
+        Raises:
+            EspaLoggerException
+        """
 
         logger_name = logger_name.lower()
         cls.check_logger_configured(logger_name)
@@ -146,20 +167,22 @@ class EspaLogging(object):
         handler = cls.my_config['handlers'][logger_name]
 
         if handler['class'] != 'logging.FileHandler':
-            msg = ("Reporter [%s] is not a file logger" % logger_name)
-            raise EspaLoggerException(msg)
+            raise EspaLoggerException('Reporter [{0}] is not a file logger'
+                                      .format(logger_name))
 
         return handler['filename']
 
     @classmethod
     def delete_logger_file(cls, logger_name):
-        '''
-        Description:
-          Deletes the file associated with the specified logger.
+        """Deletes the log file associated with the specified logger
 
-        On error raises:
-          EspaLoggerException
-        '''
+        Args:
+            logger_name (str): The name of the logger to delete the logfile
+                               for.
+
+        Raises:
+            EspaLoggerException
+        """
 
         logger_name = logger_name.lower()
         cls.check_logger_configured(logger_name)
@@ -167,8 +190,8 @@ class EspaLogging(object):
         handler = cls.my_config['handlers'][logger_name]
 
         if handler['class'] != 'logging.FileHandler':
-            msg = ("Reporter [%s] is not a file logger" % logger_name)
-            raise EspaLoggerException(msg)
+            raise EspaLoggerException('Reporter [{0}] is not a file logger'
+                                      .format(logger_name))
 
         filename = handler['filename']
 
@@ -180,14 +203,17 @@ class EspaLogging(object):
 
     @classmethod
     def read_logger_file(cls, logger_name):
-        '''
-        Description:
-          Reads and returns the contents of the file associated with the
-          specified logger.
+        """Returns the contents of the logfile for the specified logger
 
-        On error raises:
-          EspaLoggerException
-        '''
+        Reads and returns the contents of the file associated with the
+        specified logger.
+
+        Args:
+            logger_name (str): The name of the logger to read the logfile for.
+
+        Raises:
+            EspaLoggerException
+        """
 
         logger_name = logger_name.lower()
         cls.check_logger_configured(logger_name)
@@ -195,8 +221,8 @@ class EspaLogging(object):
         handler = cls.my_config['handlers'][logger_name]
 
         if handler['class'] != 'logging.FileHandler':
-            msg = ("Reporter [%s] is not a file logger" % logger_name)
-            raise EspaLoggerException(msg)
+            raise EspaLoggerException('Reporter [{0}] is not a file logger'
+                                      .format(logger_name))
 
         filename = handler['filename']
 
@@ -209,14 +235,17 @@ class EspaLogging(object):
 
     @classmethod
     def get_logger(cls, logger_name):
-        '''
-        Description:
-          Checks to see if a logger has been configured and returns the
-          logger or generates an exception.
+        """Returns a configured logger
 
-        On error raises:
-          EspaLoggerException
-        '''
+        Checks to see if the logger has been configured and returns the logger
+        or generates an exception.
+
+        Args:
+            logger_name (str): The name of the logger to get.
+
+        Raises:
+            EspaLoggerException
+        """
 
         logger_name = logger_name.lower()
         if logger_name != 'base':
