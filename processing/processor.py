@@ -1,11 +1,9 @@
 
 '''
-License:
-    NASA Open Source Agreement 1.3
+Description: Implements the processors which generate the products the system
+             is capable of producing.
 
-Description:
-    Implements the processors which generate the products the system is
-    capable of producing.
+License: NASA Open Source Agreement 1.3
 '''
 
 
@@ -33,7 +31,7 @@ import espa_exception as ee
 import sensor
 import initialization
 import parameters
-import metadata
+import landsat_metadata
 import metadata_api
 import warp
 import staging
@@ -42,7 +40,6 @@ import transfer
 import distribution
 
 
-# ===========================================================================
 class ProductProcessor(object):
     '''
     Description:
@@ -58,7 +55,6 @@ class ProductProcessor(object):
         It also implements the cleanup of the product directory.
     '''
 
-    # -------------------------------------------
     def __init__(self, parms):
         '''
         Description:
@@ -92,7 +88,6 @@ class ProductProcessor(object):
         self._work_dir = None
         self._output_dir = None
 
-    # -------------------------------------------
     def validate_parameters(self):
         '''
         Description:
@@ -134,7 +129,6 @@ class ProductProcessor(object):
         if not parameters.test_for_parameter(options, 'destination_pw'):
             options['destination_pw'] = 'localhost'
 
-    # -------------------------------------------
     def log_order_parameters(self):
         '''
         Description:
@@ -153,7 +147,6 @@ class ProductProcessor(object):
 
         del parms
 
-    # -------------------------------------------
     def initialize_processing_directory(self):
         '''
         Description:
@@ -206,7 +199,6 @@ class ProductProcessor(object):
             initialization.create_output_directory(self._product_dir)
         self._logger.info("Created directory [{0}]".format(self._output_dir))
 
-    # -------------------------------------------
     def remove_product_directory(self):
         '''
         Description:
@@ -222,7 +214,6 @@ class ProductProcessor(object):
         if self._product_dir is not None and not options['keep_directory']:
             shutil.rmtree(self._product_dir, ignore_errors=True)
 
-    # -------------------------------------------
     def get_product_name(self):
         '''
         Description:
@@ -237,7 +228,6 @@ class ProductProcessor(object):
                % self.get_product_name.__name__)
         raise NotImplementedError(msg)
 
-    # -------------------------------------------
     def distribute_product(self):
         '''
         Description:
@@ -266,7 +256,6 @@ class ProductProcessor(object):
         # Let the caller know where we put these on the destination system
         return (product_file, cksum_file)
 
-    # -------------------------------------------
     def process_product(self):
         '''
         Description:
@@ -284,7 +273,6 @@ class ProductProcessor(object):
                % self.process_product.__name__)
         raise NotImplementedError(msg)
 
-    # -------------------------------------------
     def process(self):
         '''
         Description:
@@ -315,7 +303,6 @@ class ProductProcessor(object):
         return (destination_product_file, destination_cksum_file)
 
 
-# ===========================================================================
 class CustomizationProcessor(ProductProcessor):
     '''
     Description:
@@ -323,14 +310,12 @@ class CustomizationProcessor(ProductProcessor):
         which warps the products to the user requested projection.
     '''
 
-    # -------------------------------------------
     def __init__(self, parms):
 
         self._build_products = False
 
         super(CustomizationProcessor, self).__init__(parms)
 
-    # -------------------------------------------
     def validate_parameters(self):
         '''
         Description:
@@ -350,7 +335,6 @@ class CustomizationProcessor(ProductProcessor):
         # Update the xml filename to be correct
         self._xml_filename = '.'.join([product_id, 'xml'])
 
-    # -------------------------------------------
     def customize_products(self):
         '''
         Description:
@@ -376,18 +360,15 @@ class CustomizationProcessor(ProductProcessor):
             warp.warp_espa_data(options, product_id, self._xml_filename)
 
 
-# ===========================================================================
 class CDRProcessor(CustomizationProcessor):
     '''
     Description:
         Provides the super class implementation for generating CDR products.
     '''
 
-    # -------------------------------------------
     def __init__(self, parms):
         super(CDRProcessor, self).__init__(parms)
 
-    # -------------------------------------------
     def validate_parameters(self):
         '''
         Description:
@@ -397,7 +378,6 @@ class CDRProcessor(CustomizationProcessor):
         # Call the base class parameter validation
         super(CDRProcessor, self).validate_parameters()
 
-    # -------------------------------------------
     def stage_input_data(self):
         '''
         Description:
@@ -411,7 +391,6 @@ class CDRProcessor(CustomizationProcessor):
                % self.stage_input_data.__name__)
         raise NotImplementedError(msg)
 
-    # -------------------------------------------
     def build_science_products(self):
         '''
         Description:
@@ -425,7 +404,6 @@ class CDRProcessor(CustomizationProcessor):
                % self.build_science_products.__name__)
         raise NotImplementedError(msg)
 
-    # -------------------------------------------
     def cleanup_work_dir(self):
         '''
         Description:
@@ -440,7 +418,6 @@ class CDRProcessor(CustomizationProcessor):
                % self.cleanup_work_dir.__name__)
         raise NotImplementedError(msg)
 
-    # -------------------------------------------
     def remove_products_from_xml(self):
         '''
         Description:
@@ -536,9 +513,7 @@ class CDRProcessor(CustomizationProcessor):
             # Cleanup
             del bands
             del espa_xml
-        # END - if products_to_remove
 
-    # -------------------------------------------
     def generate_statistics(self):
         '''
         Description:
@@ -552,7 +527,6 @@ class CDRProcessor(CustomizationProcessor):
                % self.generate_statistics.__name__)
         raise NotImplementedError(msg)
 
-    # -------------------------------------------
     def distribute_statistics(self):
         '''
         Description:
@@ -573,7 +547,6 @@ class CDRProcessor(CustomizationProcessor):
 
             self._logger.info("*** Statistics Distribution Complete ***")
 
-    # -------------------------------------------
     def reformat_products(self):
         '''
         Description:
@@ -592,7 +565,6 @@ class CDRProcessor(CustomizationProcessor):
         warp.reformat(self._xml_filename, self._work_dir, 'envi',
                       options['output_format'])
 
-    # -------------------------------------------
     def process_product(self):
         '''
         Description:
@@ -628,7 +600,6 @@ class CDRProcessor(CustomizationProcessor):
         return (destination_product_file, destination_cksum_file)
 
 
-# ===========================================================================
 class LandsatProcessor(CDRProcessor):
     '''
     Description:
@@ -636,7 +607,6 @@ class LandsatProcessor(CDRProcessor):
         processors.
     '''
 
-    # -------------------------------------------
     def __init__(self, parms):
         super(LandsatProcessor, self).__init__(parms)
 
@@ -644,7 +614,6 @@ class LandsatProcessor(CDRProcessor):
 
         self._metadata_filename = None
 
-    # -------------------------------------------
     def validate_parameters(self):
         '''
         Description:
@@ -705,7 +674,6 @@ class LandsatProcessor(CDRProcessor):
         else:
             self._build_products = True
 
-    # -------------------------------------------
     def stage_input_data(self):
         '''
         Description:
@@ -728,9 +696,8 @@ class LandsatProcessor(CDRProcessor):
 
         # Figure out the metadata filename
         self._metadata_filename = \
-            metadata.get_landsat_metadata(self._work_dir, product_id)
+            landsat_metadata.get_filename(self._work_dir, product_id)
 
-    # -------------------------------------------
     def convert_to_raw_binary(self):
         '''
         Description:
@@ -758,7 +725,6 @@ class LandsatProcessor(CDRProcessor):
             if len(output) > 0:
                 self._logger.info(output)
 
-    # -------------------------------------------
     def elevation_command_line(self):
         '''
         Description:
@@ -784,7 +750,6 @@ class LandsatProcessor(CDRProcessor):
 
         return cmd
 
-    # -------------------------------------------
     def generate_elevation_product(self):
         '''
         Description:
@@ -806,7 +771,6 @@ class LandsatProcessor(CDRProcessor):
                 if len(output) > 0:
                     self._logger.info(output)
 
-    # -------------------------------------------
     def land_water_mask_command_line(self):
         '''
         Description:
@@ -817,7 +781,6 @@ class LandsatProcessor(CDRProcessor):
         '''
         return None
 
-    # -------------------------------------------
     def generate_land_water_mask(self):
         '''
         Description:
@@ -838,7 +801,6 @@ class LandsatProcessor(CDRProcessor):
                 if len(output) > 0:
                     self._logger.info(output)
 
-    # -------------------------------------------
     def sr_command_line(self):
         '''
         Description:
@@ -894,7 +856,6 @@ class LandsatProcessor(CDRProcessor):
 
         return cmd
 
-    # -------------------------------------------
     def generate_sr_products(self):
         '''
         Description:
@@ -915,7 +876,6 @@ class LandsatProcessor(CDRProcessor):
                 if len(output) > 0:
                     self._logger.info(output)
 
-    # -------------------------------------------
     def generate_cloud_masking(self):
         '''
         Description:
@@ -942,7 +902,6 @@ class LandsatProcessor(CDRProcessor):
                 if len(output) > 0:
                     self._logger.info(output)
 
-    # -------------------------------------------
     def generate_spectral_indices(self):
         '''
         Description:
@@ -992,7 +951,6 @@ class LandsatProcessor(CDRProcessor):
                 if len(output) > 0:
                     self._logger.info(output)
 
-    # -------------------------------------------
     def surface_water_extent_command_line(self):
         '''
         Description:
@@ -1018,7 +976,6 @@ class LandsatProcessor(CDRProcessor):
 
         return cmd
 
-    # -------------------------------------------
     def generate_surface_water_extent(self):
         '''
         Description:
@@ -1040,7 +997,6 @@ class LandsatProcessor(CDRProcessor):
                 if len(output) > 0:
                     self._logger.info(output)
 
-    # -------------------------------------------
     def generate_land_surface_temperature(self):
         '''
         Description:
@@ -1070,7 +1026,6 @@ class LandsatProcessor(CDRProcessor):
                 if len(output) > 0:
                     self._logger.info(output)
 
-    # -------------------------------------------
     def build_science_products(self):
         '''
         Description:
@@ -1108,7 +1063,6 @@ class LandsatProcessor(CDRProcessor):
             # Change back to the previous directory
             os.chdir(current_directory)
 
-    # -------------------------------------------
     def cleanup_work_dir(self):
         '''
         Description:
@@ -1186,7 +1140,6 @@ class LandsatProcessor(CDRProcessor):
             # Change back to the previous directory
             os.chdir(current_directory)
 
-    # -------------------------------------------
     def generate_statistics(self):
         '''
         Description:
@@ -1218,7 +1171,6 @@ class LandsatProcessor(CDRProcessor):
         statistics.generate_statistics(self._work_dir,
                                        files_to_search_for)
 
-    # -------------------------------------------
     def get_product_name(self):
         '''
         Description:
@@ -1259,7 +1211,6 @@ class LandsatProcessor(CDRProcessor):
         return self._product_name
 
 
-# ===========================================================================
 class LandsatTMProcessor(LandsatProcessor):
     '''
     Description:
@@ -1270,12 +1221,10 @@ class LandsatTMProcessor(LandsatProcessor):
         the TM and ETM processors are identical.
     '''
 
-    # -------------------------------------------
     def __init__(self, parms):
         super(LandsatTMProcessor, self).__init__(parms)
 
 
-# ===========================================================================
 class Landsat4TMProcessor(LandsatTMProcessor):
     '''
     Description:
@@ -1286,12 +1235,10 @@ class Landsat4TMProcessor(LandsatTMProcessor):
         the TM and ETM processors are identical.
     '''
 
-    # -------------------------------------------
     def __init__(self, parms):
         super(Landsat4TMProcessor, self).__init__(parms)
 
 
-# ===========================================================================
 class LandsatETMProcessor(LandsatProcessor):
     '''
     Description:
@@ -1302,23 +1249,19 @@ class LandsatETMProcessor(LandsatProcessor):
         the TM and ETM processors are identical.
     '''
 
-    # -------------------------------------------
     def __init__(self, parms):
         super(LandsatETMProcessor, self).__init__(parms)
 
 
-# ===========================================================================
 class LandsatOLITIRSProcessor(LandsatProcessor):
     '''
     Description:
         Implements OLITIRS (LC8) specific processing.
     '''
 
-    # -------------------------------------------
     def __init__(self, parms):
         super(LandsatOLITIRSProcessor, self).__init__(parms)
 
-    # -------------------------------------------
     def validate_parameters(self):
         '''
         Description:
@@ -1332,7 +1275,6 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
         options = self._parms['options']
 
-    # -------------------------------------------
     def land_water_mask_command_line(self):
         '''
         Description:
@@ -1359,7 +1301,6 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
         return cmd
 
-    # -------------------------------------------
     def sr_command_line(self):
         '''
         Description:
@@ -1411,18 +1352,15 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
         return cmd
 
 
-# ===========================================================================
 class LandsatOLIProcessor(LandsatOLITIRSProcessor):
     '''
     Description:
         Implements OLI only (LO8) specific processing.
     '''
 
-    # -------------------------------------------
     def __init__(self, parms):
         super(LandsatOLIProcessor, self).__init__(parms)
 
-    # -------------------------------------------
     def validate_parameters(self):
         '''
         Description:
@@ -1452,7 +1390,6 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
             raise Exception("include_dswe is an unavailable product option"
                             " for OLI-Only data")
 
-    # -------------------------------------------
     def land_water_mask_command_line(self):
         '''
         Description:
@@ -1463,7 +1400,6 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
         '''
         return None
 
-    # -------------------------------------------
     def generate_cloud_masking(self):
         '''
         Description:
@@ -1473,7 +1409,6 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
 
         pass
 
-    # -------------------------------------------
     def generate_spectral_indices(self):
         '''
         Description:
@@ -1485,16 +1420,13 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
         pass
 
 
-# ===========================================================================
 class ModisProcessor(CDRProcessor):
 
-    # -------------------------------------------
     def __init__(self, parms):
         super(ModisProcessor, self).__init__(parms)
 
         self._hdf_filename = None
 
-    # -------------------------------------------
     def validate_parameters(self):
         '''
         Description:
@@ -1528,7 +1460,6 @@ class ModisProcessor(CDRProcessor):
         else:
             self._build_products = True
 
-    # -------------------------------------------
     def stage_input_data(self):
         '''
         Description:
@@ -1552,7 +1483,6 @@ class ModisProcessor(CDRProcessor):
         shutil.copyfile(staged_file, work_file)
         os.unlink(staged_file)
 
-    # -------------------------------------------
     def convert_to_raw_binary(self):
         '''
         Description:
@@ -1580,7 +1510,6 @@ class ModisProcessor(CDRProcessor):
             if len(output) > 0:
                 self._logger.info(output)
 
-    # -------------------------------------------
     def build_science_products(self):
         '''
         Description:
@@ -1609,7 +1538,6 @@ class ModisProcessor(CDRProcessor):
             # Change back to the previous directory
             os.chdir(current_directory)
 
-    # -------------------------------------------
     def cleanup_work_dir(self):
         '''
         Description:
@@ -1620,7 +1548,6 @@ class ModisProcessor(CDRProcessor):
         # Nothing to do for Modis products
         return
 
-    # -------------------------------------------
     def generate_statistics(self):
         '''
         Description:
@@ -1652,7 +1579,6 @@ class ModisProcessor(CDRProcessor):
         statistics.generate_statistics(self._work_dir,
                                        files_to_search_for)
 
-    # -------------------------------------------
     def get_product_name(self):
         '''
         Description:
@@ -1687,31 +1613,26 @@ class ModisProcessor(CDRProcessor):
         return self._product_name
 
 
-# ===========================================================================
 class ModisAQUAProcessor(ModisProcessor):
     '''
     Description:
         Implements AQUA specific processing.
     '''
 
-    # -------------------------------------------
     def __init__(self, parms):
         super(ModisAQUAProcessor, self).__init__(parms)
 
 
-# ===========================================================================
 class ModisTERRAProcessor(ModisProcessor):
     '''
     Description:
         Implements TERRA specific processing.
     '''
 
-    # -------------------------------------------
     def __init__(self, parms):
         super(ModisTERRAProcessor, self).__init__(parms)
 
 
-# ===========================================================================
 class PlotProcessor(ProductProcessor):
     '''
     Description:
@@ -1886,13 +1807,11 @@ class PlotProcessor(ProductProcessor):
         TERRA_NAME = 'Terra'
         AQUA_NAME = 'Aqua'
 
-        # --------------------------------------------------------------------
         # Only MODIS SR band 5 files
         self._sr_swir_modis_b5_sensor_info = \
             [('MOD*sur_refl*b05.stats', TERRA_NAME),
              ('MYD*sur_refl*b05.stats', AQUA_NAME)]
 
-        # --------------------------------------------------------------------
         # SR (L4-L7 B5) (L8 B6) (MODIS B6)
         self._sr_swir1_sensor_info = [('LT4*_sr_band5.stats', L4_NAME),
                                       ('LT5*_sr_band5.stats', L5_NAME),
@@ -1947,7 +1866,6 @@ class PlotProcessor(ProductProcessor):
         # SR (L8 B9)
         self._sr_cirrus_sensor_info = [('LC8*_sr_band9.stats', L8_NAME)]
 
-        # --------------------------------------------------------------------
         # Only Landsat TOA band 6(L4-7) band 10(L8) band 11(L8)
         self._toa_thermal_sensor_info = \
             [('LT4*_toa_band6.stats', L4_NAME),
@@ -1956,7 +1874,6 @@ class PlotProcessor(ProductProcessor):
              ('LC8*_toa_band10.stats', L8_TIRS1_NAME),
              ('LC8*_toa_band11.stats', L8_TIRS2_NAME)]
 
-        # --------------------------------------------------------------------
         # Only Landsat TOA (L4-L7 B5) (L8 B6)
         self._toa_swir1_sensor_info = [('LT4*_toa_band5.stats', L4_NAME),
                                        ('LT5*_toa_band5.stats', L5_NAME),
@@ -1999,7 +1916,6 @@ class PlotProcessor(ProductProcessor):
         # Only Landsat TOA (L8 B9)
         self._toa_cirrus_sensor_info = [('L[C,O]8*_toa_band9.stats', L8_NAME)]
 
-        # --------------------------------------------------------------------
         # Only MODIS band 20 files
         self._emis_20_sensor_info = [('MOD*Emis_20.stats', TERRA_NAME),
                                      ('MYD*Emis_20.stats', AQUA_NAME)]
@@ -2024,7 +1940,6 @@ class PlotProcessor(ProductProcessor):
         self._emis_32_sensor_info = [('MOD*Emis_32.stats', TERRA_NAME),
                                      ('MYD*Emis_32.stats', AQUA_NAME)]
 
-        # --------------------------------------------------------------------
         # Only MODIS Day files
         self._lst_day_sensor_info = [('MOD*LST_Day_*.stats', TERRA_NAME),
                                      ('MYD*LST_Day_*.stats', AQUA_NAME)]
@@ -2033,7 +1948,6 @@ class PlotProcessor(ProductProcessor):
         self._lst_night_sensor_info = [('MOD*LST_Night_*.stats', TERRA_NAME),
                                        ('MYD*LST_Night_*.stats', AQUA_NAME)]
 
-        # --------------------------------------------------------------------
         # MODIS and Landsat files
         self._ndvi_sensor_info = [('LT4*_sr_ndvi.stats', L4_NAME),
                                   ('LT5*_sr_ndvi.stats', L5_NAME),
@@ -2042,7 +1956,6 @@ class PlotProcessor(ProductProcessor):
                                   ('MOD*_NDVI.stats', TERRA_NAME),
                                   ('MYD*_NDVI.stats', AQUA_NAME)]
 
-        # --------------------------------------------------------------------
         # MODIS and Landsat files
         self._evi_sensor_info = [('LT4*_sr_evi.stats', L4_NAME),
                                  ('LT5*_sr_evi.stats', L5_NAME),
@@ -2051,35 +1964,30 @@ class PlotProcessor(ProductProcessor):
                                  ('MOD*_EVI.stats', TERRA_NAME),
                                  ('MYD*_EVI.stats', AQUA_NAME)]
 
-        # --------------------------------------------------------------------
         # Only Landsat SAVI files
         self._savi_sensor_info = [('LT4*_sr_savi.stats', L4_NAME),
                                   ('LT5*_sr_savi.stats', L5_NAME),
                                   ('LE7*_sr_savi.stats', L7_NAME),
                                   ('LC8*_sr_savi.stats', L8_NAME)]
 
-        # --------------------------------------------------------------------
         # Only Landsat MSAVI files
         self._msavi_sensor_info = [('LT4*_sr_msavi.stats', L4_NAME),
                                    ('LT5*_sr_msavi.stats', L5_NAME),
                                    ('LE7*_sr_msavi.stats', L7_NAME),
                                    ('LC8*_sr_msavi.stats', L8_NAME)]
 
-        # --------------------------------------------------------------------
         # Only Landsat NBR files
         self._nbr_sensor_info = [('LT4*_sr_nbr.stats', L4_NAME),
                                  ('LT5*_sr_nbr.stats', L5_NAME),
                                  ('LE7*_sr_nbr.stats', L7_NAME),
                                  ('LC8*_sr_nbr.stats', L8_NAME)]
 
-        # --------------------------------------------------------------------
         # Only Landsat NBR2 files
         self._nbr2_sensor_info = [('LT4*_sr_nbr2.stats', L4_NAME),
                                   ('LT5*_sr_nbr2.stats', L5_NAME),
                                   ('LE7*_sr_nbr2.stats', L7_NAME),
                                   ('LC8*_sr_nbr2.stats', L8_NAME)]
 
-        # --------------------------------------------------------------------
         # Only Landsat NDMI files
         self._ndmi_sensor_info = [('LT4*_sr_ndmi.stats', L4_NAME),
                                   ('LT5*_sr_ndmi.stats', L5_NAME),
@@ -2088,7 +1996,6 @@ class PlotProcessor(ProductProcessor):
 
         super(PlotProcessor, self).__init__(parms)
 
-    # -------------------------------------------
     def validate_parameters(self):
         '''
         Description:
@@ -2154,7 +2061,6 @@ class PlotProcessor(ProductProcessor):
         else:
             options['marker_edge_width'] = self._marker_edge_width
 
-    # -------------------------------------------
     def read_statistics(self, statistics_file):
         '''
         Description:
@@ -2177,7 +2083,6 @@ class PlotProcessor(ProductProcessor):
         if not found_valid:
             yield(['valid', 'yes'])
 
-    # -------------------------------------------
     def get_ymds_from_filename(self, filename):
         '''
         Description:
@@ -2233,7 +2138,6 @@ class PlotProcessor(ProductProcessor):
 
         return (year, date.month, date.day, day_of_year, sensor_string)
 
-    # -------------------------------------------
     def combine_sensor_stats(self, stats_name, stats_files):
         '''
         Description:
@@ -2290,7 +2194,6 @@ class PlotProcessor(ProductProcessor):
         with open(out_filename, 'w') as output_fd:
             output_fd.write(data)
 
-    # -------------------------------------------
     def scale_data_to_range(self, in_high, in_low, out_high, out_low, data):
         '''
         Description:
@@ -2303,7 +2206,6 @@ class PlotProcessor(ProductProcessor):
 
         return out_high - ((out_range * (in_high - data)) / in_range)
 
-    # -------------------------------------------
     def generate_plot(self, plot_name, subjects, band_type, stats,
                       plot_type="Value"):
         '''
@@ -2353,6 +2255,7 @@ class PlotProcessor(ProductProcessor):
         # --------------------------------------------------------------------
         # Build a dictionary of sensors which contains lists of the values,
         # while determining the minimum and maximum values to be displayed
+        # --------------------------------------------------------------------
 
         # I won't be here to resolve this
         plot_date_min = datetime.date(9998, 12, 31)
@@ -2391,7 +2294,6 @@ class PlotProcessor(ProductProcessor):
                 plot_date_min = date
             if date > plot_date_max:
                 plot_date_max = date
-        # END - for filename
 
         # Process through the sensor organized dictionary in sorted order
         sorted_sensors = sorted(sensor_dict.keys())
@@ -2484,9 +2386,7 @@ class PlotProcessor(ProductProcessor):
             # Cleanup the x and y data memory
             del x_data
             del y_data
-        # END - for sensor
 
-        # --------------------------------------------------------------------
         # Adjust the y range to help move them from the edge of the plot
         plot_y_min = display_min - 0.025
         plot_y_max = display_max + 0.025
@@ -2570,7 +2470,6 @@ class PlotProcessor(ProductProcessor):
         # Close the plot so we can open another one
         mpl_plot.close()
 
-    # -------------------------------------------
     def generate_plots(self, plot_name, stats_files, band_type):
         '''
         Description:
@@ -2614,7 +2513,6 @@ class PlotProcessor(ProductProcessor):
         plot_subjects = ['StdDev']
         self.generate_plot(plot_name, plot_subjects, band_type, stats)
 
-    # -------------------------------------------
     def process_band_type(self, sensor_info, band_type):
         '''
         Description:
@@ -2660,7 +2558,6 @@ class PlotProcessor(ProductProcessor):
 
         del multi_sensor_files
 
-    # -------------------------------------------
     def process_stats(self):
         '''
         Description:
@@ -2673,7 +2570,6 @@ class PlotProcessor(ProductProcessor):
         os.chdir(self._work_dir)
 
         try:
-            # ----------------------------------------------------------------
             self.process_band_type(self._sr_coastal_sensor_info,
                                    "SR COASTAL AEROSOL")
             self.process_band_type(self._sr_blue_sensor_info, "SR Blue")
@@ -2684,14 +2580,11 @@ class PlotProcessor(ProductProcessor):
             self.process_band_type(self._sr_swir2_sensor_info, "SR SWIR2")
             self.process_band_type(self._sr_cirrus_sensor_info, "SR CIRRUS")
 
-            # ----------------------------------------------------------------
             self.process_band_type(self._sr_swir_modis_b5_sensor_info,
                                    "SR SWIR B5")
 
-            # ----------------------------------------------------------------
             self.process_band_type(self._toa_thermal_sensor_info, "SR Thermal")
 
-            # ----------------------------------------------------------------
             self.process_band_type(self._toa_coastal_sensor_info,
                                    "TOA COASTAL AEROSOL")
             self.process_band_type(self._toa_blue_sensor_info, "TOA Blue")
@@ -2702,7 +2595,6 @@ class PlotProcessor(ProductProcessor):
             self.process_band_type(self._toa_swir2_sensor_info, "TOA SWIR2")
             self.process_band_type(self._toa_cirrus_sensor_info, "TOA CIRRUS")
 
-            # ----------------------------------------------------------------
             self.process_band_type(self._emis_20_sensor_info, "Emis Band 20")
             self.process_band_type(self._emis_22_sensor_info, "Emis Band 22")
             self.process_band_type(self._emis_23_sensor_info, "Emis Band 23")
@@ -2710,36 +2602,27 @@ class PlotProcessor(ProductProcessor):
             self.process_band_type(self._emis_31_sensor_info, "Emis Band 31")
             self.process_band_type(self._emis_32_sensor_info, "Emis Band 32")
 
-            # ----------------------------------------------------------------
             self.process_band_type(self._lst_day_sensor_info, "LST Day")
             self.process_band_type(self._lst_night_sensor_info, "LST Night")
 
-            # ----------------------------------------------------------------
             self.process_band_type(self._ndvi_sensor_info, "NDVI")
 
-            # ----------------------------------------------------------------
             self.process_band_type(self._evi_sensor_info, "EVI")
 
-            # ----------------------------------------------------------------
             self.process_band_type(self._savi_sensor_info, "SAVI")
 
-            # ----------------------------------------------------------------
             self.process_band_type(self._msavi_sensor_info, "MSAVI")
 
-            # ----------------------------------------------------------------
             self.process_band_type(self._nbr_sensor_info, "NBR")
 
-            # ----------------------------------------------------------------
             self.process_band_type(self._nbr2_sensor_info, "NBR2")
 
-            # ----------------------------------------------------------------
             self.process_band_type(self._ndmi_sensor_info, "NDMI")
 
         finally:
             # Change back to the previous directory
             os.chdir(current_directory)
 
-    # -------------------------------------------
     def stage_input_data(self):
         '''
         Description:
@@ -2749,7 +2632,6 @@ class PlotProcessor(ProductProcessor):
         staging.stage_statistics_data(self._output_dir, self._stage_dir,
                                       self._work_dir, self._parms)
 
-    # -------------------------------------------
     def get_product_name(self):
         '''
         Description:
@@ -2763,7 +2645,6 @@ class PlotProcessor(ProductProcessor):
 
         return self._product_name
 
-    # -------------------------------------------
     def process_product(self):
         '''
         Description:
@@ -2784,7 +2665,6 @@ class PlotProcessor(ProductProcessor):
         return (destination_product_file, destination_cksum_file)
 
 
-# ===========================================================================
 # ===========================================================================
 def get_instance(parms):
     '''
