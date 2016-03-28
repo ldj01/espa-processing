@@ -1,13 +1,9 @@
 
 '''
-License:
-  "NASA Open Source Agreement 1.3"
+Description: Provides routines for interfacing with parameters in a
+             dictionary.
 
-Description:
-  Provides routines for interfacing with parameters in a dictionary.
-
-History:
-  Created Jan/2014 by Ron Dilley, USGS/EROS
+License: NASA Open Source Agreement 1.3
 '''
 
 import os
@@ -58,13 +54,12 @@ def validate_reprojection_parameters(parms, scene):
 
     # Create this and set to None if not present
     if not test_for_parameter(parms, 'projection'):
-        logger.warning("'projection' parameter missing defaulting to None")
+        logger.warning('projection: missing defaulting to None')
         parms['projection'] = None
 
     # Create this and set to 'near' if not present
     if not test_for_parameter(parms, 'resample_method'):
-        logger.warning("'resample_method' parameter missing defaulting to"
-                       " near")
+        logger.warning('resample_method: missing defaulting to near')
         parms['resample_method'] = 'near'
 
     # Make sure these have at least a False value
@@ -72,13 +67,13 @@ def validate_reprojection_parameters(parms, scene):
 
     for parameter in required_parameters:
         if not test_for_parameter(parms, parameter):
-            logger.warning("'%s' parameter missing defaulting to False"
-                           % parameter)
+            logger.warning('{0}: missing defaulting to False'
+                           .format(parameter))
             parms[parameter] = False
 
     if parms['reproject']:
         if not test_for_parameter(parms, 'target_projection'):
-            raise RuntimeError("Missing target_projection parameter")
+            raise RuntimeError('Missing target_projection parameter')
         else:
             # Convert to lower case
             target_projection = parms['target_projection'].lower()
@@ -92,102 +87,98 @@ def validate_reprojection_parameters(parms, scene):
                                ', '.join(VALID_PROJECTIONS)))
                 raise ValueError(msg)
 
-            # ................................................................
-            if target_projection == "sinu":
+            if target_projection == 'sinu':
                 if not test_for_parameter(parms, 'central_meridian'):
-                    raise RuntimeError("Missing central_meridian parameter")
+                    raise RuntimeError('Missing central_meridian parameter')
                 else:
                     parms['central_meridian'] = \
                         float(parms['central_meridian'])
                 if not test_for_parameter(parms, 'false_easting'):
-                    raise RuntimeError("Missing false_easting parameter")
+                    raise RuntimeError('Missing false_easting parameter')
                 else:
                     parms['false_easting'] = float(parms['false_easting'])
                 if not test_for_parameter(parms, 'false_northing'):
-                    raise RuntimeError("Missing false_northing parameter")
+                    raise RuntimeError('Missing false_northing parameter')
                 else:
                     parms['false_northing'] = float(parms['false_northing'])
 
                 if not test_for_parameter(parms, 'datum'):
                     parms['datum'] = None
 
-            # ................................................................
             if target_projection == 'aea':
                 if not test_for_parameter(parms, 'std_parallel_1'):
-                    raise RuntimeError("Missing std_parallel_1 parameter")
+                    raise RuntimeError('Missing std_parallel_1 parameter')
                 else:
                     parms['std_parallel_1'] = float(parms['std_parallel_1'])
                 if not test_for_parameter(parms, 'std_parallel_2'):
-                    raise RuntimeError("Missing std_parallel_2 parameter")
+                    raise RuntimeError('Missing std_parallel_2 parameter')
                 else:
                     parms['std_parallel_2'] = float(parms['std_parallel_2'])
                 if not test_for_parameter(parms, 'origin_lat'):
-                    raise RuntimeError("Missing origin_lat parameter")
+                    raise RuntimeError('Missing origin_lat parameter')
                 else:
                     parms['origin_lat'] = float(parms['origin_lat'])
                 if not test_for_parameter(parms, 'central_meridian'):
-                    raise RuntimeError("Missing central_meridian parameter")
+                    raise RuntimeError('Missing central_meridian parameter')
                 else:
                     parms['central_meridian'] = \
                         float(parms['central_meridian'])
                 if not test_for_parameter(parms, 'false_easting'):
-                    raise RuntimeError("Missing false_easting parameter")
+                    raise RuntimeError('Missing false_easting parameter')
                 else:
                     parms['false_easting'] = float(parms['false_easting'])
                 if not test_for_parameter(parms, 'false_northing'):
-                    raise RuntimeError("Missing false_northing parameter")
+                    raise RuntimeError('Missing false_northing parameter')
                 else:
                     parms['false_northing'] = float(parms['false_northing'])
 
                 # The datum must be in uppercase for the processing code to
                 # work so if it is present here, we force it
                 if not test_for_parameter(parms, 'datum'):
-                    raise RuntimeError("Missing datum parameter")
+                    raise RuntimeError('Missing datum parameter')
                 else:
                     parms['datum'] = parms['datum'].upper()
                 if parms['datum'] not in settings.VALID_DATUMS:
-                    raise ValueError("Invalid datum [%s]:"
-                                     " Argument must be one of (%s)"
-                                     % (parms['datum'],
-                                        ', '.join(settings.VALID_DATUMS)))
+                    valid_items = ', '.join(settings.VALID_DATUMS)
+                    raise ValueError('Invalid datum [{0}]:'
+                                     ' Argument must be one of [{1}]'
+                                     .format(parms['datum'], valid_items))
 
-            # ................................................................
             if target_projection == 'utm':
                 if not test_for_parameter(parms, 'utm_zone'):
-                    raise RuntimeError("Missing utm_zone parameter")
+                    raise RuntimeError('Missing utm_zone parameter')
                 else:
                     zone = int(parms['utm_zone'])
                     if zone < 0 or zone > 60:
-                        raise ValueError("Invalid utm_zone [%d]:"
-                                         " Value must be 0-60" % zone)
+                        raise ValueError('Invalid utm_zone [{0}]:'
+                                         ' Value must be 0-60'.format(zone))
                     parms['utm_zone'] = zone
                 if not test_for_parameter(parms, 'utm_north_south'):
-                    raise RuntimeError("Missing utm_north_south parameter")
+                    raise RuntimeError('Missing utm_north_south parameter')
                 elif parms['utm_north_south'] not in VALID_NS:
-                    raise ValueError("Invalid utm_north_south [%s]:"
-                                     " Argument must be one of (%s)"
-                                     % (parms['utm_north_south'],
-                                        ', '.join(VALID_NS)))
+                    raise ValueError('Invalid utm_north_south [{0}]:'
+                                     ' Argument must be one of [{1}]'
+                                     .format(parms['utm_north_south'],
+                                             ', '.join(VALID_NS)))
 
                 if not test_for_parameter(parms, 'datum'):
                     parms['datum'] = None
 
-            # ................................................................
             if target_projection == 'ps':
                 if not test_for_parameter(parms, 'latitude_true_scale'):
                     # Must be tested before origin_lat
-                    raise RuntimeError("Missing latitude_true_scale parameter")
+                    raise RuntimeError('Missing latitude_true_scale parameter')
                 else:
                     value = float(parms['latitude_true_scale'])
                     if ((value < 60.0 and value > -60.0) or
                             value > 90.0 or value < -90.0):
-                        raise ValueError("Invalid latitude_true_scale [%f]:"
-                                         " Value must be between"
-                                         " (-60.0 and -90.0) or"
-                                         " (60.0 and 90.0)" % value)
+                        raise ValueError('Invalid latitude_true_scale [{0}]:'
+                                         ' Value must be between'
+                                         ' (-60.0 and -90.0) or'
+                                         ' (60.0 and 90.0)'.format(value))
                     parms['latitude_true_scale'] = value
                 if not test_for_parameter(parms, 'longitude_pole'):
-                    raise RuntimeError("Missing longitude_pole parameter")
+                    raise RuntimeError('Missing longitude_pole parameter')
                 else:
                     parms['longitude_pole'] = float(parms['longitude_pole'])
                 if not test_for_parameter(parms, 'origin_lat'):
@@ -201,60 +192,57 @@ def validate_reprojection_parameters(parms, scene):
                 else:
                     value = float(parms['origin_lat'])
                     if value != -90.0 and value != 90.0:
-                        raise ValueError("Invalid origin_lat [%f]:"
-                                         " Value must be -90.0 or 90.0"
-                                         % value)
+                        raise ValueError('Invalid origin_lat [{0}]:'
+                                         ' Value must be -90.0 or 90.0'
+                                         .format(value))
                     parms['origin_lat'] = value
 
                 if not test_for_parameter(parms, 'false_easting'):
-                    raise RuntimeError("Missing false_easting parameter")
+                    raise RuntimeError('Missing false_easting parameter')
                 else:
                     parms['false_easting'] = float(parms['false_easting'])
                 if not test_for_parameter(parms, 'false_northing'):
-                    raise RuntimeError("Missing false_northing parameter")
+                    raise RuntimeError('Missing false_northing parameter')
                 else:
                     parms['false_northing'] = float(parms['false_northing'])
 
                 if not test_for_parameter(parms, 'datum'):
                     parms['datum'] = None
 
-            # ................................................................
             if target_projection == 'lonlat':
 
                 if not test_for_parameter(parms, 'datum'):
                     parms['datum'] = None
 
-    # ------------------------------------------------------------------------
     if parms['resample_method'] not in VALID_RESAMPLE_METHODS:
-        raise ValueError("Invalid resample_method [%s]:"
-                         " Argument must be one of (%s)"
-                         % (parms['resample_method'],
-                            ', '.join(VALID_RESAMPLE_METHODS)))
+        raise ValueError('Invalid resample_method [{0}]:'
+                         ' Argument must be one of [{1}]'
+                         .format(parms['resample_method'],
+                                 ', '.join(VALID_RESAMPLE_METHODS)))
 
-    # ------------------------------------------------------------------------
     if parms['image_extents']:
         if not test_for_parameter(parms, 'image_extents_units'):
-            raise RuntimeError("Missing image_extents_units parameter")
+            raise RuntimeError('Missing image_extents_units parameter')
         else:
             if parms['image_extents_units'] not in VALID_IMAGE_EXTENTS_UNITS:
-                raise ValueError("Invalid image_extents_units [%s]:"
-                                 " Argument must be one of (%s)"
-                                 % (parms['image_extents_units'],
-                                    ', '.join(VALID_IMAGE_EXTENTS_UNITS)))
+                raise ValueError('Invalid image_extents_units [{0}]:'
+                                 ' Argument must be one of [{1}]'
+                                 .format(parms['image_extents_units'],
+                                         ', '.join(VALID_IMAGE_EXTENTS_UNITS)))
         if not test_for_parameter(parms, 'minx'):
-            raise RuntimeError("Missing minx parameter")
+            raise RuntimeError('Missing minx parameter')
         else:
             parms['minx'] = float(parms['minx'])
         if not test_for_parameter(parms, 'miny'):
-            raise RuntimeError("Missing miny parameter")
+            raise RuntimeError('Missing miny parameter')
         else:
             parms['miny'] = float(parms['miny'])
         if not test_for_parameter(parms, 'maxx'):
-            raise RuntimeError("Missing maxx parameter")
+            raise RuntimeError('Missing maxx parameter')
         else:
             parms['maxx'] = float(parms['maxx'])
         if not test_for_parameter(parms, 'maxy'):
-            raise RuntimeError("Missing maxy parameter")
+            raise RuntimeError('Missing maxy parameter')
         else:
             parms['maxy'] = float(parms['maxy'])
     else:
@@ -265,26 +253,25 @@ def validate_reprojection_parameters(parms, scene):
         parms['maxy'] = None
         parms['image_extents_units'] = None
 
-    # ------------------------------------------------------------------------
     if parms['resize']:
         if not test_for_parameter(parms, 'pixel_size'):
-            raise RuntimeError("Missing pixel_size parameter")
+            raise RuntimeError('Missing pixel_size parameter')
         else:
             parms['pixel_size'] = float(parms['pixel_size'])
         if not test_for_parameter(parms, 'pixel_size_units'):
-            raise RuntimeError("Missing pixel_size_units parameter")
+            raise RuntimeError('Missing pixel_size_units parameter')
         else:
             if parms['pixel_size_units'] not in VALID_PIXEL_SIZE_UNITS:
-                raise ValueError("Invalid pixel_size_units [%s]:"
-                                 " Argument must be one of (%s)"
-                                 % (parms['pixel_size_units'],
-                                    ', '.join(VALID_PIXEL_SIZE_UNITS)))
+                valid_items = ', '.join(VALID_PIXEL_SIZE_UNITS)
+                raise ValueError('Invalid pixel_size_units [{0}]:'
+                                 ' Argument must be one of [{1}]'
+                                 .format(parms['pixel_size_units'],
+                                         valid_items))
     else:
         # Default this
         parms['pixel_size'] = None
         parms['pixel_size_units'] = None
 
-    # ------------------------------------------------------------------------
     if ((parms['reproject'] or parms['image_extents']) and
             not parms['resize']):
         # Sombody asked for reproject or extents, but didn't specify a pixel
@@ -298,7 +285,7 @@ def validate_reprojection_parameters(parms, scene):
         parms['pixel_size'] = sensor.instance(scene).default_pixel_size[units]
         parms['pixel_size_units'] = units
 
-        logger.warning("'resize' parameter not provided but required for"
-                       " reprojection or image extents"
-                       " (Defaulting pixel_size(%f) and pixel_size_units(%s)"
-                       % (parms['pixel_size'], parms['pixel_size_units']))
+        logger.warning('resize: parameter not provided'
+                       ' but required for reprojection or image extents'
+                       ' (Defaulting pixel_size({0}) and pixel_size_units({1})'
+                       .format(parms['pixel_size'], parms['pixel_size_units']))
