@@ -168,15 +168,15 @@ class Modis(SensorProduct):
 
         self.short_name = parts[0]
 
-        self.date_acquired = parts[1][1:]
-        self.year = self.date_acquired[0:4]
-        self.doy = self.date_acquired[4:8]
+        date_YYYYDDD = parts[1][1:]
+        self.date_acquired = datetime.datetime.strptime(date_YYYYDDD,
+                                                        '%Y%j').date()
 
-        # Now that we have the year and doy, we can get the month and day of
-        # month
-        date = utilities.date_from_doy(self.year, self.doy)
-        self.month = date.month
-        self.day = date.day
+        # Create easy access to acquisition date values
+        self.year = self.date_acquired.year
+        self.month = self.date_acquired.month
+        self.day = self.date_acquired.day
+        self.doy = self.date_acquired.timetuple().tm_yday
 
         self.horizontal = parts[2][1:3]
         self.vertical = parts[2][4:6]
@@ -305,16 +305,18 @@ class Landsat(SensorProduct):
 
         self.path = product_id[3:6].lstrip('0')
         self.row = product_id[6:9].lstrip('0')
-        self.year = product_id[9:13]
-        self.doy = product_id[13:16]
         self.station = product_id[16:19]
         self.version = product_id[19:21]
 
-        # Now that we have the year and doy, we can get the month and day of
-        # month
-        date = utilities.date_from_doy(self.year, self.doy)
-        self.month = date.month
-        self.day = date.day
+        date_YYYYDDD = product_id[9:16]
+        self.date_acquired = datetime.datetime.strptime(date_YYYYDDD,
+                                                        '%Y%j').date()
+
+        # Create easy access to acquisition date values
+        self.year = self.date_acquired.year
+        self.month = self.date_acquired.month
+        self.day = self.date_acquired.day
+        self.doy = self.date_acquired.timetuple().tm_yday
 
         # set the default pixel sizes
         _meters = DEFAULT_PIXEL_SIZE['meters'][self.sensor_code]
@@ -359,19 +361,24 @@ class LandsatCollection(SensorProduct):
 
         parts = product_id.split('_')
 
+        self.processing_level = parts[1]
+
         self.path = parts[2][0:3].lstrip('0')
         self.row = parts[2][4:].lstrip('0')
 
-        self.date_acquired = parts[3]
-        self.date_produced = parts[4]
+        self.date_acquired = datetime.datetime.strptime(parts[3],
+                                                        '%Y%m%d').date()
+        self.date_produced = datetime.datetime.strptime(parts[4],
+                                                        '%Y%m%d').date()
 
-        self.year = self.date_acquired[0:4]
-        self.month = self.date_acquired[4:6]
-        self.day = self.date_acquired[6:]
+        # Create easy access to acquisition date values
+        self.year = self.date_acquired.year
+        self.month = self.date_acquired.month
+        self.day = self.date_acquired.day
+        self.doy = self.date_acquired.timetuple().tm_yday
 
-        # Now that we have the year, month, and day, we can get the day of year
-        dt = datetime.date(int(self.year), int(self.month), int(self.day))
-        self.doy = dt.timetuple().tm_yday
+        self.collection = parts[5]
+        self.tier = parts[6]
 
         # set the default pixel sizes
         _meters = DEFAULT_PIXEL_SIZE['meters'][self.sensor_code]
