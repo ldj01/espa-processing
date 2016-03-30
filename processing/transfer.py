@@ -396,7 +396,7 @@ def http_transfer_file(download_url, destination_file):
             retry_attempt += 1
             # Sleep randomly from 1 to 10 minutes
             sleep_seconds = int(random.random()*540)+60
-            sleep(sleep_seconds))
+            sleep(sleep_seconds)
 
         finally:
             if req is not None:
