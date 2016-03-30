@@ -241,9 +241,6 @@ def process(args):
             if not mapper_keep_log:
                 EspaLogging.delete_logger_file(settings.PROCESSING_LOGGER)
 
-            # Reset back to the base logger
-            logger = EspaLogging.get_logger('base')
-
         except Exception as excep:
 
             # First log the exception
@@ -270,16 +267,19 @@ def process(args):
                     logger.exception("Exception encountered stacktrace"
                                      " follows")
         finally:
+            # Reset back to the base logger
+            logger = EspaLogging.get_logger('base')
+
             end_time = datetime.datetime.now()
             seconds_elapsed = (end_time - start_time).seconds
-            logger.info('Processing Time Elapsed {0} Seconds'
-                        .format(seconds_elapsed))
+            logger.info('{0}[{1}] Processing Time Elapsed {2} Seconds'
+                        .format(order_id, product_id, seconds_elapsed))
 
             if seconds_elapsed < settings.MIN_REQUEST_DURATION_IN_SECONDS:
                 seconds_to_sleep = (settings.MIN_REQUEST_DURATION_IN_SECONDS -
                                     seconds_elapsed)
-                print ('Sleeping an additional {0} Seconds'
-                       .format(seconds_to_sleep))
+                logger.info('{0}[{1}] Sleeping an additional {2} Seconds'
+                            .format(order_id, product_id, seconds_to_sleep))
                 sleep(seconds_to_sleep)
     # END - for line in STDIN
 
