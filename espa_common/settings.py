@@ -1,3 +1,12 @@
+
+# The minimum number of seconds an order/request should take to run.  Longer
+# is OK.
+# Assuming 5Gb network connection and approximately 1GB files and 421 cores.
+# One file takes approximately 675.7 seconds to download if all cores are
+# downloading at the same time.  Disk IO not taken into consideration.
+MIN_REQUEST_DURATION_IN_SECONDS = 675
+
+
 # The maximum number of jobs Hadoop should be able to run at once.
 # This is needed so that the job tracker doesn't exceed resource limits.
 # This also affects our level of service to end users.

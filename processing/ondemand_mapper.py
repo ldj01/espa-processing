@@ -25,6 +25,7 @@ import sys
 import socket
 import json
 import xmlrpclib
+import datetime
 from time import sleep
 from argparse import ArgumentParser
 
@@ -134,6 +135,8 @@ def process(args):
 
         # Default to the command line value
         mapper_keep_log = args.keep_log
+
+        start_time = datetime.datetime.now()
 
         try:
             line = line.replace('#', '')
@@ -266,6 +269,18 @@ def process(args):
                 except Exception:
                     logger.exception("Exception encountered stacktrace"
                                      " follows")
+        finally:
+            end_time = datetime.datetime.now()
+            seconds_elapsed = (end_time - start_time).seconds
+            logger.info('Processing Time Elapsed {0} Seconds'
+                        .format(seconds_elapsed))
+
+            if seconds_elapsed < settings.MIN_REQUEST_DURATION_IN_SECONDS:
+                seconds_to_sleep = (settings.MIN_REQUEST_DURATION_IN_SECONDS -
+                                    seconds_elapsed)
+                print ('Sleeping an additional {0} Seconds'
+                       .format(seconds_to_sleep))
+                sleep(seconds_to_sleep)
     # END - for line in STDIN
 
 
