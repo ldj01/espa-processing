@@ -40,7 +40,7 @@ def test_for_parameter(parms, key):
     return True
 
 
-def validate_reprojection_parameters(parms, scene):
+def validate_reprojection_parameters(parms, product_id):
     '''
     Description:
       Perform a check on the possible reprojection parameters
@@ -282,7 +282,7 @@ def validate_reprojection_parameters(parms, scene):
             units = 'dd'
 
         # Default to the sensor specific meters or dd equivalent
-        parms['pixel_size'] = sensor.instance(scene).default_pixel_size[units]
+        parms['pixel_size'] = sensor.info(product_id).default_pixel_size[units]
         parms['pixel_size_units'] = units
 
         logger.warning('resize: parameter not provided'

@@ -1185,20 +1185,10 @@ class LandsatProcessor(CDRProcessor):
             ts = datetime.datetime.today()
 
             # Extract stuff from the product information
-            sensor_inst = sensor.instance(product_id)
+            product_prefix = sensor.info(product_id).product_prefix
 
-            sensor_code = sensor_inst.sensor_code.upper()
-            path = sensor_inst.path
-            row = sensor_inst.row
-            year = sensor_inst.year
-            doy = sensor_inst.doy
-
-            product_name = ('{0}{1}{2}{3}{4}-SC{5}{6}{7}{8}{9}{10}'
-                            .format(sensor_code,
-                                    str(path).zfill(3),
-                                    str(row).zfill(3),
-                                    str(year).zfill(4),
-                                    str(doy).zfill(3),
+            product_name = ('{0}-SC{1}{2}{3}{4}{5}{6}'
+                            .format(product_prefix,
                                     str(ts.year).zfill(4),
                                     str(ts.month).zfill(2),
                                     str(ts.day).zfill(2),
@@ -1593,20 +1583,16 @@ class ModisProcessor(CDRProcessor):
             ts = datetime.datetime.today()
 
             # Extract stuff from the product information
-            sensor_inst = sensor.instance(product_id)
+            product_prefix = sensor.info(product_id).product_prefix
 
-            short_name = sensor_inst.short_name.upper()
-            horizontal = sensor_inst.horizontal
-            vertical = sensor_inst.vertical
-            year = sensor_inst.year
-            doy = sensor_inst.doy
-
-            product_name = '%sh%sv%s%s%s-SC%s%s%s%s%s%s' \
-                % (short_name, horizontal.zfill(2), vertical.zfill(2),
-                   year.zfill(4), doy.zfill(3), str(ts.year).zfill(4),
-                   str(ts.month).zfill(2), str(ts.day).zfill(2),
-                   str(ts.hour).zfill(2), str(ts.minute).zfill(2),
-                   str(ts.second).zfill(2))
+            product_name = ('{0}-SC{1}{2}{3}{4}{5}{6}'
+                            .format(product_prefix,
+                                    str(ts.year).zfill(4),
+                                    str(ts.month).zfill(2),
+                                    str(ts.day).zfill(2),
+                                    str(ts.hour).zfill(2),
+                                    str(ts.minute).zfill(2),
+                                    str(ts.second).zfill(2)))
 
             self._product_name = product_name
 
@@ -2083,60 +2069,27 @@ class PlotProcessor(ProductProcessor):
         if not found_valid:
             yield(['valid', 'yes'])
 
-    def get_ymds_from_filename(self, filename):
+    def get_sensor_string_from_filename(self, filename):
         '''
         Description:
           Determine the year, month, day_of_month, and sensor from the
           scene name.
         '''
 
-        year = 0
-        sensor_string = 'unk'
+        sensor_name = sensor.info(filename).sensor_name
+        sensor_string = sensor_name
 
-        if filename.startswith('MOD'):
-            date_element = filename.split('.')[1]
-            year = int(date_element[1:5])
-            day_of_year = int(date_element[5:8])
-            sensor_string = 'Terra'
-
-        elif filename.startswith('MYD'):
-            date_element = filename.split('.')[1]
-            year = int(date_element[1:5])
-            day_of_year = int(date_element[5:8])
-            sensor_string = 'Aqua'
-
-        elif filename.startswith('LT4'):
-            year = int(filename[9:13])
-            day_of_year = int(filename[13:16])
-            sensor_string = 'L4'
-
-        elif filename.startswith('LT5'):
-            year = int(filename[9:13])
-            day_of_year = int(filename[13:16])
-            sensor_string = 'L5'
-
-        elif filename.startswith('LE7'):
-            year = int(filename[9:13])
-            day_of_year = int(filename[13:16])
-            sensor_string = 'L7'
-
-        elif filename.startswith('LC8') or filename.startswith('LO8'):
-            year = int(filename[9:13])
-            day_of_year = int(filename[13:16])
+        if sensor.is_landsat8(filename):
             # We plot both TIRS bands in the thermal plot so they need to
             # be separatly identified
             if 'toa_band10' in filename:
-                sensor_string = 'L8-TIRS1'
+                sensor_string = '{0}-TIRS1'.format(sensor_name)
             elif 'toa_band11' in filename:
-                sensor_string = 'L8-TIRS2'
-            else:
-                sensor_string = 'L8'
+                sensor_string = '{0}-TIRS2'.format(sensor_name)
+        else:
+            sensor_string = sensor_name
 
-        # Now that we have the year and doy we can get the month and day of
-        # month
-        date = utilities.date_from_doy(year, day_of_year)
-
-        return (year, date.month, date.day, day_of_year, sensor_string)
+        return sensor_string
 
     def combine_sensor_stats(self, stats_name, stats_files):
         '''
@@ -2161,6 +2114,7 @@ class PlotProcessor(ProductProcessor):
         for filename, obj in stats.items():
             self._logger.debug(filename)
             # Figure out the date for stats record
+            sensor_inst = sensor
             (year, month, day_of_month, day_of_year, sensor_string) = \
                 self.get_ymds_from_filename(filename)
             date = ('%04d-%02d-%02d'
@@ -2273,12 +2227,9 @@ class PlotProcessor(ProductProcessor):
         # organized by the sensor and contains a python date element
         for filename, obj in stats.items():
             self._logger.debug(filename)
-            # Figure out the date for plotting
-            (year, month, day_of_month, day_of_year, sensor_string) = \
-                self.get_ymds_from_filename(filename)
-            # day_of_year isn't used, but need a var because it is returned
 
-            date = datetime.date(year, month, day_of_month)
+            date = sensor.info(filename).date_acquired
+            sensor_string = get_sensor_string_from_filename(self, filename)
             min_value = float(obj['minimum'])
             max_value = float(obj['maximum'])
             mean = float(obj['mean'])
@@ -2678,30 +2629,28 @@ def get_instance(parms):
     if product_id == 'plot':
         return PlotProcessor(parms)
 
-    sensor_code = sensor.instance(product_id).sensor_code.lower()
-
-    if sensor_code == 'lt4':
+    if sensor.is_lt4(product_id):
         return Landsat4TMProcessor(parms)
-    elif sensor_code == 'lt04':
+    elif sensor.is_lt04(product_id):
         return LandsatTMProcessor(parms)
-    elif sensor_code == 'lt5':
+    elif sensor.is_lt5(product_id):
         return LandsatTMProcessor(parms)
-    elif sensor_code == 'lt05':
+    elif sensor.is_lt05(product_id):
         return LandsatTMProcessor(parms)
-    elif sensor_code == 'le7':
+    elif sensor.is_le7(product_id):
         return LandsatETMProcessor(parms)
-    elif sensor_code == 'le07':
+    elif sensor.is_le07(product_id):
         return LandsatETMProcessor(parms)
-    elif sensor_code == 'lo8':
+    elif sensor.is_lo8(product_id):
         return LandsatOLIProcessor(parms)
-    elif sensor_code == 'lt8':
+    elif sensor.is_lt8(product_id):
         msg = "A processor for [%s] has not been implemented" % product_id
         raise NotImplementedError(msg)
-    elif sensor_code == 'lc8':
+    elif sensor.is_lc8(product_id):
         return LandsatOLITIRSProcessor(parms)
-    elif sensor_code == 'mod':
+    elif sensor.is_terra(product_id):
         return ModisTERRAProcessor(parms)
-    elif sensor_code == 'myd':
+    elif sensor.is_aqua(product_id):
         return ModisAQUAProcessor(parms)
     else:
         msg = "A processor for [%s] has not been implemented" % product_id

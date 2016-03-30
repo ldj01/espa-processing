@@ -1,17 +1,11 @@
 
 '''
-License:
-    NASA Open Source Agreement 1.3
+Description: Provides ESPA specific exceptions to the processing code.
 
-Description:
-    Provide ESPA specific exceptions to the processing code.
+License: NASA Open Source Agreement 1.3
 '''
 
 
 class ESPAException(Exception):
-    '''
-    Description:
-        Provide an ESPA specific exception for exceptions specific to ESPA
-        processing.
-    '''
+    """Provides an ESPA specific exception specifically for ESPA processing"""
     pass

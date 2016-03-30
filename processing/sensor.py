@@ -1,35 +1,51 @@
 
 '''
-Description: Module to extract embedded information from product names and
+Description: Module to extract embedded information from Product IDs and
              supply configured values for each product
 
 License: NASA Open Source Agreement 1.3
 '''
 
 
-import settings
-import utilities
 import re
 import datetime
+from collections import namedtuple
 
 
-"""Resolves system-wide identification of sensor name based on three letter
-   prefix
+"""Sensor information that is extracted from the details available in the
+   Product ID.  Some Items are built from the details, while others are
+   generated.
+
+   product_prefix: Generated and specific to the sensor.
+   date_acquired: Extracted and converted to a datetime.date object.
+   sensor_name: Generated based on the sensor.
+   default_pixel_size:  Generated base on the sensor and is a dictionary with
+                        keys of 'meters' and 'dd'
 """
-SENSOR_INFO = {
-    'LO8': {'name': 'oli'},
-    'LO08': {'name': 'oli'},
-    'LC8': {'name': 'olitirs'},
-    'LC08': {'name': 'olitirs'},
-    'LE7': {'name': 'etm'},
-    'LE07': {'name': 'etm'},
-    'LT4': {'name': 'tm'},
-    'LT04': {'name': 'tm'},
-    'LT5': {'name': 'tm'},
-    'LT05': {'name': 'tm'},
-    'MYD': {'name': 'aqua'},
-    'MOD': {'name': 'terra'}
-}
+SensorInfo = namedtuple('SensorInfo', ['product_prefix',
+                                       'date_acquired',
+                                       'sensor_name',
+                                       'default_pixel_size'])
+
+
+"""Supported Sensor Codes
+"""
+LT4_SENSOR_CODE = 'LT4'
+LT5_SENSOR_CODE = 'LT5'
+LE7_SENSOR_CODE = 'LE7'
+LT8_SENSOR_CODE = 'LT8'
+LC8_SENSOR_CODE = 'LC8'
+LO8_SENSOR_CODE = 'LO8'
+
+LT04_SENSOR_CODE = 'LT04'
+LT05_SENSOR_CODE = 'LT05'
+LE07_SENSOR_CODE = 'LE07'
+LT08_SENSOR_CODE = 'LT08'
+LC08_SENSOR_CODE = 'LC08'
+LO08_SENSOR_CODE = 'LO08'
+
+TERRA_SENSOR_CODE = 'MOD'
+AQUA_SENSOR_CODE = 'MYD'
 
 
 """Default pixel sizes based on the input products
@@ -74,448 +90,390 @@ DEFAULT_PIXEL_SIZE = {
 }
 
 
+def landsat_collection_sensor_info(product_id):
+    """Determine information from collection Product ID
+
+    Args:
+        product_id (str): The collection Product ID
+    """
+
+    parts = product_id.split('_')
+
+    sensor_code = parts[0]
+
+    path = parts[2][0:3].lstrip('0')
+    row = parts[2][4:].lstrip('0')
+
+    date_acquired = datetime.datetime.strptime(parts[3], '%Y%m%d').date()
+
+    year = date_acquired.year
+    doy = date_acquired.timetuple().tm_yday
+
+    # Determine the product prefix
+    product_prefix = ('{0}{1:>03}{2:>03}{3:>04}{4:>03}'
+                      .format(sensor_code, path, row, year, doy))
+
+    # Determine the default pixel sizes
+    meters = DEFAULT_PIXEL_SIZE['meters'][sensor_code]
+    dd = DEFAULT_PIXEL_SIZE['dd'][sensor_code]
+
+    default_pixel_size = {'meters': meters, 'dd': dd}
+
+    # Sensor string is used in plotting
+    sensor_name = None
+    if is_lt04(product_id):
+        sensor_name = 'L4'
+    elif is_lt05(product_id):
+        sensor_name = 'L5'
+    elif is_le07(product_id):
+        sensor_name = 'L7'
+    elif is_lc08(product_id) or is_lo08(product_id) or is_lt08(product_id):
+        sensor_name = 'L8'
+
+    return SensorInfo(product_prefix, date_acquired,
+                      sensor_name, default_pixel_size)
+
+
+def landsat_historical_sensor_info(product_id):
+    """Determine information from historical Product ID
+
+    Args:
+        product_id (str): The historical Product ID
+    """
+
+    sensor_code = product_id[:3]
+
+    path = product_id[3:6].lstrip('0')
+    row = product_id[6:9].lstrip('0')
+
+    date_YYYYDDD = product_id[9:16]
+    date_acquired = datetime.datetime.strptime(date_YYYYDDD, '%Y%j').date()
+
+    year = date_acquired.year
+    doy = date_acquired.timetuple().tm_yday
+
+    # Determine the product prefix
+    product_prefix = ('{0}{1:>03}{2:>03}{3:>04}{4:>03}'
+                      .format(sensor_code, path, row, year, doy))
+
+    # Determine the default pixel sizes
+    meters = DEFAULT_PIXEL_SIZE['meters'][sensor_code]
+    dd = DEFAULT_PIXEL_SIZE['dd'][sensor_code]
+
+    default_pixel_size = {'meters': meters, 'dd': dd}
+
+    # Sensor string is used in plotting
+    sensor_name = None
+    if is_lt4(product_id):
+        sensor_name = 'L4'
+    elif is_lt5(product_id):
+        sensor_name = 'L5'
+    elif is_le7(product_id):
+        sensor_name = 'L7'
+    elif is_lc8(product_id) or is_lo8(product_id) or is_lt8(product_id):
+        sensor_name = 'L8'
+
+    return SensorInfo(product_prefix, date_acquired,
+                      sensor_name, default_pixel_size)
+
+
+def modis_sensor_info(product_id):
+    """Determine information from Modis Product ID
+
+    Args:
+        product_id (str): The Modis Product ID
+    """
+
+    parts = product_id.split('.')
+
+    short_name = parts[0]
+
+    date_YYYYDDD = parts[1][1:]
+    date_acquired = datetime.datetime.strptime(date_YYYYDDD, '%Y%j').date()
+
+    year = self.date_acquired.year
+    doy = self.date_acquired.timetuple().tm_yday
+
+    horizontal = parts[2][1:3]
+    vertical = parts[2][4:6]
+
+    # Determine the product prefix
+    product_prefix = ('{0}h{1:>02}v{2:>02}{3:>04}{4:>03}'
+                      .format(sensor_code, horizontal, vertical, year, doy))
+
+    # Determine the default pixel sizes
+    _product_code = short_name[3:]
+
+    meters = DEFAULT_PIXEL_SIZE['meters'][_product_code]
+    dd = DEFAULT_PIXEL_SIZE['dd'][_product_code]
+
+    default_pixel_size = {'meters': meters, 'dd': dd}
+
+    # Sensor string is used in plotting
+    sensor_name = None
+    if is_terra(product_id):
+        sensor_name = 'Terra'
+    elif is_aqua(product_id):
+        sensor_name = 'Aqua'
+
+    return SensorInfo(product_prefix, date_acquired,
+                      sensor_name, default_pixel_size)
+
+
+"""Map Landsat regular expressions for supported products to the correct
+   Product ID parser.
+
+   Example Collection Product ID Format:
+       LT05_L1T_038038_19950624_20160302_01_T1
+"""
+LANDSAT_COLLECTION_REGEXP_MAPPING = {
+    'lt04': (r'^lt04_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
+             landsat_collection_sensor_info),
+
+    'lt05': (r'^lt05_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
+             landsat_collection_sensor_info),
+
+    'le07': (r'^le07_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
+             landsat_collection_sensor_info)
+}
+
+
+"""Map Landsat regular expressions for supported products to the correct
+   Product ID parser.
+
+   Example Product ID Format:
+       LE72181092013069PFS00
+"""
+LANDSAT_HISTORICAL_REGEXP_MAPPING = {
+    'lt4': (r'^lt4\d{3}\d{3}\d{4}\d{3}[a-z]{3}[a-z0-9]{2}$',
+            landsat_historical_sensor_info),
+
+    'lt5': (r'^lt5\d{3}\d{3}\d{4}\d{3}[a-z]{3}[a-z0-9]{2}$',
+            landsat_historical_sensor_info),
+
+    'le7': (r'^le7\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
+            landsat_historical_sensor_info),
+
+    'lc8': (r'^lc8\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
+            landsat_historical_sensor_info),
+
+    'lo8': (r'^lo8\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
+            landsat_historical_sensor_info)
+}
+
+
+"""Map MODIS regular expressions for supported products to the correct
+   Product ID parser
+
+   Example Product ID Format:
+       MOD09GQ.A2000072.h02v09.005.2008237032813
+"""
+MODIS_REGEXP_MAPPING = {
+    'mod09a1': (r'^mod09a1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'mod09ga': (r'^mod09ga\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'mod09gq': (r'^mod09gq\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'mod09q1': (r'^mod09q1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'mod13a1': (r'^mod13a1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'mod13a2': (r'^mod13a2\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'mod13a3': (r'^mod13a3\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'mod13q1': (r'^mod13q1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'myd09a1': (r'^myd09a1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'myd09ga': (r'^myd09ga\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'myd09gq': (r'^myd09gq\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'myd09q1': (r'^myd09q1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'myd13a1': (r'^myd13a1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'myd13a2': (r'^myd13a2\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'myd13a3': (r'^myd13a3\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info),
+
+    'myd13q1': (r'^myd13q1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+                modis_sensor_info)
+}
+
+
+def is_lt4(a):
+    return a.upper().startswith(LT4_SENSOR_CODE)
+
+
+def is_lt5(a):
+    return a.upper().startswith(LT5_SENSOR_CODE)
+
+
+def is_le7(a):
+    return a.upper().startswith(LE7_SENSOR_CODE)
+
+
+def is_lt8(a):
+    return a.upper().startswith(LT8_SENSOR_CODE)
+
+
+def is_lc8(a):
+    return a.upper().startswith(LC8_SENSOR_CODE)
+
+
+def is_lo8(a):
+    return a.upper().startswith(LO8_SENSOR_CODE)
+
+
+def is_lt04(a):
+    return a.upper().startswith(LT04_SENSOR_CODE)
+
+
+def is_lt05(a):
+    return a.upper().startswith(LT05_SENSOR_CODE)
+
+
+def is_le07(a):
+    return a.upper().startswith(LE07_SENSOR_CODE)
+
+
+def is_lt08(a):
+    return a.upper().startswith(LT08_SENSOR_CODE)
+
+
+def is_lc08(a):
+    return a.upper().startswith(LC08_SENSOR_CODE)
+
+
+def is_lo08(a):
+    return a.upper().startswith(LO08_SENSOR_CODE)
+
+
+def is_landsat8(a):
+    return any([is_lc8(a), is_lo8(a), is_lt8(a),
+                is_lc08(a), is_lo08(a), is_lt08(a)])
+
+
+def is_landsat_historical(a):
+    return any([is_lc8(a), is_le7(a), is_lt5(a),
+                is_lt4(a), is_lo8(a), is_lt8(a)])
+
+
+def is_landsat_collection(a):
+    return any([is_lc08(a), is_le07(a), is_lt05(a),
+                is_lt04(a), is_lo08(a), is_lt08(a)])
+
+
+def is_landsat(a):
+    return any([is_landsat_collection(a),
+                is_landsat_historical(a)])
+
+
+def is_terra(a):
+    return a.upper().startswith('MOD')
+
+
+def is_aqua(a):
+    return a.upper().startswith('MYD')
+
+
+def is_modis(a):
+    return any([is_terra(a), is_aqua(a)])
+
+
 class ProductNotImplemented(NotImplementedError):
     """Thrown when trying to instantiate an unsupported product
     """
     pass
 
 
-class SensorProduct(object):
-    """Base class for all sensor products
+class sensor_memoize(object):
+    """Implements a special memoize decorator for sensor information
     """
 
-    def __init__(self, product_id):
-        """Constructor for the SensorProduct base class
-
-        Args:
-            product_id (str): The product id for the requested product.
+    def __init__(self, function):
+        """Constructor
         """
 
-        super(SensorProduct, self).__init__()
+        self.function = function
+        self.memory = dict()
 
-        # Set the Product ID
-        # Landsat sceneid
-        # Modis tile name
-        # Aster granule id, etc.
-        self.product_id = product_id
-
-        # Set the Sensor Code
-        self.sensor_code = self.get_satellite_sensor_code(product_id)
-
-        if self.sensor_code not in SENSOR_INFO:
-            raise ProductNotImplemented('Unsupported Sensor Code [{0}]'
-                                        .format(self.sensor_code))
-
-        # Set the Sensor Name
-        # tm, etm, terra, aqua, etc
-        self.sensor_name = SENSOR_INFO[self.sensor_code]['name']
-
-        # Initialize defaults for child determined values
-        # Four digit
-        self.year = None
-        # Three digit
-        self.doy = None
-        # Last 5 for Landsat, collection # for Modis
-        version = None
-        # Holds pixel sizes
-        default_pixel_size = None
-
-    @classmethod
-    def get_satellite_sensor_code(cls, product_id):
-        """Returns the satellite-sensor code if known
-
-        Args:
-            product_id (str): The product id for the requested product.
+    def __call__(self, *args):
+        """Constructor
         """
 
-        old_prefixes = ['LT4', 'LT5', 'LE7',
-                        'LT8', 'LC8', 'LO8',
-                        'MOD', 'MYD']
-        collection_prefixes = ['LT04', 'LT05', 'LE07',
-                               'LT08', 'LC08', 'LO08']
+        # Make sure we use a clean Product ID.
+        temp_id = args[0].strip()
+        product_id = None
 
-        # For older Landsat processing, and MODIS data, the Sensor Code is
-        # the first 3 characters of the Scene ID
-        satellite_sensor_code = product_id[0:3].upper()
-        if satellite_sensor_code in old_prefixes:
-            return satellite_sensor_code
+        if is_landsat_collection(temp_id):
+            product_id = temp_id[:39]
+        elif is_landsat_historical(temp_id):
+            product_id = temp_id[:21]
+        elif is_modis(temp_id):
+            product_id = temp_id[:41]
+        else:
+            raise ProductNotImplemented('[{0}] is not a supported product'
+                                        .format(temp_id))
 
-        # For collection based processing, the Sensor Code is the first 4
-        # characters of the Scene Id
-        satellite_sensor_code = product_id[0:4].upper()
-        if satellite_sensor_code in collection_prefixes:
-            return satellite_sensor_code
-
-        # We could not determine what the Sesnor Code should be
-        raise ProductNotImplemented('Unsupported Sensor Code [{0}] or [{1}]'
-                                    .format(product_id[0:3], product_id[0:4]))
+        try:
+            return self.memory[product_id]
+        except KeyError:
+            self.memory[_product_id] = self.function(_product_id)
+            return self.memory[product_id]
 
 
-class Modis(SensorProduct):
-    """Superclass for all Modis products
+@sensor_memoize
+def info(product_id):
+    """Return an class instance for the correct Sensor
+
+    Args:
+        product_id (str): The Product ID for the requested product.  Can also
+                          be a filename with the assumption that the Product
+                          ID is prefixed on the filename.
     """
 
-    def __init__(self, product_id):
-        """Constructor for the Modis sensor class
-
-        Args:
-            product_id (str): The product id for the requested product.
-        """
-
-        super(Modis, self).__init__(product_id)
-
-        parts = product_id.split('.')
-
-        self.short_name = parts[0]
-
-        date_YYYYDDD = parts[1][1:]
-        self.date_acquired = datetime.datetime.strptime(date_YYYYDDD,
-                                                        '%Y%j').date()
-
-        # Create easy access to acquisition date values
-        self.year = self.date_acquired.year
-        self.month = self.date_acquired.month
-        self.day = self.date_acquired.day
-        self.doy = self.date_acquired.timetuple().tm_yday
-
-        self.horizontal = parts[2][1:3]
-        self.vertical = parts[2][4:6]
-
-        self.version = parts[3]
-
-        self.date_produced = parts[4]
-
-        # Set the default pixel sizes
-
-        # This comes out to be 09A1, 09GA, 13A1, etc
-        _product_code = self.short_name.split(self.sensor_code)[1]
-
-        _meters = DEFAULT_PIXEL_SIZE['meters'][_product_code]
-        _dd = DEFAULT_PIXEL_SIZE['dd'][_product_code]
-
-        self.default_pixel_size = {'meters': _meters, 'dd': _dd}
-
-
-class Terra(Modis):
-    """Superclass for Terra based Modis products
-    """
-    def __init__(self, product_id):
-        super(Terra, self).__init__(product_id)
-
-
-class Aqua(Modis):
-    """Superclass for Aqua based Modis products
-    """
-    def __init__(self, product_id):
-        super(Aqua, self).__init__(product_id)
-
-
-class ModisTerra09A1(Terra):
-    def __init__(self, product_id):
-        super(ModisTerra09A1, self).__init__(product_id)
-
-
-class ModisTerra09GA(Terra):
-    def __init__(self, product_id):
-        super(ModisTerra09GA, self).__init__(product_id)
-
-
-class ModisTerra09GQ(Terra):
-    def __init__(self, product_id):
-        super(ModisTerra09GQ, self).__init__(product_id)
-
-
-class ModisTerra09Q1(Terra):
-    def __init__(self, product_id):
-        super(ModisTerra09Q1, self).__init__(product_id)
-
-
-class ModisTerra13A1(Terra):
-    def __init__(self, product_id):
-        super(ModisTerra13A1, self).__init__(product_id)
-
-
-class ModisTerra13A2(Terra):
-    def __init__(self, product_id):
-        super(ModisTerra13A2, self).__init__(product_id)
-
-
-class ModisTerra13A3(Terra):
-    def __init__(self, product_id):
-        super(ModisTerra13A3, self).__init__(product_id)
-
-
-class ModisTerra13Q1(Terra):
-    def __init__(self, product_id):
-        super(ModisTerra13Q1, self).__init__(product_id)
-
-
-class ModisAqua09A1(Aqua):
-    def __init__(self, product_id):
-        super(ModisAqua09A1, self).__init__(product_id)
-
-
-class ModisAqua09GA(Aqua):
-    def __init__(self, product_id):
-        super(ModisAqua09GA, self).__init__(product_id)
-
-
-class ModisAqua09GQ(Aqua):
-    def __init__(self, product_id):
-        super(ModisAqua09GQ, self).__init__(product_id)
-
-
-class ModisAqua09Q1(Aqua):
-    def __init__(self, product_id):
-        super(ModisAqua09Q1, self).__init__(product_id)
-
-
-class ModisAqua13A1(Aqua):
-    def __init__(self, product_id):
-        super(ModisAqua13A1, self).__init__(product_id)
-
-
-class ModisAqua13A2(Aqua):
-    def __init__(self, product_id):
-        super(ModisAqua13A2, self).__init__(product_id)
-
-
-class ModisAqua13A3(Aqua):
-    def __init__(self, product_id):
-        super(ModisAqua13A3, self).__init__(product_id)
-
-
-class ModisAqua13Q1(Aqua):
-    def __init__(self, product_id):
-        super(ModisAqua13Q1, self).__init__(product_id)
-
-
-class Landsat(SensorProduct):
-    """Superclass for all Landsat based products
-    """
-
-    def __init__(self, product_id):
-        """Constructor for the Landsat sensor class
-
-        Args:
-            product_id (str): The product id for the requested product.
-        """
-
-        super(Landsat, self).__init__(product_id)
-
-        self.path = product_id[3:6].lstrip('0')
-        self.row = product_id[6:9].lstrip('0')
-        self.station = product_id[16:19]
-        self.version = product_id[19:21]
-
-        date_YYYYDDD = product_id[9:16]
-        self.date_acquired = datetime.datetime.strptime(date_YYYYDDD,
-                                                        '%Y%j').date()
-
-        # Create easy access to acquisition date values
-        self.year = self.date_acquired.year
-        self.month = self.date_acquired.month
-        self.day = self.date_acquired.day
-        self.doy = self.date_acquired.timetuple().tm_yday
-
-        # set the default pixel sizes
-        _meters = DEFAULT_PIXEL_SIZE['meters'][self.sensor_code]
-
-        _dd = DEFAULT_PIXEL_SIZE['dd'][self.sensor_code]
-
-        self.default_pixel_size = {'meters': _meters, 'dd': _dd}
-
-
-class LandsatTM(Landsat):
-    def __init__(self, product_id):
-        super(LandsatTM, self).__init__(product_id)
-
-
-class LandsatETM(Landsat):
-    def __init__(self, product_id):
-        super(LandsatETM, self).__init__(product_id)
-
-
-class LandsatOLITIRS(Landsat):
-    def __init__(self, product_id):
-        super(LandsatOLITIRS, self).__init__(product_id)
-
-
-class LandsatOLI(Landsat):
-    def __init__(self, product_id):
-        super(LandsatOLI, self).__init__(product_id)
-
-
-class LandsatCollection(SensorProduct):
-    """Superclass for all Landsat collection based products
-    """
-
-    def __init__(self, product_id):
-        """Constructor for the Landsat collection sensor class
-
-        Args:
-            product_id (str): The product id for the requested product.
-        """
-
-        super(LandsatCollection, self).__init__(product_id)
-
-        parts = product_id.split('_')
-
-        self.processing_level = parts[1]
-
-        self.path = parts[2][0:3].lstrip('0')
-        self.row = parts[2][4:].lstrip('0')
-
-        self.date_acquired = datetime.datetime.strptime(parts[3],
-                                                        '%Y%m%d').date()
-        self.date_produced = datetime.datetime.strptime(parts[4],
-                                                        '%Y%m%d').date()
-
-        # Create easy access to acquisition date values
-        self.year = self.date_acquired.year
-        self.month = self.date_acquired.month
-        self.day = self.date_acquired.day
-        self.doy = self.date_acquired.timetuple().tm_yday
-
-        self.collection = parts[5]
-        self.tier = parts[6]
-
-        # set the default pixel sizes
-        _meters = DEFAULT_PIXEL_SIZE['meters'][self.sensor_code]
-
-        _dd = DEFAULT_PIXEL_SIZE['dd'][self.sensor_code]
-
-        self.default_pixel_size = {'meters': _meters, 'dd': _dd}
-
-
-class LandsatTMCollection(LandsatCollection):
-    def __init__(self, product_id):
-        super(LandsatTMCollection, self).__init__(product_id)
-
-
-class LandsatETMCollection(LandsatCollection):
-    def __init__(self, product_id):
-        super(LandsatETMCollection, self).__init__(product_id)
-
-
-def instance(product_id):
-    """
-    MODIS:
-        Supported Products:
-            MOD09A1 MOD09GA MOD09GQ MOD09Q1 MYD09A1 MYD09GA MYD09GQ MYD09Q1
-            MOD13A1 MOD13A2 MOD13A3 MOD13Q1 MYD13A1 MYD13A2 MYD13A3 MYD13Q1
-
-        Product ID Format: MOD09GQ.A2000072.h02v09.005.2008237032813
-
-    LANDSAT:
-        Supported Products:
-            LT4 LT5 LE7 LC8 LO8
-            LT04 LT05 LE07 LC08 LO08
-
-        Product ID Format: LE72181092013069PFS00
-        Collection Product ID Format: LT05_L1T_038038_19950624_20160302_01_T1
-    """
-
-    # Make sure we use a clean Product ID
-    _product_id = product_id.strip()
-
-    # Remove known file extensions before comparison
-    # Do not alter the case of the actual product_id!
-    _id = _product_id.lower()
-
-    if _id.endswith(settings.MODIS_INPUT_FILENAME_EXTENSION):
-        index = _id.index(settings.MODIS_INPUT_FILENAME_EXTENSION)
-        # leave original case intact
-        _product_id = _product_id[0:index]
-        _id = _id[0:index]
-
-    elif _id.endswith(settings.LANDSAT_INPUT_FILENAME_EXTENSION):
-        index = _id.index(settings.LANDSAT_INPUT_FILENAME_EXTENSION)
-        # leave original case intact
-        _product_id = _product_id[0:index]
-        _id = _id[0:index]
+    mapping = None
 
     # We only support an explicit set of Product ID formats, so that
     # processing breaks if it is changed
-    instances = {
-        'lt4': (r'^lt4\d{3}\d{3}\d{4}\d{3}[a-z]{3}[a-z0-9]{2}$',
-                LandsatTM),
+    if is_landsat_collection(product_id):
+        mapping = LANDSAT_COLLECTION_REGEXP_MAPPING
 
-        'lt04': (r'^lt04_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
-                 LandsatTMCollection),
+    elif is_landsat_historical(product_id):
+        mapping = LANDSAT_HISTORICAL_REGEXP_MAPPING
 
-        'lt5': (r'^lt5\d{3}\d{3}\d{4}\d{3}[a-z]{3}[a-z0-9]{2}$',
-                LandsatTM),
+    elif is_modis(product_id):
+        mapping = MODIS_REGEXP_MAPPING
 
-        'lt05': (r'^lt05_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
-                 LandsatTMCollection),
+    else:
+        raise ProductNotImplemented('[{0}] is not a supported product'
+                                    .format(product_id))
 
-        'le7': (r'^le7\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
-                LandsatETM),
-
-        'le07': (r'^le07_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
-                 LandsatETMCollection),
-
-        'lc8': (r'^lc8\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
-                LandsatOLITIRS),
-
-        'lo8': (r'^lo8\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
-                LandsatOLI),
-
-        'mod09a1': (r'^mod09a1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisTerra09A1),
-
-        'mod09ga': (r'^mod09ga\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisTerra09GA),
-
-        'mod09gq': (r'^mod09gq\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisTerra09GQ),
-
-        'mod09q1': (r'^mod09q1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisTerra09Q1),
-
-        'mod13a1': (r'^mod13a1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisTerra13A1),
-
-        'mod13a2': (r'^mod13a2\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisTerra13A2),
-
-        'mod13a3': (r'^mod13a3\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisTerra13A3),
-
-        'mod13q1': (r'^mod13q1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisTerra13Q1),
-
-        'myd09a1': (r'^myd09a1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisAqua09A1),
-
-        'myd09ga': (r'^myd09ga\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisAqua09GA),
-
-        'myd09gq': (r'^myd09gq\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisAqua09GQ),
-
-        'myd09q1': (r'^myd09q1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisAqua09Q1),
-
-        'myd13a1': (r'^myd13a1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisAqua13A1),
-
-        'myd13a2': (r'^myd13a2\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisAqua13A2),
-
-        'myd13a3': (r'^myd13a3\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisAqua13A3),
-
-        'myd13q1': (r'^myd13q1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
-                    ModisAqua13Q1)
-    }
+    test_id = product_id.lower()
 
     # Search through the dictionary and return the object for the match
-    for key in instances.iterkeys():
-        if re.match(instances[key][0], _id):
-            return instances[key][1](_product_id)
+    for key in mapping.iterkeys():
+        if re.match(mapping[key][0], test_id):
+            return mapping[key][1](product_id)
 
-    # OOOHHH!!! NOOOO!!!
-    raise ProductNotImplemented('[{0}] is not a supported product'
-                                .format(_product_id))
+    raise ProductNotImplemented('[{0}] is not a supported Product ID format'
+                                .format(product_id))

@@ -1,13 +1,9 @@
 
 '''
-License:
-  "NASA Open Source Agreement 1.3"
+Description: Provides routines for creating order directories and staging data
+             to them.
 
-Description:
-  Provides routines for creating order directories and staging data to them.
-
-History:
-  Created Jan/2014 by Ron Dilley, USGS/EROS
+License: NASA Open Source Agreement 1.3
 '''
 
 import os
@@ -21,7 +17,6 @@ from environment import Environment, DISTRIBUTION_METHOD_LOCAL
 import transfer
 
 
-# ============================================================================
 def untar_data(source_file, destination_directory):
     '''
     Description:
@@ -52,7 +47,6 @@ def untar_data(source_file, destination_directory):
             logger.info(output)
 
 
-# ============================================================================
 def stage_local_statistics_data(output_dir, work_dir, order_id):
     '''
     Description:
@@ -69,7 +63,6 @@ def stage_local_statistics_data(output_dir, work_dir, order_id):
     transfer.copy_files_to_directory(stats_files, work_dir)
 
 
-# ============================================================================
 def stage_remote_statistics_data(stage_dir, work_dir, order_id):
     '''
     Description:
@@ -90,7 +83,6 @@ def stage_remote_statistics_data(stage_dir, work_dir, order_id):
     transfer.move_files_to_directory(stats_files, work_dir)
 
 
-# ============================================================================
 def stage_statistics_data(output_dir, stage_dir, work_dir, parms):
     '''
     Description:

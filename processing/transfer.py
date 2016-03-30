@@ -1,13 +1,8 @@
 
 '''
-License:
-  "NASA Open Source Agreement 1.3"
+Description: Provides routines for transfering files.
 
-Description:
-  Provides routines for transfering files.
-
-History:
-  Created Jan/2014 by Ron Dilley, USGS/EROS
+License: NASA Open Source Agreement 1.3
 '''
 
 import os
@@ -22,7 +17,6 @@ import utilities
 from logging_tools import EspaLogging
 
 
-# ============================================================================
 def copy_files_to_directory(source_files, destination_directory):
     '''
     Description:
@@ -47,10 +41,8 @@ def copy_files_to_directory(source_files, destination_directory):
                     logger.info(output)
 
     logger.info("Transfer complete - CP")
-# END - copy_files_to_directory
 
 
-# ============================================================================
 def move_files_to_directory(source_files, destination_directory):
     '''
     Description:
@@ -75,10 +67,8 @@ def move_files_to_directory(source_files, destination_directory):
             os.rename(source_file, new_name)
 
     logger.info("Transfer complete - MOVE")
-# END - move_files_to_directory
 
 
-# ============================================================================
 def remote_copy_file_to_file(source_host, source_file, destination_file):
     '''
     Description:
@@ -103,16 +93,10 @@ def remote_copy_file_to_file(source_host, source_file, destination_file):
             logger.info(output)
 
     logger.info("Transfer complete - SSH-CP")
-# END - remote_copy_file_to_file
 
 
-# ============================================================================
 def ftp_from_remote_location(username, pword, host, remotefile, localfile):
     '''
-    Author: David Hill
-
-    Date: 12/5/13
-
     Description:
       Transfers files from a remote location to the local machine using ftplib.
 
@@ -156,16 +140,10 @@ def ftp_from_remote_location(username, pword, host, remotefile, localfile):
             ftp.quit()
 
     logger.info("Transfer complete - FTP")
-# END - ftp_from_remote_location
 
 
-# ============================================================================
 def ftp_to_remote_location(username, pword, localfile, host, remotefile):
     '''
-    Author: David Hill
-
-    Date: 12/5/13
-
     Description:
       Transfers files from the local machine to a remote location using ftplib.
 
@@ -204,10 +182,8 @@ def ftp_to_remote_location(username, pword, localfile, host, remotefile):
             ftp.quit()
 
     logger.info("Transfer complete - FTP")
-# END - ftp_to_remote_location
 
 
-# ============================================================================
 def scp_transfer_file(source_host, source_file,
                       destination_host, destination_file):
     '''
@@ -258,10 +234,8 @@ def scp_transfer_file(source_host, source_file,
         raise
 
     logger.info("Transfer complete - SCP")
-# END - scp_transfer_file
 
 
-# ============================================================================
 def scp_transfer_directory(source_host, source_directory,
                            destination_host, destination_directory):
     '''
@@ -310,10 +284,8 @@ def scp_transfer_directory(source_host, source_directory,
         raise
 
     logger.info("Transfer complete - SCP")
-# END - scp_transfer_directory
 
 
-# ============================================================================
 def http_transfer_file(download_url, destination_file):
     '''
     Description:
@@ -400,10 +372,7 @@ def http_transfer_file(download_url, destination_file):
 
     logger.info("Transfer Complete - HTTP")
 
-# END - http_transfer_file
 
-
-# ============================================================================
 def download_file_url(download_url, destination_file):
     '''
     Description:
@@ -421,10 +390,8 @@ def download_file_url(download_url, destination_file):
         raise Exception("Transfer Failed -"
                         " Unknown URL transport protocol [%s]"
                         % download_url)
-# END - download_file_url
 
 
-# ============================================================================
 def transfer_file(source_host, source_file,
                   destination_host, destination_file,
                   source_username=None, source_pw=None,
@@ -479,4 +446,3 @@ def transfer_file(source_host, source_file,
     # As a last resort try SCP
     scp_transfer_file(source_host, source_file,
                       destination_host, destination_file)
-# END - transfer_file

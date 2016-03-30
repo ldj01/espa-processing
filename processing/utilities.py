@@ -1,10 +1,8 @@
 
 '''
-License:
-  NASA Open Source Agreement 1.3
+Description: Utility module for espa-processing.
 
-Description:
-  Utility module for espa-processing.
+License: NASA Open Source Agreement 1.3
 '''
 
 import os
@@ -17,7 +15,7 @@ import random
 import settings
 
 
-def date_from_doy(year, doy):
+def date_from_year_doy(year, doy):
     '''Returns a python date object given a year and day of year'''
 
     d = datetime.date(int(year), 1, 1) + datetime.timedelta(int(doy) - 1)
@@ -30,35 +28,35 @@ def date_from_doy(year, doy):
 
 
 def execute_cmd(cmd):
-    '''
-    Description:
-      Execute a command line and return the terminal output or raise an
-      exception
+    """Execute a system command line
+
+    Args:
+        cmd (str): The command line to execute.
 
     Returns:
-        output - The stdout and/or stderr from the executed command.
-    '''
+        output (str): The stdout and/or stderr from the executed command.
+
+    Raises:
+        Exception(message)
+    """
 
     output = ''
-
     (status, output) = commands.getstatusoutput(cmd)
 
+    message = ''
     if status < 0:
-        message = "Application terminated by signal [%s]" % cmd
-        if len(output) > 0:
-            message = ' Stdout/Stderr is: '.join([message, output])
-        raise Exception(message)
+        message = 'Application terminated by signal [{0}]'.format(cmd)
 
     if status != 0:
-        message = "Application failed to execute [%s]" % cmd
-        if len(output) > 0:
-            message = ' Stdout/Stderr is: '.join([message, output])
-        raise Exception(message)
+        message = 'Application failed to execute [{0}]'.format(cmd)
 
     if os.WEXITSTATUS(status) != 0:
-        message = "Application [%s] returned error code [%d]" \
-                  % (cmd, os.WEXITSTATUS(status))
+        message = ('Application [{0}] returned error code [{1}]' \
+                   .format(cmd, os.WEXITSTATUS(status)))
+
+    if len(message) > 0:
         if len(output) > 0:
+            # Add the output to the exception message
             message = ' Stdout/Stderr is: '.join([message, output])
         raise Exception(message)
 

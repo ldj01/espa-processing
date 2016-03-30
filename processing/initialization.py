@@ -1,20 +1,9 @@
 
 '''
-License:
-  "NASA Open Source Agreement 1.3"
+Description: Provides the implementation for creating the core directories
+             required for the processing of a product request.
 
-Description:
-  Provides the implementation for creating the core directories required
-  for the processing of a product request.
-
-History:
-  Created Oct/2014 by Ron Dilley, USGS/EROS
-
-    Date              Reason
-    ----------------  --------------------------------------------------------
-    May/2015          Initial implementation completed
-    Sep/2015          Reduced complexity based on peer review comments
-
+License: NASA Open Source Agreement 1.3
 '''
 
 
@@ -25,7 +14,6 @@ import utilities
 from environment import Environment, DISTRIBUTION_METHOD_LOCAL
 
 
-# ----------------------------------------------------------------------------
 def __create_local_directory(base_path, directory_name):
     '''
     Description:
@@ -48,7 +36,6 @@ def __create_local_directory(base_path, directory_name):
     return full_path
 
 
-# ----------------------------------------------------------------------------
 def __create_linked_directory(base_path, linked_path, link_name):
     '''
     Description:
@@ -76,7 +63,6 @@ def __create_linked_directory(base_path, linked_path, link_name):
 # API Implementation
 # ============================================================================
 
-# ----------------------------------------------------------------------------
 def create_stage_directory(base_path):
     '''
     Description:
@@ -94,7 +80,6 @@ def create_stage_directory(base_path):
     return __create_local_directory(base_path, 'stage')
 
 
-# ----------------------------------------------------------------------------
 def create_work_directory(base_path):
     '''
     Description:
@@ -112,7 +97,6 @@ def create_work_directory(base_path):
     return __create_local_directory(base_path, 'work')
 
 
-# ----------------------------------------------------------------------------
 def create_output_directory(base_path):
     '''
     Description:

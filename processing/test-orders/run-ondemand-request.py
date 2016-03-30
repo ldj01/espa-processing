@@ -56,6 +56,40 @@ def build_argument_parser():
     return parser
 
 
+def get_satellite_sensor_code(product_id):
+    """Returns the satellite-sensor code if known
+
+    Args:
+        product_id (str): The Product ID for the requested product.  Can also
+                          be a filename with the assumption that the Product
+                          ID is prefixed on the filename.
+    """
+
+    three_digit_prefixes = [LT4_SENSOR_CODE, LT5_SENSOR_CODE, LE7_SENSOR_CODE,
+                            LT8_SENSOR_CODE, LC8_SENSOR_CODE, LO8_SENSOR_CODE,
+                            TERRA_SENSOR_CODE, AQUA_SENSOR_CODE]
+
+    four_digit_prefixes = [LT04_SENSOR_CODE, LT05_SENSOR_CODE,
+                           LE07_SENSOR_CODE, LT08_SENSOR_CODE,
+                           LC08_SENSOR_CODE, LO08_SENSOR_CODE]
+
+    # For older Landsat processing, and MODIS data, the Sensor Code is
+    # the first 3 characters of the Scene ID
+    satellite_sensor_code = product_id[0:3].upper()
+    if satellite_sensor_code in three_digit_prefixes:
+        return satellite_sensor_code
+
+    # For collection based processing, the Sensor Code is the first 4
+    # characters of the Scene Id
+    satellite_sensor_code = product_id[0:4].upper()
+    if satellite_sensor_code in four_digit_prefixes:
+        return satellite_sensor_code
+
+    # We could not determine what the Sesnor Code should be
+    raise NotImplementedError('Unsupported Sensor Code [{0}] or [{1}]'
+                              .format(product_id[0:3], product_id[0:4]))
+
+
 def process_test_order(request, request_file, products_file, env_vars,
                        keep_log, plot, pre, post):
     """Process the test order file"""
@@ -105,9 +139,6 @@ def process_test_order(request, request_file, products_file, env_vars,
     for product_id in products:
         logger.info('Processing Product [{0}]'.format(product_id))
 
-        sensor_inst = sensor.instance(product_id)
-        sensor_code = sensor_inst.sensor_code.upper()
-
         with open(request_file, 'r') as request_fd:
             request_contents = request_fd.read()
             if not request_contents:
@@ -130,6 +161,8 @@ def process_test_order(request, request_file, products_file, env_vars,
             # Turn it into a string for follow-on processing
             order_contents = json.dumps(new_dict, indent=4, sort_keys=True)
 
+            sensor_code = get_satellite_sensor_code(product_id)
+
             with open(tmp_order, 'w') as tmp_fd:
 
                 logger.info('Creating [{0}]'.format(tmp_order))
@@ -138,12 +171,9 @@ def process_test_order(request, request_file, products_file, env_vars,
 
                 # Update the order for the developer
                 download_url = 'null'
-                is_modis = False
-                if sensor_code in ['MOD', 'MYD']:
-                    is_modis = True
 
                 # for plots
-                if not is_modis and not plot:
+                if not sensor.is_modis(product_id) and not plot:
                     product_path = ('{0}/{1}/{2}{3}'
                                     .format(env_vars['dev_data_dir']['value'],
                                             sensor_code, product_id,
@@ -160,7 +190,7 @@ def process_test_order(request, request_file, products_file, env_vars,
                     download_url = 'file://{0}'.format(product_path)
 
                 elif not plot:
-                    if sensor_code == 'MOD':
+                    if sensor.is_terra(product_id) == 'MOD':
                         base_source_path = '/MOLT'
                     else:
                         base_source_path = '/MOLA'
@@ -179,14 +209,14 @@ def process_test_order(request, request_file, products_file, env_vars,
                                     .format(base_source_path, short_name,
                                             version, xxx))
 
-                    if sensor_code == 'MOD' or sensor_code == 'MYD':
+                    if sensor.is_modis(product_id):
                         download_url = ('http://{0}/{1}/{2}.hdf'
                                         .format(MODIS_HOST, product_path,
                                                 product_id))
 
                 sensor_name = 'plot'
                 if not plot:
-                    sensor_name = sensor.instance(product_id).sensor_name
+                    sensor_name = sensor.info(product_id).sensor_name
                     logger.info('Processing Sensor [{0}]'.format(sensor_name))
                 else:
                     logger.info('Processing Plot Request')

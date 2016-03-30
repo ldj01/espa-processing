@@ -1,11 +1,9 @@
 
 '''
-License:
-  "NASA Open Source Agreement 1.3"
+Description: This module provides routines to be used for analyzing and
+             manipulating tile data.
 
-Description:
-  This module provides routines to be used for analyzing and manipulating tile
-  data.
+License: NASA Open Source Agreement 1.3
 '''
 
 import os
@@ -20,7 +18,6 @@ from logging_tools import EspaLogging
 import espa_exception as ee
 
 
-# ============================================================================
 def get_statistics(file_name, band_type):
     '''
     Description:
@@ -68,10 +65,8 @@ def get_statistics(file_name, band_type):
         valid = 'no'
 
     return (float(minimum), float(maximum), float(mean), float(stddev), valid)
-# END - get_statistics
 
 
-# ============================================================================
 def generate_statistics(work_directory, files_to_search_for):
     '''
     Description:
@@ -140,10 +135,8 @@ def generate_statistics(work_directory, files_to_search_for):
     finally:
         # Change back to the previous directory
         os.chdir(current_directory)
-# END - generate_statistics
 
 
-# ============================================================================
 if __name__ == '__main__':
     '''
     Description:

@@ -1,11 +1,9 @@
 #! /usr/bin/env python
 
 '''
-License:
-  "NASA Open Source Agreement 1.3"
+Description: Read all lines from STDIN and process them.
 
-Description:
-  Read all lines from STDIN and process them.
+License: NASA Open Source Agreement 1.3
 '''
 
 import sys
@@ -23,7 +21,6 @@ import parameters
 import processor
 
 
-# ============================================================================
 def set_product_error(server, order_id, product_id, processing_location):
     '''
     Description:
@@ -40,7 +37,6 @@ def set_product_error(server, order_id, product_id, processing_location):
         sleep_seconds = settings.DEFAULT_SLEEP_SECONDS
         while True:
             try:
-                # START - DEBUG
                 if product_id is None:
                     logger.info("DEBUG: Product ID is [None]")
                 else:
@@ -54,7 +50,6 @@ def set_product_error(server, order_id, product_id, processing_location):
                 else:
                     logger.info("DEBUG: Processing Location is [%s]"
                                 % processing_location)
-                # END - DEBUG
 
                 logged_contents = \
                     EspaLogging.read_logger_file(settings.PROCESSING_LOGGER)
@@ -82,12 +77,10 @@ def set_product_error(server, order_id, product_id, processing_location):
                     continue
                 else:
                     return False
-        # END - while True
 
     return True
 
 
-# ============================================================================
 def process(args):
     '''
     Description:
@@ -175,8 +168,8 @@ def process(args):
 
             if product_id != 'plot':
                 # Make sure we can process the sensor
-                tmp_inst = sensor.instance(product_id)
-                del tmp_inst
+                tmp_info = sensor.info(product_id)
+                del tmp_info
 
                 # Make sure we have a valid output format
                 if not parameters.test_for_parameter(options, 'output_format'):
@@ -251,7 +244,6 @@ def process(args):
                                      " follows")
 
 
-# ============================================================================
 if __name__ == '__main__':
     '''
     Description:

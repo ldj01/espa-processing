@@ -1,20 +1,9 @@
 
 '''
-License:
-  "NASA Open Source Agreement 1.3"
+Description: Implements a class for reading, validating, and retrieving system
+             environment variables.
 
-Description:
-  Implements a class for reading, validating, and retrieving system
-  environment variables.
-
-History:
-  Created Oct/2014 by Ron Dilley, USGS/EROS
-
-    Date              Reason
-    ----------------  --------------------------------------------------------
-    May/2015          Initial implementation
-    Sep/2015          Enhanced distribution method support
-
+License: NASA Open Source Agreement 1.3
 '''
 
 
@@ -34,7 +23,6 @@ class Environment(object):
         they do not need to be retrieved everywhere they are used.
     '''
 
-    # --------------------------------------
     def __init__(self):
         '''
         Description:
@@ -61,7 +49,6 @@ class Environment(object):
 
         self.validate_environment()
 
-    # --------------------------------------
     def validate_environment(self):
         '''
         Description:
@@ -91,17 +78,14 @@ class Environment(object):
 
             obj['value'] = env_value
 
-    # --------------------------------------
     def get_distribution_method(self):
         '''Returns the distribution method'''
         return self._keys['distribution_method']['value']
 
-    # --------------------------------------
     def get_distribution_directory(self):
         '''Returns the distribution directory'''
         return self._keys['distribution_directory']['value']
 
-    # --------------------------------------
     def get_base_work_directory(self):
         '''Returns the base working directory'''
         return self._keys['base_work_directory']['value']

@@ -1,11 +1,10 @@
 
 '''
-License:
-  "NASA Open Source Agreement 1.3"
+Description: Provides methods for creating and distributing products.
 
-Description:
-  Provides methods for creating and distributing products.
+License: NASA Open Source Agreement 1.3
 '''
+
 
 import os
 import sys
@@ -21,7 +20,6 @@ from espa_exception import ESPAException
 import transfer
 
 
-# ============================================================================
 def package_product(source_directory, destination_directory, product_name):
     '''
     Description:
@@ -140,7 +138,6 @@ def package_product(source_directory, destination_directory, product_name):
     return (product_full_path, cksum_full_path, cksum_value)
 
 
-# ============================================================================
 def transfer_product(destination_host, destination_directory,
                      destination_username, destination_pw,
                      product_filename, cksum_filename):
@@ -250,7 +247,6 @@ def transfer_product(destination_host, destination_directory,
     return (cksum_value, destination_product_file, destination_cksum_file)
 
 
-# ============================================================================
 def distribute_statistics_remote(product_id, source_path,
                                  destination_host, destination_path,
                                  destination_username, destination_pw):
@@ -406,7 +402,6 @@ def distribute_statistics_remote(product_id, source_path,
         break
 
 
-# ============================================================================
 def distribute_statistics_local(product_id, source_path, destination_path):
     '''
     Description:
@@ -489,7 +484,6 @@ def distribute_statistics_local(product_id, source_path, destination_path):
         os.chdir(current_directory)
 
 
-# ============================================================================
 def distribute_product_remote(product_name, source_path, packaging_path,
                               cache_path, parms):
 
@@ -579,7 +573,6 @@ def distribute_product_remote(product_name, source_path, packaging_path,
     return (product_file, cksum_file)
 
 
-# ============================================================================
 def distribute_product_local(product_name, source_path, packaging_path):
 
     logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
