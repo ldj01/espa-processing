@@ -1,7 +1,7 @@
-## ESPA Processing Version 2.10.1 Release Notes
-Release Date: March 2016
+## ESPA Processing Version 2.10.2 Release Notes
+Release Date: April 2016
 
-See git tag [espa-2.10.1-release]
+See git tag [espa-2.10.2-release]
 
 ### General Information
 This project contains the code for processing a single input dataset to the final output products.  It is the controlling code for producing a product.  It does not produce science products on it's own, it calls on applications from other ESPA projects to perform that work.  Having said that, it does contain some code to perform a few things, such as, statistics generation, statistics plotting, and warping (using GDAL).
@@ -15,11 +15,7 @@ USGS Designation: EROS Science Processing Architecture (ESPA)
 ## Release Notes
 Please see the Release Tags for notes related to past versions.
 
-  - Updated some method names to be more generic, rather than tied to a specific algorithm.
-  - Moved old example code to the espa-junk-drawer project
-  - Moved solr code to the espa-junk-drawer project.  Also removed all references to solr from the processing code.
-  - Moved browse code to the espa-junk-drawer project.  Also removed all references to browse from the processing code.
-  - Removed an old docs directory.
+  - Added a sleep mechanism to slow down the processing system.
 
 ## Supported Science Products
 To generate products for a science application, it must be installed on the system and the applications provided must be available on the PATH.  See the respective science projects for installation instructions and auxiliary data requirements.
