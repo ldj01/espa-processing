@@ -21,7 +21,9 @@ History:
                                                map operations
 '''
 
+import os
 import sys
+import shutil
 import socket
 import json
 import xmlrpclib
@@ -32,11 +34,16 @@ from argparse import ArgumentParser
 # imports from espa_common
 from logger_factory import EspaLogging
 import settings
+import utilities
 import sensor
 
 # local objects and methods
+from environment import Environment
 import parameters
 import processor
+
+
+ONDEMAND_LOG_FILENAME = 'espa-ondemand-mapper.log'
 
 
 # ============================================================================
@@ -237,10 +244,6 @@ def process(args):
                     logger.warning("Failed processing xmlrpc call to"
                                    " mark_scene_complete")
 
-            # Cleanup the log file
-            if not mapper_keep_log:
-                EspaLogging.delete_logger_file(settings.PROCESSING_LOGGER)
-
         except Exception as excep:
 
             # First log the exception
@@ -255,32 +258,52 @@ def process(args):
                                                order_id,
                                                product_id,
                                                processing_location)
-                    if status and not mapper_keep_log:
-                        try:
-                            # Cleanup the log file
-                            EspaLogging. \
-                                delete_logger_file(settings.PROCESSING_LOGGER)
-                        except Exception:
-                            logger.exception("Exception encountered"
-                                             " stacktrace follows")
                 except Exception:
                     logger.exception("Exception encountered stacktrace"
                                      " follows")
         finally:
-            # Reset back to the base logger
-            logger = EspaLogging.get_logger('base')
-
+            # Determine if we need to sleep
             end_time = datetime.datetime.now()
             seconds_elapsed = (end_time - start_time).seconds
-            logger.info('{0}[{1}] Processing Time Elapsed {2} Seconds'
-                        .format(order_id, product_id, seconds_elapsed))
+            logger.info('Processing Time Elapsed {0} Seconds'
+                        .format(seconds_elapsed))
 
             if seconds_elapsed < settings.MIN_REQUEST_DURATION_IN_SECONDS:
                 seconds_to_sleep = (settings.MIN_REQUEST_DURATION_IN_SECONDS -
                                     seconds_elapsed)
-                logger.info('{0}[{1}] Sleeping an additional {2} Seconds'
-                            .format(order_id, product_id, seconds_to_sleep))
-                sleep(seconds_to_sleep)
+                logger.info('Sleeping An Additional {0} Seconds'
+                            .format(seconds_to_sleep))
+                # Joe-Developer doesn't want to wait so check and skip
+                # This directory will not exist for HADOOP processing
+                if not os.path.isdir('unittests'):
+                    sleep(seconds_to_sleep)
+
+            # Reset back to the base logger
+            logger = EspaLogging.get_logger('base')
+
+            # Archive the log files for the job
+            try:
+                # Job log file
+                logfile_path = EspaLogging.get_filename(settings
+                                                        .PROCESSING_LOGGER)
+                full_logfile_path = os.path.abspath(logfile_path)
+                log_name = os.path.basename(full_logfile_path)
+                output_dir = Environment().get_distribution_directory()
+                destination_path = os.path.join(output_dir, 'logs', order_id)
+                destination_file = os.path.join(destination_path, log_name)
+                utilities.create_directory(destination_path)
+                shutil.copyfile(full_logfile_path, destination_file)
+
+                # Mapper log file
+                full_logfile_path = os.path.abspath(ONDEMAND_LOG_FILENAME)
+                log_name = os.path.basename(full_logfile_path)
+                destination_file = os.path.join(destination_path, log_name)
+                utilities.create_directory(destination_path)
+                shutil.copyfile(full_logfile_path, destination_file)
+            except Exception:
+                # We don't care because we are at the end of processing and
+                # hadoop will cleanup
+                pass
     # END - for line in STDIN
 
 
@@ -298,7 +321,7 @@ if __name__ == '__main__':
                         default=False, help="keep the generated log file")
     args = parser.parse_args()
 
-    EspaLogging.configure_base_logger(filename='/tmp/espa-ondemand-mapper.log')
+    EspaLogging.configure_base_logger(filename=ONDEMAND_LOG_FILENAME)
     # Initially set to the base logger
     logger = EspaLogging.get_logger('base')
 
