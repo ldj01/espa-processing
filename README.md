@@ -15,7 +15,8 @@ USGS Designation: EROS Science Processing Architecture (ESPA)
 ## Release Notes
 Please see the Release Tags for notes related to past versions.
 
-  - Added a sleep mechanism to slow down the processing system.
+  - Added a minimum request duration mechanism to slow down the processing system, so we don't saturate the network.
+  - Added a random sleep interval for http download errors from 1 to 10 minutes.
 
 ## Supported Science Products
 To generate products for a science application, it must be installed on the system and the applications provided must be available on the PATH.  See the respective science projects for installation instructions and auxiliary data requirements.
