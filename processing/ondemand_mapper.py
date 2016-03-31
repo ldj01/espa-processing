@@ -43,7 +43,8 @@ import parameters
 import processor
 
 
-ONDEMAND_LOG_FILENAME = 'espa-ondemand-mapper.log'
+MAPPER_LOG_PREFIX = 'espa-mapper'
+MAPPER_LOG_FILENAME = '.'.join([MAPPER_LOG_PREFIX, 'log'])
 
 
 # ============================================================================
@@ -157,10 +158,11 @@ def archive_log_files(order_id):
         shutil.copyfile(full_logfile_path, destination_file)
 
         # Mapper log file
-        full_logfile_path = os.path.abspath(ONDEMAND_LOG_FILENAME)
-        log_name = os.path.basename(full_logfile_path)
+        full_logfile_path = os.path.abspath(MAPPER_LOG_FILENAME)
+        final_log_name = '-'.join([MAPPER_LOG_PREFIX, order_id])
+        final_log_name = '.'.join([final_log_name, 'log'])
         # Determine full destination
-        destination_file = os.path.join(destination_path, log_name)
+        destination_file = os.path.join(destination_path, final_log_name)
         # Copy it
         shutil.copyfile(full_logfile_path, destination_file)
 
@@ -351,7 +353,7 @@ if __name__ == '__main__':
                         default=False, help="keep the generated log file")
     args = parser.parse_args()
 
-    EspaLogging.configure_base_logger(filename=ONDEMAND_LOG_FILENAME)
+    EspaLogging.configure_base_logger(filename=MAPPER_LOG_FILENAME)
     # Initially set to the base logger
     logger = EspaLogging.get_logger('base')
 
