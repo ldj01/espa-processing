@@ -17,6 +17,8 @@ Please see the Release Tags for notes related to past versions.
 
   - Added a minimum request duration mechanism to slow down the processing system, so we don't saturate the network.
   - Added a random sleep interval for http download errors from 1 to 10 minutes.
+  - Changed logging so that logfiles are written to the hadoop job working directory.
+  - Changed logging so that we archive the logfiles for every work order on the output cache.
 
 ## Supported Science Products
 To generate products for a science application, it must be installed on the system and the applications provided must be available on the PATH.  See the respective science projects for installation instructions and auxiliary data requirements.
