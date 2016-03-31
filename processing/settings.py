@@ -1,3 +1,11 @@
+
+# The minimum number of seconds an order/request should take to run.  Longer
+# is OK.
+# Assuming 4Gb network connection and approximately 1GB files and 421 cores.
+# One file takes approximately 842 seconds to download if all cores are
+# downloading at the same time.  Disk IO not taken into consideration.
+MIN_REQUEST_DURATION_IN_SECONDS = 842
+
 # Filename extension for Landsat based input products
 LANDSAT_INPUT_FILENAME_EXTENSION = '.tar.gz'
 

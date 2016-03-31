@@ -144,7 +144,7 @@ class EspaLogging(object):
                 config_handler = cls.my_config['handlers'][handler_name]
 
                 # Override the logger path and name
-                filename = '/tmp/espa-job-{0}-{1}.log'.format(order, product)
+                filename = 'espa-job-{0}-{1}.log'.format(order, product)
                 config_handler['filename'] = filename
 
             # Now configure the python logging module

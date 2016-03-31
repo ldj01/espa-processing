@@ -6,19 +6,30 @@ Description: Read all lines from STDIN and process them.
 License: NASA Open Source Agreement 1.3
 '''
 
+import os
 import sys
+import shutil
 import socket
 import json
 import xmlrpclib
+import datetime
 from time import sleep
 from argparse import ArgumentParser
 
 # local objects and methods
 import settings
+import utilities
 import sensor
 from logging_tools import EspaLogging
+
+# local objects and methods
+from environment import Environment
 import parameters
 import processor
+
+
+MAPPER_LOG_PREFIX = 'espa-mapper'
+MAPPER_LOG_FILENAME = '.'.join([MAPPER_LOG_PREFIX, 'log'])
 
 
 def set_product_error(server, order_id, product_id, processing_location):
@@ -81,6 +92,67 @@ def set_product_error(server, order_id, product_id, processing_location):
     return True
 
 
+def get_sleep_duration(start_time):
+    """Logs details and returns number of seconds to sleep
+    """
+
+    logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
+
+    # Determine if we need to sleep
+    end_time = datetime.datetime.now()
+    seconds_elapsed = (end_time - start_time).seconds
+    logger.info('Processing Time Elapsed {0} Seconds'.format(seconds_elapsed))
+
+    seconds_to_sleep = 1
+    if seconds_elapsed < settings.MIN_REQUEST_DURATION_IN_SECONDS:
+        # Joe-Developer doesn't want to wait so check and skip
+        # This directory will not exist for HADOOP processing
+        if not os.path.isdir('unittests'):
+            seconds_to_sleep = (settings.MIN_REQUEST_DURATION_IN_SECONDS -
+                                seconds_elapsed)
+
+    logger.info('Sleeping An Additional {0} Seconds'.format(seconds_to_sleep))
+
+    return seconds_to_sleep
+
+
+def archive_log_files(order_id, product_id):
+    """Archive the log files for the current job
+    """
+
+    logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
+
+    try:
+        # Determine the destination path for the logs
+        output_dir = Environment().get_distribution_directory()
+        destination_path = os.path.join(output_dir, 'logs', order_id)
+        # Create the path
+        utilities.create_directory(destination_path)
+
+        # Job log file
+        logfile_path = EspaLogging.get_filename(settings.PROCESSING_LOGGER)
+        full_logfile_path = os.path.abspath(logfile_path)
+        log_name = os.path.basename(full_logfile_path)
+        # Determine full destination
+        destination_file = os.path.join(destination_path, log_name)
+        # Copy it
+        shutil.copyfile(full_logfile_path, destination_file)
+
+        # Mapper log file
+        full_logfile_path = os.path.abspath(MAPPER_LOG_FILENAME)
+        final_log_name = '-'.join([MAPPER_LOG_PREFIX, order_id, product_id])
+        final_log_name = '.'.join([final_log_name, 'log'])
+        # Determine full destination
+        destination_file = os.path.join(destination_path, final_log_name)
+        # Copy it
+        shutil.copyfile(full_logfile_path, destination_file)
+
+    except Exception:
+        # We don't care because we are at the end of processing
+        # And if we are on the successful path, we don't care either
+        logger.exception("Exception encountered and follows")
+
+
 def process(args):
     '''
     Description:
@@ -112,6 +184,8 @@ def process(args):
 
         # Default to the command line value
         mapper_keep_log = args.keep_log
+
+        start_time = datetime.datetime.now()
 
         try:
             line = line.replace('#', '')
@@ -202,6 +276,11 @@ def process(args):
                 if not mapper_keep_log and pp is not None:
                     pp.remove_product_directory()
 
+            # Sleep the number of seconds for minimum request duration
+            sleep(get_sleep_duration(start_time))
+
+            archive_log_files(order_id, product_id)
+
             # Everything was successfull so mark the scene complete
             if server is not None:
                 status = server.mark_scene_complete(product_id, order_id,
@@ -212,36 +291,28 @@ def process(args):
                     logger.warning("Failed processing xmlrpc call to"
                                    " mark_scene_complete")
 
-            # Cleanup the log file
-            if not mapper_keep_log:
-                EspaLogging.delete_logger_file(settings.PROCESSING_LOGGER)
-
-            # Reset back to the base logger
-            logger = EspaLogging.get_logger('base')
-
         except Exception as excep:
 
             # First log the exception
             logger.exception("Exception encountered stacktrace follows")
 
-            if server is not None:
+            # Sleep the number of seconds for minimum request duration
+            sleep(get_sleep_duration(start_time))
 
+            archive_log_files(order_id, product_id)
+
+            if server is not None:
                 try:
                     status = set_product_error(server,
                                                order_id,
                                                product_id,
                                                processing_location)
-                    if status and not mapper_keep_log:
-                        try:
-                            # Cleanup the log file
-                            EspaLogging. \
-                                delete_logger_file(settings.PROCESSING_LOGGER)
-                        except Exception:
-                            logger.exception("Exception encountered"
-                                             " stacktrace follows")
                 except Exception:
                     logger.exception("Exception encountered stacktrace"
                                      " follows")
+        finally:
+            # Reset back to the base logger
+            logger = EspaLogging.get_logger('base')
 
 
 if __name__ == '__main__':
@@ -257,7 +328,7 @@ if __name__ == '__main__':
                         default=False, help="keep the generated log file")
     args = parser.parse_args()
 
-    EspaLogging.configure_base_logger(filename='/tmp/espa-ondemand-mapper.log')
+    EspaLogging.configure_base_logger(filename=MAPPER_LOG_FILENAME)
     # Initially set to the base logger
     logger = EspaLogging.get_logger('base')
 
