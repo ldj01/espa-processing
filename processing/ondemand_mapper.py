@@ -135,7 +135,7 @@ def get_sleep_duration(start_time):
     return seconds_to_sleep
 
 
-def archive_log_files(order_id):
+def archive_log_files(order_id, product_id):
     """Archive the log files for the current job
     """
 
@@ -159,7 +159,7 @@ def archive_log_files(order_id):
 
         # Mapper log file
         full_logfile_path = os.path.abspath(MAPPER_LOG_FILENAME)
-        final_log_name = '-'.join([MAPPER_LOG_PREFIX, order_id])
+        final_log_name = '-'.join([MAPPER_LOG_PREFIX, order_id, product_id])
         final_log_name = '.'.join([final_log_name, 'log'])
         # Determine full destination
         destination_file = os.path.join(destination_path, final_log_name)
@@ -299,7 +299,7 @@ def process(args):
             # Sleep the number of seconds for minimum request duration
             sleep(get_sleep_duration(start_time))
 
-            archive_log_files(order_id)
+            archive_log_files(order_id, product_id)
 
             # Everything was successfull so mark the scene complete
             if server is not None:
@@ -321,7 +321,7 @@ def process(args):
             # Sleep the number of seconds for minimum request duration
             sleep(get_sleep_duration(start_time))
 
-            archive_log_files(order_id)
+            archive_log_files(order_id, product_id)
 
             if server is not None:
                 try:
