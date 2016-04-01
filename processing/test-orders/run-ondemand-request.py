@@ -79,7 +79,8 @@ def get_satellite_sensor_code(product_id):
                            sensor.LE07_SENSOR_CODE,
                            sensor.LT08_SENSOR_CODE,
                            sensor.LC08_SENSOR_CODE,
-                           sensor.LO08_SENSOR_CODE]
+                           sensor.LO08_SENSOR_CODE,
+                           'PLOT']
 
     # For older Landsat processing, and MODIS data, the Sensor Code is
     # the first 3 characters of the Scene ID
