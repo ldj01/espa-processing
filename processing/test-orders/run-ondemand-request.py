@@ -65,13 +65,21 @@ def get_satellite_sensor_code(product_id):
                           ID is prefixed on the filename.
     """
 
-    three_digit_prefixes = [LT4_SENSOR_CODE, LT5_SENSOR_CODE, LE7_SENSOR_CODE,
-                            LT8_SENSOR_CODE, LC8_SENSOR_CODE, LO8_SENSOR_CODE,
-                            TERRA_SENSOR_CODE, AQUA_SENSOR_CODE]
+    three_digit_prefixes = [sensor.LT4_SENSOR_CODE,
+                            sensor.LT5_SENSOR_CODE,
+                            sensor.LE7_SENSOR_CODE,
+                            sensor.LT8_SENSOR_CODE,
+                            sensor.LC8_SENSOR_CODE,
+                            sensor.LO8_SENSOR_CODE,
+                            sensor.TERRA_SENSOR_CODE,
+                            sensor.AQUA_SENSOR_CODE]
 
-    four_digit_prefixes = [LT04_SENSOR_CODE, LT05_SENSOR_CODE,
-                           LE07_SENSOR_CODE, LT08_SENSOR_CODE,
-                           LC08_SENSOR_CODE, LO08_SENSOR_CODE]
+    four_digit_prefixes = [sensor.LT04_SENSOR_CODE,
+                           sensor.LT05_SENSOR_CODE,
+                           sensor.LE07_SENSOR_CODE,
+                           sensor.LT08_SENSOR_CODE,
+                           sensor.LC08_SENSOR_CODE,
+                           sensor.LO08_SENSOR_CODE]
 
     # For older Landsat processing, and MODIS data, the Sensor Code is
     # the first 3 characters of the Scene ID
