@@ -25,7 +25,6 @@
         "include_sr_toa": true,
         "include_statistics": true,
         "keep_directory": true,
-        "keep_log": true,
         "latitude_true_scale": null,
         "longitude_pole": null,
         "maxx": null,
