@@ -2113,15 +2113,12 @@ class PlotProcessor(ProductProcessor):
         # Process through and create records
         for filename, obj in stats.items():
             self._logger.debug(filename)
-            # Figure out the date for stats record
-            sensor_inst = sensor
-            (year, month, day_of_month, day_of_year, sensor_string) = \
-                self.get_ymds_from_filename(filename)
-            date = ('%04d-%02d-%02d'
-                    % (int(year), int(month), int(day_of_month)))
-            self._logger.debug(date)
 
-            line = ','.join([date, '%03d' % day_of_year,
+            # Figure out the date information for the stats record
+            date = sensor.info(filename).date_acquired
+            day_of_year = date.timetuple().tm_yday
+
+            line = ','.join([date.isoformat(), '{0:03}'.format(day_of_year),
                              obj['minimum'], obj['maximum'],
                              obj['mean'], obj['stddev'], obj['valid']])
             self._logger.debug(line)
@@ -2229,7 +2226,7 @@ class PlotProcessor(ProductProcessor):
             self._logger.debug(filename)
 
             date = sensor.info(filename).date_acquired
-            sensor_string = get_sensor_string_from_filename(self, filename)
+            sensor_string = self.get_sensor_string_from_filename(filename)
             min_value = float(obj['minimum'])
             max_value = float(obj['maximum'])
             mean = float(obj['mean'])
