@@ -187,6 +187,71 @@ class TestSensor(unittest.TestCase):
         self.assertFalse(method(self.lt8_product_id))
         self.assertFalse(method(self.lo8_product_id))
 
+    def test_modis_sensor_info(self):
+        result_1 = sensor.modis_sensor_info(self.terra_product_id)
+        result_2 = sensor.info(self.terra_product_id)
+        self.assertEqual(result_1, result_2)
+
+    def test_landsat_historical_sensor_info(self):
+        result_1 = sensor.landsat_historical_sensor_info(self.lt4_product_id)
+        result_2 = sensor.info(self.lt4_product_id)
+        self.assertEqual(result_1, result_2)
+
+        result_1 = sensor.landsat_historical_sensor_info(self.lt5_product_id)
+        result_2 = sensor.info(self.lt5_product_id)
+        self.assertEqual(result_1, result_2)
+
+        result_1 = sensor.landsat_historical_sensor_info(self.le7_product_id)
+        result_2 = sensor.info(self.le7_product_id)
+        self.assertEqual(result_1, result_2)
+
+        result_1 = sensor.landsat_historical_sensor_info(self.lc8_product_id)
+        result_2 = sensor.info(self.lc8_product_id)
+        self.assertEqual(result_1, result_2)
+
+        result_1 = sensor.landsat_historical_sensor_info(self.lo8_product_id)
+        result_2 = sensor.info(self.lo8_product_id)
+        self.assertEqual(result_1, result_2)
+
+        # LT8 is not supported today, so check for the known failure points
+        with self.assertRaises(KeyError) as context:
+            sensor.landsat_historical_sensor_info(self .lt8_product_id)
+            self.assertTrue('LT8' in context)
+
+        with self.assertRaises(sensor.ProductNotImplemented) as context:
+            sensor.info(self.lt8_product_id)
+            self.assertTrue('is not a supported Product ID format' in context)
+
+    def test_landsat_collection_sensor_info(self):
+        result_1 = sensor.landsat_collection_sensor_info(self.lt04_product_id)
+        result_2 = sensor.info(self.lt04_product_id)
+        self.assertEqual(result_1, result_2)
+
+        result_1 = sensor.landsat_collection_sensor_info(self.lt05_product_id)
+        result_2 = sensor.info(self.lt05_product_id)
+        self.assertEqual(result_1, result_2)
+
+        result_1 = sensor.landsat_collection_sensor_info(self.le07_product_id)
+        result_2 = sensor.info(self.le07_product_id)
+        self.assertEqual(result_1, result_2)
+
+        result_1 = sensor.landsat_collection_sensor_info(self.lc08_product_id)
+        result_2 = sensor.info(self.lc08_product_id)
+        self.assertEqual(result_1, result_2)
+
+        result_1 = sensor.landsat_collection_sensor_info(self.lo08_product_id)
+        result_2 = sensor.info(self.lo08_product_id)
+        self.assertEqual(result_1, result_2)
+
+        # LT08 is not supported today, so check for the known failure points
+        with self.assertRaises(KeyError) as context:
+            sensor.landsat_collection_sensor_info(self .lt08_product_id)
+            self.assertTrue('LT08' in context)
+
+        with self.assertRaises(sensor.ProductNotImplemented) as context:
+            sensor.info(self.lt08_product_id)
+            self.assertTrue('is not a supported Product ID format' in context)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
