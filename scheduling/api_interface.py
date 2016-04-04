@@ -30,8 +30,7 @@ class APIServer(object):
         """
         url = '{}{}'.format(self.base, resource)
 
-        with requests.Session() as s:
-            resp = s.get(url, data=data)
+        resp = requests.get(url, data=data)
 
         if status and resp.status_code != status:
             self._unexpected_status(resp.status_code, url)
@@ -109,10 +108,9 @@ class APIServer(object):
         Tests the base URL for the class
         Returns: True if 200 status received, else False
         """
-        with requests.Session() as s:
-            resp = s.get(self.base)
+        resp, status = self.get(self.base)
 
-        if resp.status_code == 200:
+        if status == 200:
             return True
 
         return False
