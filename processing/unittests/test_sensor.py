@@ -134,6 +134,63 @@ class TestSensor(unittest.TestCase):
         self.assertTrue(method(self.lo08_product_id))
         self.assertFalse(method(self.lt04_product_id))
 
+    def test_is_landsat4(self):
+        method = sensor.is_landsat4
+
+        self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
+
+        self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
+        self.assertTrue(method(self.lt4_product_id))
+        self.assertFalse(method(self.lt5_product_id))
+        self.assertFalse(method(self.le7_product_id))
+
+        self.assertTrue(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
+
+    def test_is_landsat5(self):
+        method = sensor.is_landsat5
+
+        self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
+
+        self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
+        self.assertFalse(method(self.lt4_product_id))
+        self.assertTrue(method(self.lt5_product_id))
+        self.assertFalse(method(self.le7_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertTrue(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
+
+    def test_is_landsat7(self):
+        method = sensor.is_landsat7
+
+        self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
+
+        self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
+        self.assertFalse(method(self.lt4_product_id))
+        self.assertFalse(method(self.lt5_product_id))
+        self.assertTrue(method(self.le7_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertTrue(method(self.le07_product_id))
+
     def test_is_landsat8(self):
         method = sensor.is_landsat8
 

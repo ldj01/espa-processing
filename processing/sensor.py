@@ -377,6 +377,18 @@ def is_lo08(a):
     return a.upper().startswith(LO08_SENSOR_CODE)
 
 
+def is_landsat4(a):
+    return any([is_lt4(a), is_lt04(a)])
+
+
+def is_landsat5(a):
+    return any([is_lt5(a), is_lt05(a)])
+
+
+def is_landsat7(a):
+    return any([is_le7(a), is_le07(a)])
+
+
 def is_landsat8(a):
     return any([is_lc8(a), is_lo8(a), is_lt8(a),
                 is_lc08(a), is_lo08(a), is_lt08(a)])
