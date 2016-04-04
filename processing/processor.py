@@ -2599,7 +2599,7 @@ class PlotProcessor(ProductProcessor):
                                               single_sensor_files)
                     multi_sensor_files.extend(single_sensor_files)
 
-            # Cleanup the memory for this while we process the multi-sensor list
+            # Cleanup the memory for this
             del single_sensor_files
 
         # We always use the multi sensor variable here because it will only
