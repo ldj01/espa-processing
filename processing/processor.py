@@ -15,7 +15,7 @@ import json
 import datetime
 import copy
 from cStringIO import StringIO
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from matplotlib import pyplot as mpl_plot
 from matplotlib import dates as mpl_dates
 from matplotlib import lines as mpl_lines
@@ -1793,192 +1793,315 @@ class PlotProcessor(ProductProcessor):
         TERRA_NAME = 'Terra'
         AQUA_NAME = 'Aqua'
 
+        SearchInfo = namedtuple('SearchInfo', ('key', 'filter_list'))
+
         # Only MODIS SR band 5 files
-        self._sr_swir_modis_b5_sensor_info = \
-            [('MOD*sur_refl*b05.stats', TERRA_NAME),
-             ('MYD*sur_refl*b05.stats', AQUA_NAME)]
+        _sr_swir_modis_b5_info = [SearchInfo(TERRA_NAME,
+                                             ['MOD*sur_refl*b05.stats']),
+                                  SearchInfo(AQUA_NAME,
+                                             ['MYD*sur_refl*b05.stats'])]
 
         # SR (L4-L7 B5) (L8 B6) (MODIS B6)
-        self._sr_swir1_sensor_info = [('LT4*_sr_band5.stats', L4_NAME),
-                                      ('LT5*_sr_band5.stats', L5_NAME),
-                                      ('LE7*_sr_band5.stats', L7_NAME),
-                                      ('LC8*_sr_band6.stats', L8_NAME),
-                                      ('MOD*sur_refl_b06*.stats', TERRA_NAME),
-                                      ('MYD*sur_refl_b06*.stats', AQUA_NAME)]
+        _sr_swir1_info = [SearchInfo(L4_NAME, ['LT4*_sr_band5.stats',
+                                               'LT04*_sr_band5.stats']),
+                          SearchInfo(L5_NAME, ['LT5*_sr_band5.stats',
+                                               'LT05*_sr_band5.stats']),
+                          SearchInfo(L7_NAME, ['LE7*_sr_band5.stats',
+                                               'LE07*_sr_band5.stats']),
+                          SearchInfo(L8_NAME, ['LC8*_sr_band6.stats'
+                                               'LC08*_sr_band6.stats']),
+                          SearchInfo(TERRA_NAME, ['MOD*sur_refl_b06*.stats']),
+                          SearchInfo(AQUA_NAME, ['MYD*sur_refl_b06*.stats'])]
 
         # SR (L4-L8 B7) (MODIS B7)
-        self._sr_swir2_sensor_info = [('LT4*_sr_band7.stats', L4_NAME),
-                                      ('LT5*_sr_band7.stats', L5_NAME),
-                                      ('LE7*_sr_band7.stats', L7_NAME),
-                                      ('LC8*_sr_band7.stats', L8_NAME),
-                                      ('MOD*sur_refl_b07*.stats', TERRA_NAME),
-                                      ('MYD*sur_refl_b07*.stats', AQUA_NAME)]
+        _sr_swir2_info = [SearchInfo(L4_NAME, ['LT4*_sr_band7.stats',
+                                               'LT04*_sr_band7.stats']),
+                          SearchInfo(L5_NAME, ['LT5*_sr_band7.stats',
+                                               'LT05*_sr_band7.stats']),
+                          SearchInfo(L7_NAME, ['LE7*_sr_band7.stats',
+                                               'LE07*_sr_band7.stats']),
+                          SearchInfo(L8_NAME, ['LC8*_sr_band7.stats',
+                                               'LC08*_sr_band7.stats']),
+                          SearchInfo(TERRA_NAME, ['MOD*sur_refl_b07*.stats']),
+                          SearchInfo(AQUA_NAME, ['MYD*sur_refl_b07*.stats'])]
 
         # SR (L8 B1)  coastal aerosol
-        self._sr_coastal_sensor_info = [('LC8*_sr_band1.stats', L8_NAME)]
+        _sr_coastal_info = [SearchInfo(L8_NAME, ['LC8*_sr_band1.stats',
+                                                 'LC08*_sr_band1.stats'])]
 
         # SR (L4-L7 B1) (L8 B2) (MODIS B3)
-        self._sr_blue_sensor_info = [('LT4*_sr_band1.stats', L4_NAME),
-                                     ('LT5*_sr_band1.stats', L5_NAME),
-                                     ('LE7*_sr_band1.stats', L7_NAME),
-                                     ('LC8*_sr_band2.stats', L8_NAME),
-                                     ('MOD*sur_refl_b03*.stats', TERRA_NAME),
-                                     ('MYD*sur_refl_b03*.stats', AQUA_NAME)]
+        _sr_blue_info = [SearchInfo(L4_NAME, ['LT4*_sr_band1.stats',
+                                              'LT04*_sr_band1.stats']),
+                         SearchInfo(L5_NAME, ['LT5*_sr_band1.stats',
+                                              'LT05*_sr_band1.stats']),
+                         SearchInfo(L7_NAME, ['LE7*_sr_band1.stats',
+                                              'LE07*_sr_band1.stats']),
+                         SearchInfo(L8_NAME, ['LC8*_sr_band2.stats',
+                                              'LC08*_sr_band2.stats']),
+                         SearchInfo(TERRA_NAME, ['MOD*sur_refl_b03*.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*sur_refl_b03*.stats'])]
 
         # SR (L4-L7 B2) (L8 B3) (MODIS B4)
-        self._sr_green_sensor_info = [('LT4*_sr_band2.stats', L4_NAME),
-                                      ('LT5*_sr_band2.stats', L5_NAME),
-                                      ('LE7*_sr_band2.stats', L7_NAME),
-                                      ('LC8*_sr_band3.stats', L8_NAME),
-                                      ('MOD*sur_refl_b04*.stats', TERRA_NAME),
-                                      ('MYD*sur_refl_b04*.stats', AQUA_NAME)]
+        _sr_green_info = [SearchInfo(L4_NAME, ['LT4*_sr_band2.stats',
+                                               'LT04*_sr_band2.stats']),
+                          SearchInfo(L5_NAME, ['LT5*_sr_band2.stats',
+                                               'LT05*_sr_band2.stats']),
+                          SearchInfo(L7_NAME, ['LE7*_sr_band2.stats',
+                                               'LE07*_sr_band2.stats']),
+                          SearchInfo(L8_NAME, ['LC8*_sr_band3.stats',
+                                               'LC08*_sr_band3.stats']),
+                          SearchInfo(TERRA_NAME, ['MOD*sur_refl_b04*.stats']),
+                          SearchInfo(AQUA_NAME, ['MYD*sur_refl_b04*.stats'])]
 
         # SR (L4-L7 B3) (L8 B4) (MODIS B1)
-        self._sr_red_sensor_info = [('LT4*_sr_band3.stats', L4_NAME),
-                                    ('LT5*_sr_band3.stats', L5_NAME),
-                                    ('LE7*_sr_band3.stats', L7_NAME),
-                                    ('LC8*_sr_band4.stats', L8_NAME),
-                                    ('MOD*sur_refl_b01*.stats', TERRA_NAME),
-                                    ('MYD*sur_refl_b01*.stats', AQUA_NAME)]
+        _sr_red_info = [SearchInfo(L4_NAME, ['LT4*_sr_band3.stats',
+                                             'LT04*_sr_band3.stats']),
+                        SearchInfo(L5_NAME, ['LT5*_sr_band3.stats',
+                                             'LT05*_sr_band3.stats']),
+                        SearchInfo(L7_NAME, ['LE7*_sr_band3.stats',
+                                             'LE07*_sr_band3.stats']),
+                        SearchInfo(L8_NAME, ['LC8*_sr_band4.stats',
+                                             'LC08*_sr_band4.stats']),
+                        SearchInfo(TERRA_NAME, ['MOD*sur_refl_b01*.stats']),
+                        SearchInfo(AQUA_NAME, ['MYD*sur_refl_b01*.stats'])]
 
         # SR (L4-L7 B4) (L8 B5) (MODIS B2)
-        self._sr_nir_sensor_info = [('LT4*_sr_band4.stats', L4_NAME),
-                                    ('LT5*_sr_band4.stats', L5_NAME),
-                                    ('LE7*_sr_band4.stats', L7_NAME),
-                                    ('LC8*_sr_band5.stats', L8_NAME),
-                                    ('MOD*sur_refl_b02*.stats', TERRA_NAME),
-                                    ('MYD*sur_refl_b02*.stats', AQUA_NAME)]
+        _sr_nir_info = [SearchInfo(L4_NAME, ['LT4*_sr_band4.stats',
+                                             'LT04*_sr_band4.stats']),
+                        SearchInfo(L5_NAME, ['LT5*_sr_band4.stats',
+                                             'LT05*_sr_band4.stats']),
+                        SearchInfo(L7_NAME, ['LE7*_sr_band4.stats',
+                                             'LE07*_sr_band4.stats']),
+                        SearchInfo(L8_NAME, ['LC8*_sr_band5.stats',
+                                             'LC08*_sr_band5.stats']),
+                        SearchInfo(TERRA_NAME, ['MOD*sur_refl_b02*.stats']),
+                        SearchInfo(AQUA_NAME, ['MYD*sur_refl_b02*.stats'])]
 
         # SR (L8 B9)
-        self._sr_cirrus_sensor_info = [('LC8*_sr_band9.stats', L8_NAME)]
+        _sr_cirrus_info = [SearchInfo(L8_NAME, ['LC8*_sr_band9.stats',
+                                                'LC08*_sr_band9.stats'])]
 
         # Only Landsat TOA band 6(L4-7) band 10(L8) band 11(L8)
-        self._toa_thermal_sensor_info = \
-            [('LT4*_toa_band6.stats', L4_NAME),
-             ('LT5*_toa_band6.stats', L5_NAME),
-             ('LE7*_toa_band6.stats', L7_NAME),
-             ('LC8*_toa_band10.stats', L8_TIRS1_NAME),
-             ('LC8*_toa_band11.stats', L8_TIRS2_NAME)]
+        _toa_thermal_info = [SearchInfo(L4_NAME, ['LT4*_toa_band6.stats',
+                                                  'LT04*_toa_band6.stats']),
+                             SearchInfo(L5_NAME, ['LT5*_toa_band6.stats',
+                                                  'LT05*_toa_band6.stats']),
+                             SearchInfo(L7_NAME, ['LE7*_toa_band6.stats',
+                                                  'LE07*_toa_band6.stats']),
+                             SearchInfo(L8_TIRS1_NAME,
+                                        ['LC8*_toa_band10.stats',
+                                         'LC08*_toa_band10.stats']),
+                             SearchInfo(L8_TIRS2_NAME,
+                                        ['LC8*_toa_band11.stats',
+                                         'LC08*_toa_band11.stats'])]
 
         # Only Landsat TOA (L4-L7 B5) (L8 B6)
-        self._toa_swir1_sensor_info = [('LT4*_toa_band5.stats', L4_NAME),
-                                       ('LT5*_toa_band5.stats', L5_NAME),
-                                       ('LE7*_toa_band5.stats', L7_NAME),
-                                       ('L[C,O]8*_toa_band6.stats', L8_NAME)]
+        _toa_swir1_info = [SearchInfo(L4_NAME, ['LT4*_toa_band5.stats',
+                                                'LT04*_toa_band5.stats']),
+                           SearchInfo(L5_NAME, ['LT5*_toa_band5.stats',
+                                                'LT05*_toa_band5.stats']),
+                           SearchInfo(L7_NAME, ['LE7*_toa_band5.stats',
+                                                'LE07*_toa_band5.stats']),
+                           SearchInfo(L8_NAME, ['L[C,O]8*_toa_band6.stats',
+                                                'L[C,O]08*_toa_band6.stats'])]
 
         # Only Landsat TOA (L4-L8 B7)
-        self._toa_swir2_sensor_info = [('LT4*_toa_band7.stats', L4_NAME),
-                                       ('LT5*_toa_band7.stats', L5_NAME),
-                                       ('LE7*_toa_band7.stats', L7_NAME),
-                                       ('L[C,O]8*_toa_band7.stats', L8_NAME)]
+        _toa_swir2_info = [SearchInfo(L4_NAME, ['LT4*_toa_band7.stats',
+                                                'LT04*_toa_band7.stats']),
+                           SearchInfo(L5_NAME, ['LT5*_toa_band7.stats',
+                                                'LT05*_toa_band7.stats']),
+                           SearchInfo(L7_NAME, ['LE7*_toa_band7.stats',
+                                                'LE07*_toa_band7.stats']),
+                           SearchInfo(L8_NAME, ['L[C,O]8*_toa_band7.stats',
+                                                'L[C,O]08*_toa_band7.stats'])]
 
         # Only Landsat TOA (L8 B1)
-        self._toa_coastal_sensor_info = [('L[C,O]8*_toa_band1.stats', L8_NAME)]
+        _toa_coastal_info = [SearchInfo(L8_NAME,
+                                        ['L[C,O]8*_toa_band1.stats',
+                                         'L[C,O]08*_toa_band1.stats'])]
 
         # Only Landsat TOA (L4-L7 B1) (L8 B2)
-        self._toa_blue_sensor_info = [('LT4*_toa_band1.stats', L4_NAME),
-                                      ('LT5*_toa_band1.stats', L5_NAME),
-                                      ('LE7*_toa_band1.stats', L7_NAME),
-                                      ('L[C,O]8*_toa_band2.stats', L8_NAME)]
+        _toa_blue_info = [SearchInfo(L4_NAME, ['LT4*_toa_band1.stats',
+                                               'LT04*_toa_band1.stats']),
+                          SearchInfo(L5_NAME, ['LT5*_toa_band1.stats',
+                                               'LT05*_toa_band1.stats']),
+                          SearchInfo(L7_NAME, ['LE7*_toa_band1.stats',
+                                               'LE07*_toa_band1.stats']),
+                          SearchInfo(L8_NAME, ['L[C,O]8*_toa_band2.stats',
+                                               'L[C,O]08*_toa_band2.stats'])]
 
         # Only Landsat TOA (L4-L7 B2) (L8 B3)
-        self._toa_green_sensor_info = [('LT4*_toa_band2.stats', L4_NAME),
-                                       ('LT5*_toa_band2.stats', L5_NAME),
-                                       ('LE7*_toa_band2.stats', L7_NAME),
-                                       ('L[C,O]8*_toa_band3.stats', L8_NAME)]
+        _toa_green_info = [SearchInfo(L4_NAME, ['LT4*_toa_band2.stats',
+                                                'LT04*_toa_band2.stats']),
+                           SearchInfo(L5_NAME, ['LT5*_toa_band2.stats',
+                                                'LT05*_toa_band2.stats']),
+                           SearchInfo(L7_NAME, ['LE7*_toa_band2.stats',
+                                                'LE07*_toa_band2.stats']),
+                           SearchInfo(L8_NAME, ['L[C,O]8*_toa_band3.stats',
+                                                'L[C,O]08*_toa_band3.stats'])]
 
         # Only Landsat TOA (L4-L7 B3) (L8 B4)
-        self._toa_red_sensor_info = [('LT4*_toa_band3.stats', L4_NAME),
-                                     ('LT5*_toa_band3.stats', L5_NAME),
-                                     ('LE7*_toa_band3.stats', L7_NAME),
-                                     ('L[C,O]8*_toa_band4.stats', L8_NAME)]
+        _toa_red_info = [SearchInfo(L4_NAME, ['LT4*_toa_band3.stats',
+                                              'LT04*_toa_band3.stats']),
+                         SearchInfo(L5_NAME, ['LT5*_toa_band3.stats',
+                                              'LT05*_toa_band3.stats']),
+                         SearchInfo(L7_NAME, ['LE7*_toa_band3.stats',
+                                              'LE07*_toa_band3.stats']),
+                         SearchInfo(L8_NAME, ['L[C,O]8*_toa_band4.stats',
+                                              'L[C,O]08*_toa_band4.stats'])]
 
         # Only Landsat TOA (L4-L7 B4) (L8 B5)
-        self._toa_nir_sensor_info = [('LT4*_toa_band4.stats', L4_NAME),
-                                     ('LT5*_toa_band4.stats', L5_NAME),
-                                     ('LE7*_toa_band4.stats', L7_NAME),
-                                     ('L[C,O]8*_toa_band5.stats', L8_NAME)]
+        _toa_nir_info = [SearchInfo(L4_NAME, ['LT4*_toa_band4.stats',
+                                              'LT04*_toa_band4.stats']),
+                         SearchInfo(L5_NAME, ['LT5*_toa_band4.stats',
+                                              'LT05*_toa_band4.stats']),
+                         SearchInfo(L7_NAME, ['LE7*_toa_band4.stats',
+                                              'LE07*_toa_band4.stats']),
+                         SearchInfo(L8_NAME, ['L[C,O]8*_toa_band5.stats',
+                                              'L[C,O]08*_toa_band5.stats'])]
 
         # Only Landsat TOA (L8 B9)
-        self._toa_cirrus_sensor_info = [('L[C,O]8*_toa_band9.stats', L8_NAME)]
+        _toa_cirrus_info = [SearchInfo(L8_NAME, ['L[C,O]8*_toa_band9.stats'])]
 
         # Only MODIS band 20 files
-        self._emis_20_sensor_info = [('MOD*Emis_20.stats', TERRA_NAME),
-                                     ('MYD*Emis_20.stats', AQUA_NAME)]
+        _emis_20_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_20.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*Emis_20.stats'])]
 
         # Only MODIS band 22 files
-        self._emis_22_sensor_info = [('MOD*Emis_22.stats', TERRA_NAME),
-                                     ('MYD*Emis_22.stats', AQUA_NAME)]
+        _emis_22_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_22.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*Emis_22.stats'])]
 
         # Only MODIS band 23 files
-        self._emis_23_sensor_info = [('MOD*Emis_23.stats', TERRA_NAME),
-                                     ('MYD*Emis_23.stats', AQUA_NAME)]
+        _emis_23_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_23.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*Emis_23.stats'])]
 
         # Only MODIS band 29 files
-        self._emis_29_sensor_info = [('MOD*Emis_29.stats', TERRA_NAME),
-                                     ('MYD*Emis_29.stats', AQUA_NAME)]
+        _emis_29_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_29.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*Emis_29.stats'])]
 
         # Only MODIS band 31 files
-        self._emis_31_sensor_info = [('MOD*Emis_31.stats', TERRA_NAME),
-                                     ('MYD*Emis_31.stats', AQUA_NAME)]
+        _emis_31_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_31.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*Emis_31.stats'])]
 
         # Only MODIS band 32 files
-        self._emis_32_sensor_info = [('MOD*Emis_32.stats', TERRA_NAME),
-                                     ('MYD*Emis_32.stats', AQUA_NAME)]
+        _emis_32_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_32.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*Emis_32.stats'])]
 
         # Only MODIS Day files
-        self._lst_day_sensor_info = [('MOD*LST_Day_*.stats', TERRA_NAME),
-                                     ('MYD*LST_Day_*.stats', AQUA_NAME)]
+        _lst_day_info = [SearchInfo(TERRA_NAME, ['MOD*LST_Day_*.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*LST_Day_*.stats'])]
 
         # Only MODIS Night files
-        self._lst_night_sensor_info = [('MOD*LST_Night_*.stats', TERRA_NAME),
-                                       ('MYD*LST_Night_*.stats', AQUA_NAME)]
+        _lst_night_info = [SearchInfo(TERRA_NAME, ['MOD*LST_Night_*.stats']),
+                           SearchInfo(AQUA_NAME, ['MYD*LST_Night_*.stats'])]
 
         # MODIS and Landsat files
-        self._ndvi_sensor_info = [('LT4*_sr_ndvi.stats', L4_NAME),
-                                  ('LT5*_sr_ndvi.stats', L5_NAME),
-                                  ('LE7*_sr_ndvi.stats', L7_NAME),
-                                  ('LC8*_sr_ndvi.stats', L8_NAME),
-                                  ('MOD*_NDVI.stats', TERRA_NAME),
-                                  ('MYD*_NDVI.stats', AQUA_NAME)]
+        _ndvi_info = [SearchInfo(L4_NAME, ['LT4*_sr_ndvi.stats',
+                                           'LT04*_sr_ndvi.stats']),
+                      SearchInfo(L5_NAME, ['LT5*_sr_ndvi.stats',
+                                           'LT05*_sr_ndvi.stats']),
+                      SearchInfo(L7_NAME, ['LE7*_sr_ndvi.stats',
+                                           'LE07*_sr_ndvi.stats']),
+                      SearchInfo(L8_NAME, ['LC8*_sr_ndvi.stats',
+                                           'LC08*_sr_ndvi.stats']),
+                      SearchInfo(TERRA_NAME, ['MOD*_NDVI.stats']),
+                      SearchInfo(AQUA_NAME, ['MYD*_NDVI.stats'])]
 
         # MODIS and Landsat files
-        self._evi_sensor_info = [('LT4*_sr_evi.stats', L4_NAME),
-                                 ('LT5*_sr_evi.stats', L5_NAME),
-                                 ('LE7*_sr_evi.stats', L7_NAME),
-                                 ('LC8*_sr_evi.stats', L8_NAME),
-                                 ('MOD*_EVI.stats', TERRA_NAME),
-                                 ('MYD*_EVI.stats', AQUA_NAME)]
+        _evi_info = [SearchInfo(L4_NAME, ['LT4*_sr_evi.stats',
+                                          'LT04*_sr_evi.stats']),
+                     SearchInfo(L5_NAME, ['LT5*_sr_evi.stats',
+                                          'LT05*_sr_evi.stats']),
+                     SearchInfo(L7_NAME, ['LE7*_sr_evi.stats',
+                                          'LE07*_sr_evi.stats']),
+                     SearchInfo(L8_NAME, ['LC8*_sr_evi.stats',
+                                          'LC08*_sr_evi.stats']),
+                     SearchInfo(TERRA_NAME, ['MOD*_EVI.stats']),
+                     SearchInfo(AQUA_NAME, ['MYD*_EVI.stats'])]
 
         # Only Landsat SAVI files
-        self._savi_sensor_info = [('LT4*_sr_savi.stats', L4_NAME),
-                                  ('LT5*_sr_savi.stats', L5_NAME),
-                                  ('LE7*_sr_savi.stats', L7_NAME),
-                                  ('LC8*_sr_savi.stats', L8_NAME)]
+        _savi_info = [SearchInfo(L4_NAME, ['LT4*_sr_savi.stats',
+                                           'LT04*_sr_savi.stats']),
+                      SearchInfo(L5_NAME, ['LT5*_sr_savi.stats',
+                                           'LT05*_sr_savi.stats']),
+                      SearchInfo(L7_NAME, ['LE7*_sr_savi.stats',
+                                           'LE07*_sr_savi.stats']),
+                      SearchInfo(L8_NAME, ['LC8*_sr_savi.stats',
+                                           'LC08*_sr_savi.stats'])]
 
         # Only Landsat MSAVI files
-        self._msavi_sensor_info = [('LT4*_sr_msavi.stats', L4_NAME),
-                                   ('LT5*_sr_msavi.stats', L5_NAME),
-                                   ('LE7*_sr_msavi.stats', L7_NAME),
-                                   ('LC8*_sr_msavi.stats', L8_NAME)]
+        _msavi_info = [SearchInfo(L4_NAME, ['LT4*_sr_msavi.stats',
+                                            'LT04*_sr_msavi.stats']),
+                       SearchInfo(L5_NAME, ['LT5*_sr_msavi.stats',
+                                            'LT05*_sr_msavi.stats']),
+                       SearchInfo(L7_NAME, ['LE7*_sr_msavi.stats',
+                                            'LE07*_sr_msavi.stats']),
+                       SearchInfo(L8_NAME, ['LC8*_sr_msavi.stats',
+                                            'LC08*_sr_msavi.stats'])]
 
         # Only Landsat NBR files
-        self._nbr_sensor_info = [('LT4*_sr_nbr.stats', L4_NAME),
-                                 ('LT5*_sr_nbr.stats', L5_NAME),
-                                 ('LE7*_sr_nbr.stats', L7_NAME),
-                                 ('LC8*_sr_nbr.stats', L8_NAME)]
+        _nbr_info = [SearchInfo(L4_NAME, ['LT4*_sr_nbr.stats',
+                                          'LT04*_sr_nbr.stats']),
+                     SearchInfo(L5_NAME, ['LT5*_sr_nbr.stats',
+                                          'LT05*_sr_nbr.stats']),
+                     SearchInfo(L7_NAME, ['LE7*_sr_nbr.stats',
+                                          'LE07*_sr_nbr.stats']),
+                     SearchInfo(L8_NAME, ['LC8*_sr_nbr.stats',
+                                          'LC08*_sr_nbr.stats'])]
 
         # Only Landsat NBR2 files
-        self._nbr2_sensor_info = [('LT4*_sr_nbr2.stats', L4_NAME),
-                                  ('LT5*_sr_nbr2.stats', L5_NAME),
-                                  ('LE7*_sr_nbr2.stats', L7_NAME),
-                                  ('LC8*_sr_nbr2.stats', L8_NAME)]
+        _nbr2_info = [SearchInfo(L4_NAME, ['LT4*_sr_nbr2.stats',
+                                           'LT04*_sr_nbr2.stats']),
+                      SearchInfo(L5_NAME, ['LT5*_sr_nbr2.stats',
+                                           'LT05*_sr_nbr2.stats']),
+                      SearchInfo(L7_NAME, ['LE7*_sr_nbr2.stats',
+                                           'LE07*_sr_nbr2.stats']),
+                      SearchInfo(L8_NAME, ['LC8*_sr_nbr2.stats',
+                                           'LC08*_sr_nbr2.stats'])]
 
         # Only Landsat NDMI files
-        self._ndmi_sensor_info = [('LT4*_sr_ndmi.stats', L4_NAME),
-                                  ('LT5*_sr_ndmi.stats', L5_NAME),
-                                  ('LE7*_sr_ndmi.stats', L7_NAME),
-                                  ('LC8*_sr_ndmi.stats', L8_NAME)]
+        _ndmi_info = [SearchInfo(L4_NAME, ['LT4*_sr_ndmi.stats',
+                                           'LT04*_sr_ndmi.stats']),
+                      SearchInfo(L5_NAME, ['LT5*_sr_ndmi.stats',
+                                           'LT05*_sr_ndmi.stats']),
+                      SearchInfo(L7_NAME, ['LE7*_sr_ndmi.stats',
+                                           'LE07*_sr_ndmi.stats']),
+                      SearchInfo(L8_NAME, ['LC8*_sr_ndmi.stats',
+                                           'LC08*_sr_ndmi.stats'])]
+
+        self.work_list = [(_sr_coastal_info, 'SR COASTAL AEROSOL'),
+                          (_sr_blue_info, 'SR Blue'),
+                          (_sr_green_info, 'SR Green'),
+                          (_sr_red_info, 'SR Red'),
+                          (_sr_nir_info, 'SR NIR'),
+                          (_sr_swir1_info, 'SR SWIR1'),
+                          (_sr_swir2_info, 'SR SWIR2'),
+                          (_sr_cirrus_info, 'SR CIRRUS'),
+                          (_sr_swir_modis_b5_info, 'SR SWIR B5'),
+                          (_toa_thermal_info, 'SR Thermal'),
+                          (_toa_coastal_info, 'TOA COASTAL AEROSOL'),
+                          (_toa_blue_info, 'TOA Blue'),
+                          (_toa_green_info, 'TOA Green'),
+                          (_toa_red_info, 'TOA Red'),
+                          (_toa_nir_info, 'TOA NIR'),
+                          (_toa_swir1_info, 'TOA SWIR1'),
+                          (_toa_swir2_info, 'TOA SWIR2'),
+                          (_toa_cirrus_info, 'TOA CIRRUS'),
+                          (_emis_20_info, 'Emis Band 20'),
+                          (_emis_22_info, 'Emis Band 22'),
+                          (_emis_23_info, 'Emis Band 23'),
+                          (_emis_29_info, 'Emis Band 29'),
+                          (_emis_31_info, 'Emis Band 31'),
+                          (_emis_32_info, 'Emis Band 32'),
+                          (_lst_day_info, 'LST Day'),
+                          (_lst_night_info, 'LST Night'),
+                          (_ndvi_info, 'NDVI'),
+                          (_evi_info, 'EVI'),
+                          (_savi_info, 'SAVI'),
+                          (_msavi_info, 'MSAVI'),
+                          (_nbr_info, 'NBR'),
+                          (_nbr2_info, 'NBR2'),
+                          (_ndmi_info, 'NDMI')]
 
         super(PlotProcessor, self).__init__(parms)
 
@@ -2461,7 +2584,7 @@ class PlotProcessor(ProductProcessor):
         plot_subjects = ['StdDev']
         self.generate_plot(plot_name, plot_subjects, band_type, stats)
 
-    def process_band_type(self, sensor_info, band_type):
+    def process_band_type(self, (search_list, band_type)):
         '''
         Description:
           A generic processing routine which finds the files to process based
@@ -2474,8 +2597,9 @@ class PlotProcessor(ProductProcessor):
         multi_sensor_files = list()
         single_sensor_name = ''
         sensor_count = 0  # How many sensors were found....
-        for (search_string, sensor_name) in sensor_info:
-            single_sensor_files = glob.glob(search_string)
+        for (sensor_name, filter_list) in search_list:
+            for filter_item in filter_list:
+                single_sensor_files.extend(glob.glob(filter_item))
             if single_sensor_files and single_sensor_files is not None:
                 if len(single_sensor_files) > 0:
                     sensor_count += 1  # We found another sensor
@@ -2518,54 +2642,7 @@ class PlotProcessor(ProductProcessor):
         os.chdir(self._work_dir)
 
         try:
-            self.process_band_type(self._sr_coastal_sensor_info,
-                                   "SR COASTAL AEROSOL")
-            self.process_band_type(self._sr_blue_sensor_info, "SR Blue")
-            self.process_band_type(self._sr_green_sensor_info, "SR Green")
-            self.process_band_type(self._sr_red_sensor_info, "SR Red")
-            self.process_band_type(self._sr_nir_sensor_info, "SR NIR")
-            self.process_band_type(self._sr_swir1_sensor_info, "SR SWIR1")
-            self.process_band_type(self._sr_swir2_sensor_info, "SR SWIR2")
-            self.process_band_type(self._sr_cirrus_sensor_info, "SR CIRRUS")
-
-            self.process_band_type(self._sr_swir_modis_b5_sensor_info,
-                                   "SR SWIR B5")
-
-            self.process_band_type(self._toa_thermal_sensor_info, "SR Thermal")
-
-            self.process_band_type(self._toa_coastal_sensor_info,
-                                   "TOA COASTAL AEROSOL")
-            self.process_band_type(self._toa_blue_sensor_info, "TOA Blue")
-            self.process_band_type(self._toa_green_sensor_info, "TOA Green")
-            self.process_band_type(self._toa_red_sensor_info, "TOA Red")
-            self.process_band_type(self._toa_nir_sensor_info, "TOA NIR")
-            self.process_band_type(self._toa_swir1_sensor_info, "TOA SWIR1")
-            self.process_band_type(self._toa_swir2_sensor_info, "TOA SWIR2")
-            self.process_band_type(self._toa_cirrus_sensor_info, "TOA CIRRUS")
-
-            self.process_band_type(self._emis_20_sensor_info, "Emis Band 20")
-            self.process_band_type(self._emis_22_sensor_info, "Emis Band 22")
-            self.process_band_type(self._emis_23_sensor_info, "Emis Band 23")
-            self.process_band_type(self._emis_29_sensor_info, "Emis Band 29")
-            self.process_band_type(self._emis_31_sensor_info, "Emis Band 31")
-            self.process_band_type(self._emis_32_sensor_info, "Emis Band 32")
-
-            self.process_band_type(self._lst_day_sensor_info, "LST Day")
-            self.process_band_type(self._lst_night_sensor_info, "LST Night")
-
-            self.process_band_type(self._ndvi_sensor_info, "NDVI")
-
-            self.process_band_type(self._evi_sensor_info, "EVI")
-
-            self.process_band_type(self._savi_sensor_info, "SAVI")
-
-            self.process_band_type(self._msavi_sensor_info, "MSAVI")
-
-            self.process_band_type(self._nbr_sensor_info, "NBR")
-
-            self.process_band_type(self._nbr2_sensor_info, "NBR2")
-
-            self.process_band_type(self._ndmi_sensor_info, "NDMI")
+            map(self.process_band_type, self.work_list)
 
         finally:
             # Change back to the previous directory
