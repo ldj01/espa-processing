@@ -2176,21 +2176,11 @@ class PlotProcessor(ProductProcessor):
           Read the file contents and return as a list of key values.
         '''
 
-        found_valid = False
         with open(statistics_file, 'r') as statistics_fd:
             for line in statistics_fd:
                 line_lower = line.strip().lower()
                 parts = line_lower.split('=')
-                # Some files may not contain the field so detect that
-                # TODO - This can be removed after version 2.6.1
-                if parts[0] == 'valid':
-                    found_valid = True
                 yield parts
-
-        # Some files may not contain the field so report valid for them
-        # TODO - This can be removed after version 2.6.1
-        if not found_valid:
-            yield(['valid', 'yes'])
 
     def get_sensor_string_from_filename(self, filename):
         '''
@@ -2593,11 +2583,11 @@ class PlotProcessor(ProductProcessor):
           plots or combined statistics will be generated.
         '''
 
-        single_sensor_files = list()
         multi_sensor_files = list()
         single_sensor_name = ''
         sensor_count = 0  # How many sensors were found....
         for (sensor_name, filter_list) in search_list:
+            single_sensor_files = list()
             for filter_item in filter_list:
                 single_sensor_files.extend(glob.glob(filter_item))
             if single_sensor_files and single_sensor_files is not None:
@@ -2609,8 +2599,8 @@ class PlotProcessor(ProductProcessor):
                                               single_sensor_files)
                     multi_sensor_files.extend(single_sensor_files)
 
-        # Cleanup the memory for this while we process the multi-sensor list
-        del single_sensor_files
+            # Cleanup the memory for this while we process the multi-sensor list
+            del single_sensor_files
 
         # We always use the multi sensor variable here because it will only
         # have the single sensor in it, if that is the case
