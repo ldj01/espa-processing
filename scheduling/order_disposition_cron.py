@@ -16,6 +16,7 @@ import os
 import sys
 import logging
 import xmlrpclib
+import api_interface
 
 
 LOGGER_NAME = 'espa.cron.orderdisp'
@@ -33,7 +34,7 @@ def determine_order_disposition():
     # Get the logger for this task
     logger = logging.get_logger(LOGGER_NAME)
 
-    rpcurl = os.environ.get('ESPA_XMLRPC')
+    rpcurl = os.environ.get('ESPA_API')
     server = None
 
     # Create a server object if the rpcurl seems valid
@@ -41,13 +42,13 @@ def determine_order_disposition():
             rpcurl.startswith('http://') and
             len(rpcurl) > 7):
 
-        server = xmlrpclib.ServerProxy(rpcurl)
+        server = api_interface.api_connect(rpcurl)
     else:
-        raise Exception('Missing or invalid environment variable ESPA_XMLRPC')
+        raise Exception('Missing or invalid environment variable ESPA_API')
 
-    # Verify xmlrpc server
+    # Verify the API is up
     if server is None:
-        raise Exception('xmlrpc server was None... exiting')
+        raise Exception('API server was None... exiting')
 
     # Use order_disposition_enabled to determine if we should be processing
     # or not
@@ -60,7 +61,7 @@ def determine_order_disposition():
         if not server.handle_orders():
             raise Exception('server.handle_orders() was not successful')
 
-    except xmlrpclib.ProtocolError:
+    except api_interface.APIException:
         logger.exception('A protocol error occurred')
 
     except Exception:

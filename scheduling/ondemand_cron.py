@@ -18,16 +18,13 @@ import os
 import sys
 import logging
 import json
-import xmlrpclib
-import urllib
 from datetime import datetime
 from argparse import ArgumentParser
 
-
+import api_interface
 import settings
 
-
-LOGGER_NAME 'espa.cron.ondemand'
+LOGGER_NAME = 'espa.cron.ondemand'
 
 
 def execute_cmd(cmd):
@@ -108,7 +105,7 @@ def process_requests(args, queue_priority, request_priority):
                     ' is below {0}'.format(job_limit))
         return
 
-    rpcurl = os.environ.get('ESPA_XMLRPC')
+    rpcurl = os.environ.get('ESPA_API')
     server = None
 
     # Create a server object if the rpcurl seems valid
@@ -116,27 +113,27 @@ def process_requests(args, queue_priority, request_priority):
             rpcurl.startswith('http://') and
             len(rpcurl) > 7):
 
-        server = xmlrpclib.ServerProxy(rpcurl, allow_none=True)
+        server = api_interface.api_connect(rpcurl)
     else:
-        raise Exception('Missing or invalid environment variable ESPA_XMLRPC')
+        raise Exception('Missing or invalid environment variable ESPA_API')
 
     home_dir = os.environ.get('HOME')
     hadoop_executable = os.path.join(home_dir, 'bin/hadoop/bin/hadoop')
 
     # Verify xmlrpc server
     if server is None:
-        raise Exception('xmlrpc server was None... exiting')
+        raise Exception('ESPA API did not respond... exiting')
 
     user = server.get_configuration('landsatds.username')
-    if len(user) == 0:
+    if user is None:
         raise Exception('landsatds.username is not defined... exiting')
 
-    password = urllib.quote(server.get_configuration('landsatds.password'))
-    if len(password) == 0:
+    password = server.get_configuration('landsatds.password')
+    if password is None:
         raise Exception('landsatds.password is not defined... exiting')
 
     host = server.get_configuration('landsatds.host')
-    if len(host) == 0:
+    if host is None:
         raise Exception('landsatds.host is not defined... exiting')
 
     # Use ondemand_enabled to determine if we should be processing or not
@@ -324,7 +321,7 @@ def process_requests(args, queue_priority, request_priority):
         else:
             logger.info('No requests to process....')
 
-    except xmlrpclib.ProtocolError:
+    except api_interface.APIException:
         logger.exception('A protocol error occurred')
 
     except Exception:
