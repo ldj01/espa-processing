@@ -108,8 +108,6 @@ def process_test_order(request, request_file, products_file, env_vars,
     template_file = 'template.json'
     template_dict = None
 
-    tmp_order = 'tmp-test-order'
-
     order_id = request
 
     if pre:
@@ -147,6 +145,8 @@ def process_test_order(request, request_file, products_file, env_vars,
 
     for product_id in products:
         logger.info('Processing Product [{0}]'.format(product_id))
+
+        tmp_order = 'test-{0}-{1}'.format(order_id, product_id)
 
         with open(request_file, 'r') as request_fd:
             request_contents = request_fd.read()
@@ -273,7 +273,7 @@ def process_test_order(request, request_file, products_file, env_vars,
             logger.exception('Processing failed')
             status = False
 
-    os.unlink(tmp_order)
+        os.unlink(tmp_order)
 
     return status
 
