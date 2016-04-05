@@ -22,7 +22,10 @@ from matplotlib import lines as mpl_lines
 from matplotlib.ticker import MaxNLocator
 import numpy as np
 
-# local objects and methods
+
+from espa import MetadataError, Metadata
+
+
 import settings
 import utilities
 from logging_tools import EspaLogging
@@ -32,7 +35,6 @@ import sensor
 import initialization
 import parameters
 import landsat_metadata
-import metadata_api
 import warp
 import staging
 import statistics
@@ -473,46 +475,33 @@ class CDRProcessor(CustomizationProcessor):
         products_to_remove.append('elevation')
 
         if products_to_remove is not None:
-            espa_xml = metadata_api.parse(self._xml_filename, silence=True)
-            bands = espa_xml.get_bands()
+            # Create and load the metadata object
+            espa_metadata = Metadata()
+            espa_metadata.parse(xml_filename=self._xml_filename)
 
-            file_names = []
+            # Search for and remove the items
+            for band in espa_metadata.xml_object.bands.band:
+                if band.attrib['product'] in products_to_remove:
+                    img_filename = str(band.file_name)
+                    hdr_filename = img_filename.replace('.img', '.hdr')
 
-            # Remove them from the file system first
-            for band in bands.band:
-                if band.product in products_to_remove:
-                    # Add the .img file
-                    file_names.append(band.file_name)
-                    # Add the .hdr file
-                    hdr_file_name = band.file_name.replace('.img', '.hdr')
-                    file_names.append(hdr_file_name)
+                    # Remove the files
+                    if os.path.exists(img_filename):
+                        os.unlink(img_filename)
+                    if os.path.exists(hdr_filename):
+                        os.unlink(hdr_filename)
 
-            # Only remove files if we found some
-            if len(file_names) > 0:
-                # First remove from disk
-                for filename in file_names:
-                    if os.path.exists(filename):
-                        os.unlink(filename)
+                    # Remove the element
+                    parent = band.getparent()
+                    parent.remove(band)
 
-                # Second remove from the metadata XML
-                # Remove them from the XML by creating a new list of all the
-                # others
-                bands.band[:] = [band for band in bands.band
-                                 if band.product not in products_to_remove]
+            # Validate the XML
+            espa_metadata.validate()
 
-                try:
-                    # Export to the file with validation
-                    with open(self._xml_filename, 'w') as xml_fd:
-                        metadata_api.export(xml_fd, espa_xml)
+            # Write it to the XML file
+            espa_metadata.write(xml_filename=self._xml_filename)
 
-                except Exception:
-                    self._logger.exception('An exception occurred validating'
-                                           ' metadata XML')
-                    raise
-
-            # Cleanup
-            del bands
-            del espa_xml
+            del espa_metadata
 
     def generate_statistics(self):
         '''
@@ -1328,7 +1317,8 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
         if (options['include_sr_toa'] or
                 options['include_sr_thermal'] or
                 options['include_sr'] or
-                options['include_cfmask']):
+                options['include_cfmask'] or
+                options['include_dswe']):
 
             cmd.append('--write_toa')
             execute_do_l8_sr = True
