@@ -23,7 +23,7 @@ from matplotlib.ticker import MaxNLocator
 import numpy as np
 
 
-from espa import MetadataError, Metadata
+from espa import Metadata
 
 
 import settings
