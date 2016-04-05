@@ -16,7 +16,7 @@ class APIServer(object):
     def __init__(self, base_url):
         self.base = base_url
 
-    def get(self, resource, data=None, status=None):
+    def get(self, resource=None, data=None, status=None):
         """
         Make a call into the API
 
@@ -28,7 +28,12 @@ class APIServer(object):
         Returns: response and status code
 
         """
-        url = '{}{}'.format(self.base, resource)
+        if resource and resource[0] == '/':
+            url = '{}{}'.format(self.base, resource)
+        elif resource:
+            url = '{}/{}'.format(self.base, resource)
+        else:
+            url = self.base
 
         resp = requests.get(url, data=data)
 
@@ -108,7 +113,7 @@ class APIServer(object):
         Tests the base URL for the class
         Returns: True if 200 status received, else False
         """
-        resp, status = self.get(self.base)
+        resp, status = self.get()
 
         if status == 200:
             return True
