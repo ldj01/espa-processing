@@ -16,13 +16,21 @@ import settings
 
 
 def date_from_year_doy(year, doy):
-    '''Returns a python date object given a year and day of year'''
+    """Returns a python date object given a year and day of year
+
+    Args:
+        year (int/str): The 4-digit year for the date.
+        doy (int/str): The day of year for the date.
+
+    Returns:
+        date (date): A date repesenting the given year and day of year.
+    """
 
     d = datetime.date(int(year), 1, 1) + datetime.timedelta(int(doy) - 1)
 
     if int(d.year) != int(year):
-        raise Exception("doy [%s] must fall within the specified year [%s]" %
-                        (doy, year))
+        raise Exception('doy [{}] must fall within the specified year [{}]'
+                        .format(doy, year))
     else:
         return d
 
@@ -45,13 +53,13 @@ def execute_cmd(cmd):
 
     message = ''
     if status < 0:
-        message = 'Application terminated by signal [{0}]'.format(cmd)
+        message = 'Application terminated by signal [{}]'.format(cmd)
 
     if status != 0:
-        message = 'Application failed to execute [{0}]'.format(cmd)
+        message = 'Application failed to execute [{}]'.format(cmd)
 
     if os.WEXITSTATUS(status) != 0:
-        message = ('Application [{0}] returned error code [{1}]' \
+        message = ('Application [{}] returned error code [{}]'
                    .format(cmd, os.WEXITSTATUS(status)))
 
     if len(message) > 0:
@@ -64,26 +72,48 @@ def execute_cmd(cmd):
 
 
 def get_cache_hostname():
-    '''
-    Description:
-      Poor mans load balancer for accessing the online cache over the private
-      network
-    '''
+    """Poor mans load balancer for accessing the online cache over the private
+       network
+
+    Returns:
+        hostname (str): The name of the host to use.
+
+    Raises:
+        Exception(message)
+    """
 
     host_list = settings.ESPA_CACHE_HOST_LIST
 
     def check_host_status(hostname):
-        cmd = "ping -q -c 1 %s" % hostname
+        """Check to see if the host is reachable
+
+        Args:
+            hostname (str): The hostname to check.
+
+        Returns:
+            result (bool): True if the host was reachable and False if not.
+        """
+
+        cmd = 'ping -q -c 1 {}'.format(hostname)
 
         try:
             execute_cmd(cmd)
         except Exception:
-            return -1
-        return 0
+            return False
+        return True
 
     def get_hostname():
+        """Recursivly select a host and check to see if it is available
+
+        Returns:
+            hostname (str): The name of the host to use.
+
+        Raises:
+            Exception(message)
+        """
+
         hostname = random.choice(host_list)
-        if check_host_status(hostname) == 0:
+        if check_host_status(hostname):
             return hostname
         else:
             for x in host_list:
@@ -92,19 +122,20 @@ def get_cache_hostname():
             if len(host_list) > 0:
                 return get_hostname()
             else:
-                raise Exception("No online cache hosts available...")
+                raise Exception('No online cache hosts available...')
 
     return get_hostname()
 
 
 def create_directory(directory):
-    '''
-    Description:
-        Create the specified directory with some error checking.
+    """Create the specified directory with some error checking
 
-    Parameters:
-        directory - The full path to create.
-    '''
+    Args:
+        directory (str): The full path to create.
+
+    Raises:
+        Exception()
+    """
 
     # Create/Make sure the directory exists
     try:
@@ -112,21 +143,22 @@ def create_directory(directory):
     except OSError as ose:
         if ose.errno == errno.EEXIST and os.path.isdir(directory):
             # With how we operate, as long as it is a directory, we do not
-            # care about the "already exists" error.
+            # care about the 'already exists' error.
             pass
         else:
             raise
 
 
 def create_link(src_path, link_path):
-    '''
-    Description:
-        Create the specified link with some error checking.
+    """Create the specified link with some error checking
 
-    Parameters:
-        src_path - The location where the link will point.
-        link_path - The location where the link will reside.
-    '''
+    Args:
+        src_path (str): The location where the link will point.
+        link_path (str): The location where the link will reside.
+
+    Raises:
+        Exception()
+    """
 
     # Create/Make sure the directory exists
     try:
@@ -140,12 +172,19 @@ def create_link(src_path, link_path):
 
 
 def tar_files(tarred_full_path, file_list, gzip=False):
-    '''
-    Description:
-      Create a tar ball (*.tar) of the specified file(s).
-      OR
-      Create a tar.gz ball (*.tar.gz) of the specified file(s).
-    '''
+    """Create a tar ball (*.tar or *.tar.gz) of the specified file(s)
+
+    Args:
+        tarred_full_path (str): The full path to the tarred filename.
+        file_list (list): The files to tar as a list.
+        gzip (bool): Whether or not to gzip the tar on the fly.
+
+    Returns:
+        target (str): The full path to the tarred/gzipped filename.
+
+    Raises:
+        Exception(message)
+    """
 
     flags = '-cf'
     target = '%s.tar' % tarred_full_path
@@ -167,7 +206,7 @@ def tar_files(tarred_full_path, file_list, gzip=False):
         if len(output) > 0:
             msg = ' '.join([msg, output])
         else:
-            msg = ' '.join([msg, "NO STDOUT/STDERR"])
+            msg = ' '.join([msg, 'NO STDOUT/STDERR'])
         # Raise and retain the callstack
         raise Exception(msg)
 
@@ -175,10 +214,14 @@ def tar_files(tarred_full_path, file_list, gzip=False):
 
 
 def gzip_files(file_list):
-    '''
-    Description:
-      Create a gzip for each of the specified file(s).
-    '''
+    """Create a gzip for each of the specified file(s).
+
+    Args:
+        file_list (list): The files to tar as a list.
+
+    Raises:
+        Exception(message)
+    """
 
     # Force the gzip file to overwrite any previously existing attempt
     cmd = ['gzip', '--force']
@@ -189,10 +232,10 @@ def gzip_files(file_list):
     try:
         output = execute_cmd(cmd)
     except Exception:
-        msg = "Error encountered compressing file(s): Stdout/Stderr:"
+        msg = 'Error encountered compressing file(s): Stdout/Stderr:'
         if len(output) > 0:
             msg = ' '.join([msg, output])
         else:
-            msg = ' '.join([msg, "NO STDOUT/STDERR"])
+            msg = ' '.join([msg, 'NO STDOUT/STDERR'])
         # Raise and retain the callstack
         raise Exception(msg)
