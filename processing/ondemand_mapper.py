@@ -92,7 +92,7 @@ def set_product_error(server, order_id, product_id, processing_location):
     return True
 
 
-def get_sleep_duration(start_time):
+def get_sleep_duration(start_time, dont_sleep):
     """Logs details and returns number of seconds to sleep
     """
 
@@ -104,12 +104,12 @@ def get_sleep_duration(start_time):
     logger.info('Processing Time Elapsed {0} Seconds'.format(seconds_elapsed))
 
     seconds_to_sleep = 1
-    if seconds_elapsed < settings.MIN_REQUEST_DURATION_IN_SECONDS:
-        # Joe-Developer doesn't want to wait so check and skip
-        # This directory will not exist for HADOOP processing
-        if not os.path.isdir('unittests'):
-            seconds_to_sleep = (settings.MIN_REQUEST_DURATION_IN_SECONDS -
-                                seconds_elapsed)
+    if dont_sleep:
+        # We don't need to sleep
+        seconds_to_sleep = 1
+    elif seconds_elapsed < settings.MIN_REQUEST_DURATION_IN_SECONDS:
+        seconds_to_sleep = (settings.MIN_REQUEST_DURATION_IN_SECONDS -
+                            seconds_elapsed)
 
     logger.info('Sleeping An Additional {0} Seconds'.format(seconds_to_sleep))
 
@@ -153,7 +153,7 @@ def archive_log_files(order_id, product_id):
         logger.exception("Exception encountered and follows")
 
 
-def process():
+def process(developer_sleep_mode=False):
     '''
     Description:
       Read all lines from STDIN and process them.  Each line is converted to
@@ -184,6 +184,9 @@ def process():
 
         start_time = datetime.datetime.now()
 
+        # Initialize so that we don't sleep
+        dont_sleep = True
+
         try:
             line = line.replace('#', '')
             parms = json.loads(line)
@@ -195,6 +198,12 @@ def process():
             (order_id, product_id, product_type, options) = \
                 (parms['orderid'], parms['scene'], parms['product_type'],
                  parms['options'])
+
+            if product_id != 'plot':
+                # Developer mode is always false unless you are a developer
+                # so sleeping will always occur for none plotting requests
+                # Override with the developer mode
+                dont_sleep = developer_sleep_mode
 
             # Fix the orderid in-case it contains any single quotes
             # The processors can not handle single quotes in the email
@@ -267,9 +276,7 @@ def process():
                     pp.remove_product_directory()
 
             # Sleep the number of seconds for minimum request duration
-            # We don't need to sleep for plotting requests
-            if product_id != 'plot':
-                sleep(get_sleep_duration(start_time))
+            sleep(get_sleep_duration(start_time, dont_sleep))
 
             archive_log_files(order_id, product_id)
 
@@ -289,7 +296,7 @@ def process():
             logger.exception("Exception encountered stacktrace follows")
 
             # Sleep the number of seconds for minimum request duration
-            sleep(get_sleep_duration(start_time))
+            sleep(get_sleep_duration(start_time, dont_sleep))
 
             archive_log_files(order_id, product_id)
 
@@ -313,12 +320,27 @@ if __name__ == '__main__':
         Some parameter and logging setup, then call the process routine.
     '''
 
+    # Create a command line argument parser
+    description = 'Main mapper for a request'
+    parser = ArgumentParser(description=description)
+
+    # Add our only options to determine if we are a developer or not
+    parser.add_argument('--developer',
+                        action='store_true', dest='developer', default=False,
+                        help='use a developer mode for sleeping')
+
+    # Parse the command line arguments
+    args = parser.parse_args()
+
     EspaLogging.configure_base_logger(filename=MAPPER_LOG_FILENAME)
     # Initially set to the base logger
     logger = EspaLogging.get_logger('base')
 
     try:
-        process()
+        # Joe-Developer doesn't want to wait so if set skip sleeping
+        developer_sleep_mode = args.developer
+
+        process(developer_sleep_mode)
     except Exception:
         logger.exception("Processing failed stacktrace follows")
 

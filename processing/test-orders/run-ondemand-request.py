@@ -260,7 +260,7 @@ def process_test_order(args, request_file, products_file, env_vars):
             logger.error(error_msg)
             return False
 
-        cmd = ('cd ..; cat test-orders/{0} | ./ondemand_mapper.py'
+        cmd = ('cd ..; cat test-orders/{0} | ./ondemand_mapper.py --developer'
                .format(tmp_order))
 
         output = ''
