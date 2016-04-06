@@ -21,6 +21,9 @@ Please see the Release Tags for notes related to past versions.
   - Modified the scheduling code to be self contained within the scheduling directory.
   - Modified the processing code to be self contained within the processing directory.
   - Added support for L4, 5, 7 collection processing.
+  - Turned sleeping off for plotting requests, since they do not interface with the LTA.
+  - Removed remaining keep_log code, since the logs are always kept from now on.
+  - General cleanup of the code base.
 
 ## Supported Science Products
 To generate products for a science application, it must be installed on the system and the applications provided must be available on the PATH.  See the respective science projects for installation instructions and auxiliary data requirements.
