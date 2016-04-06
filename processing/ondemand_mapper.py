@@ -267,7 +267,9 @@ def process():
                     pp.remove_product_directory()
 
             # Sleep the number of seconds for minimum request duration
-            sleep(get_sleep_duration(start_time))
+            # We don't need to sleep for plotting requests
+            if product_id != 'plot':
+                sleep(get_sleep_duration(start_time))
 
             archive_log_files(order_id, product_id)
 
