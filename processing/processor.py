@@ -43,25 +43,22 @@ import distribution
 
 
 class ProductProcessor(object):
-    '''
-    Description:
-        Provides the super class for all product request processing.  It
-        performs the tasks needed by all processors.
+    """Provides the super class for all product request processing
 
-        It initializes the logger object and keeps it around for all the
-        child-classes to use.
+    It performs the tasks needed by all processors.
 
-        It implements initialization of the order and product directory
-        structures.
+    It initializes the logger object and keeps it around for all the
+    child-classes to use.
 
-        It also implements the cleanup of the product directory.
-    '''
+    It implements initialization of the order and product directory
+    structures.
+
+    It also implements the cleanup of the product directory.
+    """
 
     def __init__(self, parms):
-        '''
-        Description:
-            Initialization for the object.
-        '''
+        """Initialization for the object.
+        """
 
         self._logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
 
@@ -69,14 +66,14 @@ class ProductProcessor(object):
         if isinstance(parms, dict):
             self._parms = parms
         else:
-            raise Exception('Input parameters was of type [{0}],'
+            raise Exception('Input parameters was of type [{}],'
                             ' where dict is required'.format(type(parms)))
 
         # Create an environment object (which also validates it)
         self._environment = Environment()
 
         # Log the distribution method that will be used
-        self._logger.info('Using distribution method [{0}]'.
+        self._logger.info('Using distribution method [{}]'.
                           format(self._environment.get_distribution_method()))
 
         # Validate the parameters
@@ -91,17 +88,15 @@ class ProductProcessor(object):
         self._output_dir = None
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for the processor.
-        '''
+        """Validates the parameters required for the processor
+        """
 
         # Test for presence of required top-level parameters
         keys = ['orderid', 'scene', 'product_type', 'options']
         for key in keys:
             if not parameters.test_for_parameter(self._parms, key):
-                raise RuntimeError("Missing required input parameter [%s]"
-                                   % key)
+                raise RuntimeError('Missing required input parameter [{}]'
+                                   .format(key))
 
         # Set the download URL to None if not provided
         if not parameters.test_for_parameter(self._parms, 'download_url'):
@@ -109,8 +104,8 @@ class ProductProcessor(object):
 
         # TODO - Remove this once we have converted
         if not parameters.test_for_parameter(self._parms, 'product_id'):
-            self._logger.warning("'product_id' parameter missing defaulting to"
-                                 " 'scene'")
+            self._logger.warning('[product_id] parameter missing defaulting'
+                                 ' to [scene]')
             self._parms['product_id'] = self._parms['scene']
 
         # Validate the options
@@ -132,10 +127,8 @@ class ProductProcessor(object):
             options['destination_pw'] = 'localhost'
 
     def log_order_parameters(self):
-        '''
-        Description:
-            Log the order parameters in json format.
-        '''
+        """Log the order parameters in json format
+        """
 
         # Override the usernames and passwords for logging
         parms = copy.deepcopy(self._parms)
@@ -144,25 +137,24 @@ class ProductProcessor(object):
         parms['options']['source_pw'] = 'XXXXXXX'
         parms['options']['destination_pw'] = 'XXXXXXX'
 
-        self._logger.info("MAPPER OPTION LINE %s"
-                          % json.dumps(parms, sort_keys=True))
+        self._logger.info('MAPPER OPTION LINE {}'
+                          .format(json.dumps(parms, sort_keys=True)))
 
         del parms
 
     def initialize_processing_directory(self):
-        '''
-        Description:
-            Initializes the processing directory.  Creates the following
-            directories.
+        """Initializes the processing directory
 
-            .../output
-            .../stage
-            .../work
+        Creates the following directories.
+
+           .../output
+           .../stage
+           .../work
 
         Note:
             order_id and product_id along with the ESPA_WORK_DIR environment
             variable provide the path to the processing locations.
-        '''
+        """
 
         product_id = self._parms['product_id']
         order_id = self._parms['orderid']
@@ -191,21 +183,19 @@ class ProductProcessor(object):
         # Create each of the sub-directories
         self._stage_dir = \
             initialization.create_stage_directory(self._product_dir)
-        self._logger.info("Created directory [{0}]".format(self._stage_dir))
+        self._logger.info('Created directory [{}]'.format(self._stage_dir))
 
         self._work_dir = \
             initialization.create_work_directory(self._product_dir)
-        self._logger.info("Created directory [{0}]".format(self._work_dir))
+        self._logger.info('Created directory [{}]'.format(self._work_dir))
 
         self._output_dir = \
             initialization.create_output_directory(self._product_dir)
-        self._logger.info("Created directory [{0}]".format(self._output_dir))
+        self._logger.info('Created directory [{}]'.format(self._output_dir))
 
     def remove_product_directory(self):
-        '''
-        Description:
-            Remove the product directory.
-        '''
+        """Remove the product directory
+        """
 
         options = self._parms['options']
 
@@ -217,25 +207,21 @@ class ProductProcessor(object):
             shutil.rmtree(self._product_dir, ignore_errors=True)
 
     def get_product_name(self):
-        '''
-        Description:
-            Build the product name from the product information and current
-            time.
+        """Build the product name from the product information and current
+           time
 
         Note:
             Not implemented here.
-        '''
+        """
 
-        msg = ("[%s] Requires implementation in the child class"
-               % self.get_product_name.__name__)
-        raise NotImplementedError(msg)
+        raise NotImplementedError('[{}] Requires implementation in the child'
+                                  ' class'.format(self.get_product_name
+                                                  .__name__))
 
     def distribute_product(self):
-        '''
-        Description:
-            Does both the packaging and distribution of the product using
-            the distribution module.
-        '''
+        """Does both the packaging and distribution of the product using
+           the distribution module
+        """
 
         product_name = self.get_product_name()
 
@@ -253,38 +239,35 @@ class ProductProcessor(object):
                                    ' the product')
             raise
 
-        self._logger.info("*** Product Delivery Complete ***")
+        self._logger.info('*** Product Delivery Complete ***')
 
         # Let the caller know where we put these on the destination system
         return (product_file, cksum_file)
 
     def process_product(self):
-        '''
-        Description:
-            Perform the processor specific processing to generate the
-            requested product.
+        """Perform the processor specific processing to generate the
+           requested product
 
         Note:
             Not implemented here.
 
         Note:
             Must return the destination product and cksum file names.
-        '''
+        """
 
-        msg = ("[%s] Requires implementation in the child class"
-               % self.process_product.__name__)
-        raise NotImplementedError(msg)
+        raise NotImplementedError('[{}] Requires implementation in the child'
+                                  ' class'.format(self.process_product
+                                                  .__name__))
 
     def process(self):
-        '''
-        Description:
-            Generates a product through a defined process.
-            This method must cleanup everything it creates by calling the
-            remove_product_directory() method.
+        """Generates a product through a defined process
+
+        This method must cleanup everything it creates by calling the
+        remove_product_directory() method.
 
         Note:
             Must return the destination product and cksum file names.
-        '''
+        """
 
         # Logs the order parameters that can be passed to the mapper for this
         # processor
@@ -306,11 +289,10 @@ class ProductProcessor(object):
 
 
 class CustomizationProcessor(ProductProcessor):
-    '''
-    Description:
-        Provides the super class implementation for customization processing,
-        which warps the products to the user requested projection.
-    '''
+    """Provides the super class implementation for customization processing
+
+    Allows for warping the products to the user requested projection.
+    """
 
     def __init__(self, parms):
 
@@ -319,10 +301,8 @@ class CustomizationProcessor(ProductProcessor):
         super(CustomizationProcessor, self).__init__(parms)
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for the processor.
-        '''
+        """Validates the parameters required for the processor
+        """
 
         # Call the base class parameter validation
         super(CustomizationProcessor, self).validate_parameters()
@@ -330,7 +310,7 @@ class CustomizationProcessor(ProductProcessor):
         product_id = self._parms['product_id']
         options = self._parms['options']
 
-        self._logger.info("Validating [CustomizationProcessor] parameters")
+        self._logger.info('Validating [CustomizationProcessor] parameters')
 
         parameters. validate_reprojection_parameters(options, product_id)
 
@@ -338,10 +318,8 @@ class CustomizationProcessor(ProductProcessor):
         self._xml_filename = '.'.join([product_id, 'xml'])
 
     def customize_products(self):
-        '''
-        Description:
-            Performs the customization of the products.
-        '''
+        """Performs the customization of the products
+        """
 
         # Nothing to do if the user did not specify anything to build
         if not self._build_products:
@@ -363,70 +341,56 @@ class CustomizationProcessor(ProductProcessor):
 
 
 class CDRProcessor(CustomizationProcessor):
-    '''
-    Description:
-        Provides the super class implementation for generating CDR products.
-    '''
+    """Provides the super class implementation for generating CDR products
+    """
 
     def __init__(self, parms):
         super(CDRProcessor, self).__init__(parms)
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for all processors.
-        '''
+        """Validates the parameters required for all processors
+        """
 
         # Call the base class parameter validation
         super(CDRProcessor, self).validate_parameters()
 
     def stage_input_data(self):
-        '''
-        Description:
-            Stages the input data required for the processor.
+        """Stages the input data required for the processor
 
-        Note:
-            Not implemented here.
-        '''
+        Not implemented here.
+        """
 
-        msg = ("[%s] Requires implementation in the child class"
+        msg = ('[%s] Requires implementation in the child class'
                % self.stage_input_data.__name__)
         raise NotImplementedError(msg)
 
     def build_science_products(self):
-        '''
-        Description:
-            Build the science products requested by the user.
+        """Build the science products requested by the user
 
-        Note:
-            Not implemented here.
-        '''
+        Not implemented here.
+        """
 
-        msg = ("[%s] Requires implementation in the child class"
-               % self.build_science_products.__name__)
-        raise NotImplementedError(msg)
+        raise NotImplementedError('[{}] Requires implementation in the child'
+                                  ' class'.format(self.build_science_products
+                                                  .__name__))
 
     def cleanup_work_dir(self):
-        '''
-        Description:
-            Cleanup all the intermediate non-products and the science
-            products not requested.
+        """Cleanup all the intermediate non-products and the science
+           products not requested
 
-        Note:
-            Not implemented here.
-        '''
+        Not implemented here.
+        """
 
-        msg = ("[%s] Requires implementation in the child class"
-               % self.cleanup_work_dir.__name__)
-        raise NotImplementedError(msg)
+        raise NotImplementedError('[{}] Requires implementation in the child'
+                                  ' class'.format(self.cleanup_work_dir
+                                                  .__name__))
 
     def remove_products_from_xml(self):
-        '''
-        Description:
-            Remove the specified products from the XML file.  The file is
-            read into memory, processed, and written back out with out the
-            specified products.
-        '''
+        """Remove the specified products from the XML file
+
+        The file is read into memory, processed, and written back out with out
+        the specified products.
+        """
 
         # Nothing to do if the user did not specify anything to build
         if not self._build_products:
@@ -504,23 +468,18 @@ class CDRProcessor(CustomizationProcessor):
             del espa_metadata
 
     def generate_statistics(self):
-        '''
-        Description:
-            Generates statistics if required for the processor.
+        """Generates statistics if required for the processor
 
-        Note:
-            Not implemented here.
-        '''
+        Not implemented here.
+        """
 
-        msg = ("[%s] Requires implementation in the child class"
-               % self.generate_statistics.__name__)
-        raise NotImplementedError(msg)
+        raise NotImplementedError('[{}] Requires implementation in the child'
+                                  ' class'.format(self.generate_statistics
+                                                  .__name__))
 
     def distribute_statistics(self):
-        '''
-        Description:
-            Distributes statistics if required for the processor.
-        '''
+        """Distributes statistics if required for the processor
+        """
 
         options = self._parms['options']
 
@@ -534,13 +493,11 @@ class CDRProcessor(CustomizationProcessor):
                                        ' the stats')
                 raise
 
-            self._logger.info("*** Statistics Distribution Complete ***")
+            self._logger.info('*** Statistics Distribution Complete ***')
 
     def reformat_products(self):
-        '''
-        Description:
-            Reformat the customized products if required for the processor.
-        '''
+        """Reformat the customized products if required for the processor
+        """
 
         # Nothing to do if the user did not specify anything to build
         if not self._build_products:
@@ -555,11 +512,9 @@ class CDRProcessor(CustomizationProcessor):
                       options['output_format'])
 
     def process_product(self):
-        '''
-        Description:
-            Perform the processor specific processing to generate the
-            requested product.
-        '''
+        """Perform the processor specific processing to generate the
+           requested product
+        """
 
         # Stage the required input data
         self.stage_input_data()
@@ -590,11 +545,9 @@ class CDRProcessor(CustomizationProcessor):
 
 
 class LandsatProcessor(CDRProcessor):
-    '''
-    Description:
-        Implements the common processing between all of the landsat
-        processors.
-    '''
+    """Implements the common processing between all of the Landsat
+       processors
+    """
 
     def __init__(self, parms):
         super(LandsatProcessor, self).__init__(parms)
@@ -604,15 +557,13 @@ class LandsatProcessor(CDRProcessor):
         self._metadata_filename = None
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for the processor.
-        '''
+        """Validates the parameters required for the processor
+        """
 
         # Call the base class parameter validation
         super(LandsatProcessor, self).validate_parameters()
 
-        self._logger.info("Validating [LandsatProcessor] parameters")
+        self._logger.info('Validating [LandsatProcessor] parameters')
 
         options = self._parms['options']
 
@@ -638,8 +589,8 @@ class LandsatProcessor(CDRProcessor):
 
         for parameter in required_includes:
             if not parameters.test_for_parameter(options, parameter):
-                self._logger.warning("'%s' parameter missing defaulting to"
-                                     " False" % parameter)
+                self._logger.warning('[{}] parameter missing defaulting to'
+                                     ' False'.format(parameter))
                 options[parameter] = False
 
         # Determine if we need to build products
@@ -658,16 +609,14 @@ class LandsatProcessor(CDRProcessor):
                 not options['include_dswe'] and
                 not options['include_lst']):
 
-            self._logger.info("***NO SCIENCE PRODUCTS CHOSEN***")
+            self._logger.info('***NO SCIENCE PRODUCTS CHOSEN***')
             self._build_products = False
         else:
             self._build_products = True
 
     def stage_input_data(self):
-        '''
-        Description:
-            Stages the input data required for the processor.
-        '''
+        """Stages the input data required for the processor
+        """
 
         product_id = self._parms['product_id']
         download_url = self._parms['download_url']
@@ -688,11 +637,9 @@ class LandsatProcessor(CDRProcessor):
             landsat_metadata.get_filename(self._work_dir, product_id)
 
     def convert_to_raw_binary(self):
-        '''
-        Description:
-            Converts the Landsat(LPGS) input data to our internal raw binary
-            format.
-        '''
+        """Converts the Landsat(LPGS) input data to our internal raw binary
+           format
+        """
 
         options = self._parms['options']
 
@@ -715,16 +662,15 @@ class LandsatProcessor(CDRProcessor):
                 self._logger.info(output)
 
     def elevation_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate the elevation
-            product.
-            Evaluates the options requested by the user to define the command
-            line string to use, or returns None indicating nothing todo.
+        """Returns the command line required to generate the elevation
+           product
+
+        Evaluates the options requested by the user to define the command
+        line string to use, or returns None indicating nothing todo.
 
         Note:
             Provides the L4, L5, L7, and L8 command line.
-        '''
+        """
 
         options = self._parms['options']
 
@@ -740,11 +686,9 @@ class LandsatProcessor(CDRProcessor):
         return cmd
 
     def generate_elevation_product(self):
-        '''
-        Description:
-            Generates an elevation product using the metadata from the source
-            data.
-        '''
+        """Generates an elevation product using the metadata from the source
+           data
+        """
 
         cmd = self.elevation_command_line()
 
@@ -761,20 +705,16 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     def land_water_mask_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate a land/water mask.
+        """Returns the command line required to generate a land/water mask
 
         Note:
             Only for L8 OLITIRS processing
-        '''
+        """
         return None
 
     def generate_land_water_mask(self):
-        '''
-        Description:
-            Generates a land water mask.
-        '''
+        """Generates a land water mask
+        """
 
         cmd = self.land_water_mask_command_line()
 
@@ -791,16 +731,15 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     def sr_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate surface reflectance.
-            Evaluates the options requested by the user to define the command
-            line string to use, or returns None indicating nothing todo.
+        """Returns the command line required to generate surface reflectance
+
+        Evaluates the options requested by the user to define the command
+        line string to use, or returns None indicating nothing todo.
 
         Note:
             Provides the L4, L5, and L7 command line.  L8 processing overrides
             this method.
-        '''
+        """
 
         options = self._parms['options']
 
@@ -846,10 +785,8 @@ class LandsatProcessor(CDRProcessor):
         return cmd
 
     def generate_sr_products(self):
-        '''
-        Description:
-            Generates surface reflectance products.
-        '''
+        """Generates surface reflectance products
+        """
 
         cmd = self.sr_command_line()
 
@@ -866,10 +803,8 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     def generate_cloud_masking(self):
-        '''
-        Description:
-            Generates cloud mask products.
-        '''
+        """Generates cloud mask products
+        """
 
         options = self._parms['options']
         cmd = None
@@ -892,10 +827,8 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     def generate_spectral_indices(self):
-        '''
-        Description:
-            Generates the requested spectral indices.
-        '''
+        """Generates the requested spectral indices
+        """
 
         options = self._parms['options']
 
@@ -941,16 +874,15 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     def surface_water_extent_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate Dynamic Surface
-            Water Extent.  Evaluates the options requested by the user to
-            define the command line string to use, or returns None indicating
-            nothing todo.
+        """Returns the command line required to generate Dynamic Surface
+           Water Extent
+
+        Evaluates the options requested by the user to define the command line
+        string to use, or returns None indicating nothing todo.
 
         Note:
             Provides the L4, L5, L7, and L8(LC8) command line.
-        '''
+        """
 
         options = self._parms['options']
 
@@ -966,10 +898,8 @@ class LandsatProcessor(CDRProcessor):
         return cmd
 
     def generate_surface_water_extent(self):
-        '''
-        Description:
-            Generates the Dynamic Surface Water Extent product.
-        '''
+        """Generates the Dynamic Surface Water Extent product
+        """
 
         cmd = self.surface_water_extent_command_line()
 
@@ -987,10 +917,8 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     def generate_land_surface_temperature(self):
-        '''
-        Description:
-            Generates the Land Surface Temperature product.
-        '''
+        """Generates the Land Surface Temperature product
+        """
 
         options = self._parms['options']
 
@@ -1016,16 +944,14 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     def build_science_products(self):
-        '''
-        Description:
-            Build the science products requested by the user.
-        '''
+        """Build the science products requested by the user
+        """
 
         # Nothing to do if the user did not specify anything to build
         if not self._build_products:
             return
 
-        self._logger.info("[LandsatProcessor] Building Science Products")
+        self._logger.info('[LandsatProcessor] Building Science Products')
 
         # Change to the working directory
         current_directory = os.getcwd()
@@ -1053,11 +979,9 @@ class LandsatProcessor(CDRProcessor):
             os.chdir(current_directory)
 
     def cleanup_work_dir(self):
-        '''
-        Description:
-            Cleanup all the intermediate non-products and the science
-            products not requested.
-        '''
+        """Cleanup all the intermediate non-products and the science
+           products not requested
+        """
 
         product_id = self._parms['product_id']
         options = self._parms['options']
@@ -1130,10 +1054,8 @@ class LandsatProcessor(CDRProcessor):
             os.chdir(current_directory)
 
     def generate_statistics(self):
-        '''
-        Description:
-            Generates statistics if required for the processor.
-        '''
+        """Generates statistics if required for the processor
+        """
 
         options = self._parms['options']
 
@@ -1161,11 +1083,9 @@ class LandsatProcessor(CDRProcessor):
                                        files_to_search_for)
 
     def get_product_name(self):
-        '''
-        Description:
-            Build the product name from the product information and current
-            time.
-        '''
+        """Build the product name from the product information and current
+           time
+        """
 
         if self._product_name is None:
             product_id = self._parms['product_id']
@@ -1191,77 +1111,65 @@ class LandsatProcessor(CDRProcessor):
 
 
 class LandsatTMProcessor(LandsatProcessor):
-    '''
-    Description:
-        Implements TM specific processing.
+    """Implements TM specific processing
 
     Note:
         Today all processing is inherited from the LandsatProcessors because
         the TM and ETM processors are identical.
-    '''
+    """
 
     def __init__(self, parms):
         super(LandsatTMProcessor, self).__init__(parms)
 
 
 class Landsat4TMProcessor(LandsatTMProcessor):
-    '''
-    Description:
-        Implements L4 TM specific processing.
+    """Implements L4 TM specific processing
 
     Note:
         Today all processing is inherited from the LandsatProcessors because
         the TM and ETM processors are identical.
-    '''
+    """
 
     def __init__(self, parms):
         super(Landsat4TMProcessor, self).__init__(parms)
 
 
 class LandsatETMProcessor(LandsatProcessor):
-    '''
-    Description:
-        Implements ETM specific processing.
+    """Implements ETM specific processing
 
     Note:
         Today all processing is inherited from the LandsatProcessors because
         the TM and ETM processors are identical.
-    '''
+    """
 
     def __init__(self, parms):
         super(LandsatETMProcessor, self).__init__(parms)
 
 
 class LandsatOLITIRSProcessor(LandsatProcessor):
-    '''
-    Description:
-        Implements OLITIRS (LC8) specific processing.
-    '''
+    """Implements OLITIRS (LC8) specific processing
+    """
 
     def __init__(self, parms):
         super(LandsatOLITIRSProcessor, self).__init__(parms)
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for the processor.
-        '''
+        """Validates the parameters required for the processor
+        """
 
         # Call the base class parameter validation
         super(LandsatOLITIRSProcessor, self).validate_parameters()
 
-        self._logger.info("Validating [LandsatOLITIRSProcessor] parameters")
+        self._logger.info('Validating [LandsatOLITIRSProcessor] parameters')
 
         options = self._parms['options']
 
     def land_water_mask_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate a land/water mask.
+        """Returns the command line required to generate a land/water mask
 
         Note:
             Only for L8 OLITIRS processing
-        '''
+        """
 
         options = self._parms['options']
 
@@ -1281,12 +1189,11 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
         return cmd
 
     def sr_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate surface reflectance.
-            Evaluates the options requested by the user to define the command
-            line string to use, or returns None indicating nothing todo.
-        '''
+        """Returns the command line required to generate surface reflectance
+
+        Evaluates the options requested by the user to define the command
+        line string to use, or returns None indicating nothing todo.
+        """
 
         options = self._parms['options']
 
@@ -1333,74 +1240,68 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
 
 class LandsatOLIProcessor(LandsatOLITIRSProcessor):
-    '''
-    Description:
-        Implements OLI only (LO8) specific processing.
-    '''
+    """Implements OLI only (LO8) specific processing
+    """
 
     def __init__(self, parms):
         super(LandsatOLIProcessor, self).__init__(parms)
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for the processor.
-        '''
+        """Validates the parameters required for the processor
+        """
 
         # Call the base class parameter validation
         super(LandsatOLIProcessor, self).validate_parameters()
 
-        self._logger.info("Validating [LandsatOLIProcessor] parameters")
+        self._logger.info('Validating [LandsatOLIProcessor] parameters')
 
         options = self._parms['options']
 
         if options['include_sr'] is True:
-            raise Exception("include_sr is an unavailable product option"
-                            " for OLI-Only data")
+            raise Exception('include_sr is an unavailable product option'
+                            ' for OLI-Only data')
 
         if options['include_sr_thermal'] is True:
-            raise Exception("include_sr_thermal is an unavailable product"
-                            " option for OLI-Only data")
+            raise Exception('include_sr_thermal is an unavailable product'
+                            ' option for OLI-Only data')
 
         if options['include_cfmask'] is True:
-            raise Exception("include_cfmask is an unavailable product option"
-                            " for OLI-Only data")
+            raise Exception('include_cfmask is an unavailable product option'
+                            ' for OLI-Only data')
 
         if options['include_dswe'] is True:
-            raise Exception("include_dswe is an unavailable product option"
-                            " for OLI-Only data")
+            raise Exception('include_dswe is an unavailable product option'
+                            ' for OLI-Only data')
 
     def land_water_mask_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate a land/water mask.
+        """Returns the command line required to generate a land/water mask
 
         Note:
             Only for L8 OLITIRS processing
-        '''
+        """
         return None
 
     def generate_cloud_masking(self):
-        '''
-        Description:
-            Cloud Masking processing requires both OLI and TIRS bands.  So OLI
-            only processing can not produce cloud mask products.
-        '''
+        """Cloud Masking processing requires both OLI and TIRS bands
 
+        So OLI only processing can not produce cloud mask products.
+        """
         pass
 
     def generate_spectral_indices(self):
-        '''
-        Description:
-            Spectral Indices processing requires surface reflectance products
-            as input.  So since, SR products can not be produced with OLI
-            only data, OLI only processing can not produce spectral indices.
-        '''
+        """ Spectral Indices processing requires surface reflectance products
+            as input
 
+        So since, SR products can not be produced with OLI only data, OLI only
+        processing can not produce spectral indices.
+        """
         pass
 
 
 class ModisProcessor(CDRProcessor):
+    """Implements the common processing between all of the MODIS
+       processors
+    """
 
     def __init__(self, parms):
         super(ModisProcessor, self).__init__(parms)
@@ -1408,15 +1309,13 @@ class ModisProcessor(CDRProcessor):
         self._hdf_filename = None
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for the processor.
-        '''
+        """Validates the parameters required for the processor
+        """
 
         # Call the base class parameter validation
         super(ModisProcessor, self).validate_parameters()
 
-        self._logger.info("Validating [ModisProcessor] parameters")
+        self._logger.info('Validating [ModisProcessor] parameters')
 
         options = self._parms['options']
 
@@ -1428,23 +1327,21 @@ class ModisProcessor(CDRProcessor):
 
         for parameter in required_includes:
             if not parameters.test_for_parameter(options, parameter):
-                self._logger.warning("'%s' parameter missing defaulting to"
-                                     " False" % parameter)
+                self._logger.warning('[{}] parameter missing defaulting to'
+                                     ' False'.format(parameter))
                 options[parameter] = False
 
         # Determine if we need to build products
         if not options['include_customized_source_data']:
 
-            self._logger.info("***NO CUSTOMIZED PRODUCTS CHOSEN***")
+            self._logger.info('***NO CUSTOMIZED PRODUCTS CHOSEN***')
             self._build_products = False
         else:
             self._build_products = True
 
     def stage_input_data(self):
-        '''
-        Description:
-            Stages the input data required for the processor.
-        '''
+        """Stages the input data required for the processor
+        """
 
         product_id = self._parms['product_id']
         download_url = self._parms['download_url']
@@ -1464,11 +1361,9 @@ class ModisProcessor(CDRProcessor):
         os.unlink(staged_file)
 
     def convert_to_raw_binary(self):
-        '''
-        Description:
-            Converts the Landsat(LPGS) input data to our internal raw binary
-            format.
-        '''
+        """Converts the Landsat(LPGS) input data to our internal raw binary
+           format
+        """
 
         options = self._parms['options']
 
@@ -1491,21 +1386,19 @@ class ModisProcessor(CDRProcessor):
                 self._logger.info(output)
 
     def build_science_products(self):
-        '''
-        Description:
-            Build the science products requested by the user.
+        """Build the science products requested by the user
 
         Note:
             We get science products as the input, so the only thing really
             happening here is generating a customized product for the
             statistics generation.
-        '''
+        """
 
         # Nothing to do if the user did not specify anything to build
         if not self._build_products:
             return
 
-        self._logger.info("[ModisProcessor] Building Science Products")
+        self._logger.info('[ModisProcessor] Building Science Products')
 
         # Change to the working directory
         current_directory = os.getcwd()
@@ -1519,20 +1412,16 @@ class ModisProcessor(CDRProcessor):
             os.chdir(current_directory)
 
     def cleanup_work_dir(self):
-        '''
-        Description:
-            Cleanup all the intermediate non-products and the science
-            products not requested.
-        '''
+        """Cleanup all the intermediate non-products and the science
+           products not requested
+        """
 
         # Nothing to do for Modis products
         return
 
     def generate_statistics(self):
-        '''
-        Description:
-            Generates statistics if required for the processor.
-        '''
+        """Generates statistics if required for the processor
+        """
 
         options = self._parms['options']
 
@@ -1560,11 +1449,9 @@ class ModisProcessor(CDRProcessor):
                                        files_to_search_for)
 
     def get_product_name(self):
-        '''
-        Description:
-            Build the product name from the product information and current
-            time.
-        '''
+        """Build the product name from the product information and current
+           time
+        """
 
         if self._product_name is None:
             product_id = self._parms['product_id']
@@ -1590,30 +1477,24 @@ class ModisProcessor(CDRProcessor):
 
 
 class ModisAQUAProcessor(ModisProcessor):
-    '''
-    Description:
-        Implements AQUA specific processing.
-    '''
+    """Implements AQUA specific processing
+    """
 
     def __init__(self, parms):
         super(ModisAQUAProcessor, self).__init__(parms)
 
 
 class ModisTERRAProcessor(ModisProcessor):
-    '''
-    Description:
-        Implements TERRA specific processing.
-    '''
+    """Implements TERRA specific processing
+    """
 
     def __init__(self, parms):
         super(ModisTERRAProcessor, self).__init__(parms)
 
 
 class PlotProcessor(ProductProcessor):
-    '''
-    Description:
-        Implements Plot processing.
-    '''
+    """Implements Plot processing
+    """
 
     def __init__(self, parms):
 
@@ -2096,15 +1977,13 @@ class PlotProcessor(ProductProcessor):
         super(PlotProcessor, self).__init__(parms)
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for the processor.
-        '''
+        """Validates the parameters required for the processor
+        """
 
         # Call the base class parameter validation
         super(PlotProcessor, self).validate_parameters()
 
-        self._logger.info("Validating [PlotProcessor] parameters")
+        self._logger.info('Validating [PlotProcessor] parameters')
 
         options = self._parms['options']
 
@@ -2161,10 +2040,8 @@ class PlotProcessor(ProductProcessor):
             options['marker_edge_width'] = self._marker_edge_width
 
     def read_statistics(self, statistics_file):
-        '''
-        Description:
-          Read the file contents and return as a list of key values.
-        '''
+        """Read the file contents and return as a list of key values
+        """
 
         with open(statistics_file, 'r') as statistics_fd:
             for line in statistics_fd:
@@ -2173,11 +2050,9 @@ class PlotProcessor(ProductProcessor):
                 yield parts
 
     def get_sensor_string_from_filename(self, filename):
-        '''
-        Description:
-          Determine the year, month, day_of_month, and sensor from the
-          scene name.
-        '''
+        """Determine the year, month, day_of_month, and sensor from the
+           scene name
+        """
 
         sensor_name = sensor.info(filename).sensor_name
         sensor_string = sensor_name
@@ -2186,19 +2061,17 @@ class PlotProcessor(ProductProcessor):
             # We plot both TIRS bands in the thermal plot so they need to
             # be separatly identified
             if 'toa_band10' in filename:
-                sensor_string = '{0}-TIRS1'.format(sensor_name)
+                sensor_string = '{}-TIRS1'.format(sensor_name)
             elif 'toa_band11' in filename:
-                sensor_string = '{0}-TIRS2'.format(sensor_name)
+                sensor_string = '{}-TIRS2'.format(sensor_name)
         else:
             sensor_string = sensor_name
 
         return sensor_string
 
     def combine_sensor_stats(self, stats_name, stats_files):
-        '''
-        Description:
-          Combines all the stat files for one sensor into one csv file.
-        '''
+        """Combines all the stat files for one sensor into one csv file
+        """
 
         stats = dict()
 
@@ -2249,10 +2122,8 @@ class PlotProcessor(ProductProcessor):
             output_fd.write(data)
 
     def scale_data_to_range(self, in_high, in_low, out_high, out_low, data):
-        '''
-        Description:
-          Scale the values in the data array to the specified output range.
-        '''
+        """Scale the values in the data array to the specified output range
+        """
 
         # Figure out the ranges
         in_range = in_high - in_low
@@ -2261,18 +2132,15 @@ class PlotProcessor(ProductProcessor):
         return out_high - ((out_range * (in_high - data)) / in_range)
 
     def generate_plot(self, plot_name, subjects, band_type, stats,
-                      plot_type="Value"):
-        '''
-        Description:
-          Builds a plot and then generates a png formatted image of the plot.
-        '''
+                      plot_type='Value'):
+        """Builds a plot and then generates a png formatted image of the plot
+        """
 
         # Test for a valid plot_type parameter
         # For us 'Range' mean min, max, and mean
         if plot_type not in ('Range', 'Value'):
-            error = ("Error plot_type='%s' must be one of ('Range', 'Value')"
-                     % plot_type)
-            raise ValueError(error)
+            raise ValueError('Error plot_type={} must be one of'
+                             ' (Range, Value)'.format(plot_type))
 
         # Create the subplot objects
         fig = mpl_plot.figure()
@@ -2288,12 +2156,12 @@ class PlotProcessor(ProductProcessor):
             if band_type.startswith(range_type):
                 use_data_range = range_type
                 break
-        self._logger.info("Using use_data_range [%s] for band_type [%s]"
-                          % (use_data_range, band_type))
+        self._logger.info('Using use_data_range [{}] for band_type [{1}]'
+                          .format(use_data_range, band_type))
 
         # Make sure the band_type has been coded (help the developer)
         if use_data_range == '':
-            raise ValueError("Error unable to determine 'use_data_range'")
+            raise ValueError('Error unable to determine [use_data_range]')
 
         data_max = self._band_type_data_ranges[use_data_range]['DATA_MAX']
         data_min = self._band_type_data_ranges[use_data_range]['DATA_MIN']
@@ -2318,7 +2186,7 @@ class PlotProcessor(ProductProcessor):
 
         sensor_dict = defaultdict(list)
 
-        if plot_type == "Range":
+        if plot_type == 'Range':
             lower_subject = 'mean'  # Since Range force to the mean
         else:
             lower_subject = subjects[0].lower()
@@ -2381,7 +2249,7 @@ class PlotProcessor(ProductProcessor):
                                                      stddev_values)
 
             # Draw the min to max line for these dates
-            if plot_type == "Range":
+            if plot_type == 'Range':
                 min_plot.vlines(dates, min_values, max_values,
                                 colors=self._sensor_colors[sensor_name],
                                 linestyles='solid', linewidths=1)
@@ -2497,7 +2365,7 @@ class PlotProcessor(ProductProcessor):
         # Configure the legend
         legend = mpl_plot.legend(proxy_artists, sorted_sensors,
                                  bbox_to_anchor=(0.0, 1.01, 1.0, 0.5),
-                                 loc=3, ncol=6, mode="expand",
+                                 loc=3, ncol=6, mode='expand',
                                  borderaxespad=0.0, numpoints=1,
                                  prop={'size': 12})
 
@@ -2522,11 +2390,9 @@ class PlotProcessor(ProductProcessor):
         mpl_plot.close()
 
     def generate_plots(self, plot_name, stats_files, band_type):
-        '''
-        Description:
-          Gather all the information needed for plotting from the files and
-          generate a plot for each statistic
-        '''
+        """Gather all the information needed for plotting from the files and
+           generate a plot for each statistic
+        """
 
         stats = dict()
 
@@ -2538,19 +2404,20 @@ class PlotProcessor(ProductProcessor):
                      in self.read_statistics(stats_file))
             if stats[stats_file]['valid'] == 'no':
                 # Remove it so we do not have it in the plot
-                self._logger.warning("[%s] Data is not valid:"
-                                     " Will not be used for plot generation"
-                                     % stats_file)
+                self._logger.warning('[{}] Data is not valid:'
+                                     ' Will not be used for plot generation'
+                                     .format(stats_file))
                 del stats[stats_file]
 
         # Check if we have enough stuff to plot or not
         if len(stats) < 2:
-            self._logger.warning("Not enough points to plot [%s]"
-                                 " skipping plotting" % plot_name)
+            self._logger.warning('Not enough points to plot [{}]'
+                                 ' skipping plotting'.format(plot_name))
             return
 
         plot_subjects = ['Minimum', 'Maximum', 'Mean']
-        self.generate_plot(plot_name, plot_subjects, band_type, stats, "Range")
+        self.generate_plot(plot_name, plot_subjects, band_type, stats,
+                           'Range')
 
         plot_subjects = ['Minimum']
         self.generate_plot(plot_name, plot_subjects, band_type, stats)
@@ -2565,13 +2432,13 @@ class PlotProcessor(ProductProcessor):
         self.generate_plot(plot_name, plot_subjects, band_type, stats)
 
     def process_band_type(self, (search_list, band_type)):
-        '''
-        Description:
-          A generic processing routine which finds the files to process based
-          on the provided search criteria.  Utilizes the provided band type as
-          part of the plot names and filenames.  If no files are found, no
-          plots or combined statistics will be generated.
-        '''
+        """A generic processing routine which finds the files to process based
+           on the provided search criteria
+
+        Utilizes the provided band type as part of the plot names and
+        filenames.  If no files are found, no plots or combined statistics
+        will be generated.
+        """
 
         multi_sensor_files = list()
         single_sensor_name = ''
@@ -2595,7 +2462,7 @@ class PlotProcessor(ProductProcessor):
         # We always use the multi sensor variable here because it will only
         # have the single sensor in it, if that is the case
         if sensor_count > 1:
-            self.generate_plots("Multi Sensor %s" % band_type,
+            self.generate_plots('Multi Sensor {}'.format(band_type),
                                 multi_sensor_files, band_type)
         elif sensor_count == 1 and len(multi_sensor_files) > 1:
             self.generate_plots(' '.join([single_sensor_name, band_type]),
@@ -2611,11 +2478,10 @@ class PlotProcessor(ProductProcessor):
         del multi_sensor_files
 
     def process_stats(self):
-        '''
-        Description:
-          Process the stat results to plots.  If any bands/files do not exist,
-          plots will not be generated for them.
-        '''
+        """Process the stat results to plots
+
+        If any bands/files do not exist, plots will not be generated for them.
+        """
 
         # Change to the working directory
         current_directory = os.getcwd()
@@ -2629,20 +2495,16 @@ class PlotProcessor(ProductProcessor):
             os.chdir(current_directory)
 
     def stage_input_data(self):
-        '''
-        Description:
-            Stages the input data required for the processor.
-        '''
+        """Stages the input data required for the processor
+        """
 
         staging.stage_statistics_data(self._output_dir, self._stage_dir,
                                       self._work_dir, self._parms)
 
     def get_product_name(self):
-        '''
-        Description:
-            Return the product name for that statistics and plot product from
-            the product request information.
-        '''
+        """Return the product name for that statistics and plot product from
+           the product request information
+        """
 
         if self._product_name is None:
             self._product_name = '-'.join([self._parms['orderid'],
@@ -2651,11 +2513,9 @@ class PlotProcessor(ProductProcessor):
         return self._product_name
 
     def process_product(self):
-        '''
-        Description:
-            Perform the processor specific processing to generate the
-            requested product.
-        '''
+        """Perform the processor specific processing to generate the
+           requested product
+        """
 
         # Stage the required input data
         self.stage_input_data()
@@ -2672,11 +2532,9 @@ class PlotProcessor(ProductProcessor):
 
 # ===========================================================================
 def get_instance(parms):
-    '''
-    Description:
-        Provides a method to retrieve the proper processor for the specified
-        product.
-    '''
+    """Provides a method to retrieve the proper processor for the specified
+       product.
+    """
 
     product_id = parms['product_id']
 
@@ -2698,8 +2556,8 @@ def get_instance(parms):
     elif sensor.is_lo8(product_id):
         return LandsatOLIProcessor(parms)
     elif sensor.is_lt8(product_id):
-        msg = "A processor for [%s] has not been implemented" % product_id
-        raise NotImplementedError(msg)
+        raise NotImplementedError('A processor for [{}] has not been'
+                                  ' implemented'.format(product_id))
     elif sensor.is_lc8(product_id):
         return LandsatOLITIRSProcessor(parms)
     elif sensor.is_terra(product_id):
@@ -2707,5 +2565,5 @@ def get_instance(parms):
     elif sensor.is_aqua(product_id):
         return ModisAQUAProcessor(parms)
     else:
-        msg = "A processor for [%s] has not been implemented" % product_id
-        raise NotImplementedError(msg)
+        raise NotImplementedError('A processor for [{}] has not been'
+                                  ' implemented'.format(product_id))
