@@ -33,13 +33,12 @@ MAPPER_LOG_FILENAME = '.'.join([MAPPER_LOG_PREFIX, 'log'])
 
 
 def set_product_error(server, order_id, product_id, processing_location):
-    '''
-    Description:
-        Call the xmlrpc server routine to set a product request to error.
-        Provides a sleep retry implementation to hopefully by-pass any errors
-        encountered, so that we do not get requests that have failed, but
-        show a status of processing.
-    '''
+    """Call the xmlrpc server routine to set a product request to error
+
+    Provides a sleep retry implementation to hopefully by-pass any errors
+    encountered, so that we do not get requests that have failed, but
+    show a status of processing.
+    """
 
     if server is not None:
         logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
@@ -145,13 +144,13 @@ def archive_log_files(order_id, product_id):
 
 
 def process(developer_sleep_mode=False):
-    '''
-    Description:
-      Read all lines from STDIN and process them.  Each line is converted to
-      a JSON dictionary of the parameters for processing.  Validation is
-      performed on the JSON dictionary to test if valid for this mapper.
-      After validation the generation of the products is performed.
-    '''
+    """Read all lines from STDIN and process them
+
+    Each line is converted to a JSON dictionary of the parameters for
+    processing.  Validation is performed on the JSON dictionary to test if
+    valid for this mapper.  After validation the generation of the products
+    is performed.
+    """
 
     # Initially set to the base logger
     logger = EspaLogging.get_logger('base')
@@ -307,10 +306,8 @@ def process(developer_sleep_mode=False):
 
 
 if __name__ == '__main__':
-    '''
-    Description:
-        Some parameter and logging setup, then call the process routine.
-    '''
+    """Some parameter and logging setup, then call the process routine
+    """
 
     # Create a command line argument parser
     description = 'Main mapper for a request'
