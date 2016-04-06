@@ -48,19 +48,10 @@ def set_product_error(server, order_id, product_id, processing_location):
         sleep_seconds = settings.DEFAULT_SLEEP_SECONDS
         while True:
             try:
-                if product_id is None:
-                    logger.info("DEBUG: Product ID is [None]")
-                else:
-                    logger.info("DEBUG: Product ID is [%s]" % product_id)
-                if order_id is None:
-                    logger.info("DEBUG: Order ID is [None]")
-                else:
-                    logger.info("DEBUG: Order ID is [%s]" % order_id)
-                if processing_location is None:
-                    logger.info("DEBUG: Processing Location is [None]")
-                else:
-                    logger.info("DEBUG: Processing Location is [%s]"
-                                % processing_location)
+                logger.info('Product ID is [{}]'.format(product_id))
+                logger.info('Order ID is [{}]'.format(order_id))
+                logger.info('Processing Location is [{}]'
+                            .format(processing_location))
 
                 logged_contents = \
                     EspaLogging.read_logger_file(settings.PROCESSING_LOGGER)
@@ -70,16 +61,16 @@ def set_product_error(server, order_id, product_id, processing_location):
                                                 logged_contents)
 
                 if not status:
-                    logger.critical("Failed processing xmlrpc call to"
-                                    " set_scene_error")
+                    logger.critical('Failed processing xmlrpc call to'
+                                    ' set_scene_error')
                     return False
 
                 break
 
             except Exception:
-                logger.critical("Failed processing xmlrpc call to"
-                                " set_scene_error")
-                logger.exception("Exception encountered and follows")
+                logger.critical('Failed processing xmlrpc call to'
+                                ' set_scene_error')
+                logger.exception('Exception encountered and follows')
 
                 if attempt < settings.MAX_SET_SCENE_ERROR_ATTEMPTS:
                     sleep(sleep_seconds)  # sleep before trying again
@@ -150,7 +141,7 @@ def archive_log_files(order_id, product_id):
     except Exception:
         # We don't care because we are at the end of processing
         # And if we are on the successful path, we don't care either
-        logger.exception("Exception encountered and follows")
+        logger.exception('Exception encountered and follows')
 
 
 def process(developer_sleep_mode=False):
@@ -172,11 +163,11 @@ def process(developer_sleep_mode=False):
         if not line or len(line) < 1 or not line.strip().find('{') > -1:
             # this is how the nlineinputformat is supplying values:
             # 341104        {"orderid":
-            # logger.info("BAD LINE:%s##" % line)
+            # logger.info('BAD LINE:{}##'.format(line))
             continue
         else:
             # take the entry starting at the first opening parenth to the end
-            line = line[line.find("{"):]
+            line = line[line.find('{'):]
             line = line.strip()
 
         # Reset these for each line
@@ -192,7 +183,7 @@ def process(developer_sleep_mode=False):
             parms = json.loads(line)
 
             if not parameters.test_for_parameter(parms, 'options'):
-                raise ValueError("Error missing JSON 'options' record")
+                raise ValueError('Error missing JSON [options] record')
 
             # TODO scene will be replaced with product_id someday
             (order_id, product_id, product_type, options) = \
@@ -224,7 +215,7 @@ def process(developer_sleep_mode=False):
                                   product=product_id, debug=debug)
             logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
 
-            logger.info("Processing %s:%s" % (order_id, product_id))
+            logger.info('Processing {}:{}'.format(order_id, product_id))
 
             # Update the status in the database
             if parameters.test_for_parameter(parms, 'xmlrpcurl'):
@@ -236,8 +227,8 @@ def process(developer_sleep_mode=False):
                                                       processing_location,
                                                       'processing')
                         if not status:
-                            logger.warning("Failed processing xmlrpc call"
-                                           " to update_status to processing")
+                            logger.warning('Failed processing xmlrpc call'
+                                           ' to update_status to processing')
 
             if product_id != 'plot':
                 # Make sure we can process the sensor
@@ -246,15 +237,15 @@ def process(developer_sleep_mode=False):
 
                 # Make sure we have a valid output format
                 if not parameters.test_for_parameter(options, 'output_format'):
-                    logger.warning("'output_format' parameter missing"
-                                   " defaulting to envi")
+                    logger.warning('[output_format] parameter missing'
+                                   ' defaulting to envi')
                     options['output_format'] = 'envi'
 
                 if (options['output_format']
                         not in parameters.VALID_OUTPUT_FORMATS):
 
-                    raise ValueError("Invalid Output format %s"
-                                     % options['output_format'])
+                    raise ValueError('Invalid Output format {}'
+                                     .format(options['output_format']))
 
             # ----------------------------------------------------------------
             # NOTE: The first thing the product processor does during
@@ -285,15 +276,16 @@ def process(developer_sleep_mode=False):
                 status = server.mark_scene_complete(product_id, order_id,
                                                     processing_location,
                                                     destination_product_file,
-                                                    destination_cksum_file, "")
+                                                    destination_cksum_file,
+                                                    '')
                 if not status:
-                    logger.warning("Failed processing xmlrpc call to"
-                                   " mark_scene_complete")
+                    logger.warning('Failed processing xmlrpc call to'
+                                   ' mark_scene_complete')
 
         except Exception as excep:
 
             # First log the exception
-            logger.exception("Exception encountered stacktrace follows")
+            logger.exception('Exception encountered stacktrace follows')
 
             # Sleep the number of seconds for minimum request duration
             sleep(get_sleep_duration(start_time, dont_sleep))
@@ -307,8 +299,8 @@ def process(developer_sleep_mode=False):
                                                product_id,
                                                processing_location)
                 except Exception:
-                    logger.exception("Exception encountered stacktrace"
-                                     " follows")
+                    logger.exception('Exception encountered stacktrace'
+                                     ' follows')
         finally:
             # Reset back to the base logger
             logger = EspaLogging.get_logger('base')
@@ -342,6 +334,6 @@ if __name__ == '__main__':
 
         process(developer_sleep_mode)
     except Exception:
-        logger.exception("Processing failed stacktrace follows")
+        logger.exception('Processing failed stacktrace follows')
 
     sys.exit(0)
