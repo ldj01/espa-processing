@@ -305,7 +305,7 @@ def process(developer_sleep_mode=False):
             logger = EspaLogging.get_logger('base')
 
 
-if __name__ == '__main__':
+def main():
     """Some parameter and logging setup, then call the process routine
     """
 
@@ -333,4 +333,6 @@ if __name__ == '__main__':
     except Exception:
         logger.exception('Processing failed stacktrace follows')
 
-    sys.exit(0)
+
+if __name__ == '__main__':
+    main()
