@@ -2156,7 +2156,7 @@ class PlotProcessor(ProductProcessor):
             if band_type.startswith(range_type):
                 use_data_range = range_type
                 break
-        self._logger.info('Using use_data_range [{}] for band_type [{1}]'
+        self._logger.info('Using use_data_range [{}] for band_type [{}]'
                           .format(use_data_range, band_type))
 
         # Make sure the band_type has been coded (help the developer)
