@@ -153,7 +153,7 @@ def archive_log_files(order_id, product_id):
         logger.exception("Exception encountered and follows")
 
 
-def process(args):
+def process():
     '''
     Description:
       Read all lines from STDIN and process them.  Each line is converted to
@@ -181,9 +181,6 @@ def process(args):
 
         # Reset these for each line
         (server, order_id, product_id) = (None, None, None)
-
-        # Default to the command line value
-        mapper_keep_log = args.keep_log
 
         start_time = datetime.datetime.now()
 
@@ -217,13 +214,6 @@ def process(args):
             EspaLogging.configure(settings.PROCESSING_LOGGER, order=order_id,
                                   product=product_id, debug=debug)
             logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
-
-            # If the command line option is True don't use the scene option
-            if not mapper_keep_log:
-                if not parameters.test_for_parameter(options, 'keep_log'):
-                    options['keep_log'] = False
-
-                mapper_keep_log = options['keep_log']
 
             logger.info("Processing %s:%s" % (order_id, product_id))
 
@@ -273,7 +263,7 @@ def process(args):
 
             finally:
                 # Free disk space to be nice to the whole system.
-                if not mapper_keep_log and pp is not None:
+                if pp is not None:
                     pp.remove_product_directory()
 
             # Sleep the number of seconds for minimum request duration
@@ -321,19 +311,12 @@ if __name__ == '__main__':
         Some parameter and logging setup, then call the process routine.
     '''
 
-    # Grab our only command line parameter
-    parser = ArgumentParser(
-        description="Processes a list of scenes from stdin")
-    parser.add_argument('--keep-log', action='store_true', dest='keep_log',
-                        default=False, help="keep the generated log file")
-    args = parser.parse_args()
-
     EspaLogging.configure_base_logger(filename=MAPPER_LOG_FILENAME)
     # Initially set to the base logger
     logger = EspaLogging.get_logger('base')
 
     try:
-        process(args)
+        process()
     except Exception:
         logger.exception("Processing failed stacktrace follows")
 
