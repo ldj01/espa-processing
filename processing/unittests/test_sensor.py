@@ -36,11 +36,39 @@ class TestSensor(unittest.TestCase):
         self.assertTrue(method(self.terra_product_id))
         self.assertFalse(method(self.aqua_product_id))
 
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
+        self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
+        self.assertFalse(method(self.lt4_product_id))
+        self.assertFalse(method(self.lt5_product_id))
+        self.assertFalse(method(self.le7_product_id))
+        self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
+
     def test_is_aqua(self):
         method = sensor.is_aqua
 
         self.assertTrue(method(self.aqua_product_id))
         self.assertFalse(method(self.terra_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
+        self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
+        self.assertFalse(method(self.lt4_product_id))
+        self.assertFalse(method(self.lt5_product_id))
+        self.assertFalse(method(self.le7_product_id))
+        self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
 
     def test_is_modis(self):
         method = sensor.is_modis
@@ -65,82 +93,252 @@ class TestSensor(unittest.TestCase):
     def test_is_lt4(self):
         method = sensor.is_lt4
 
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
+        self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
         self.assertTrue(method(self.lt4_product_id))
         self.assertFalse(method(self.lt5_product_id))
+        self.assertFalse(method(self.le7_product_id))
+        self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
 
     def test_is_lt5(self):
         method = sensor.is_lt5
 
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
+        self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
+        self.assertFalse(method(self.lt4_product_id))
         self.assertTrue(method(self.lt5_product_id))
         self.assertFalse(method(self.le7_product_id))
+        self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
 
     def test_is_le7(self):
         method = sensor.is_le7
 
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
+        self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
+        self.assertFalse(method(self.lt4_product_id))
+        self.assertFalse(method(self.lt5_product_id))
         self.assertTrue(method(self.le7_product_id))
         self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
 
     def test_is_lc8(self):
         method = sensor.is_lc8
 
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
+        self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
+        self.assertFalse(method(self.lt4_product_id))
+        self.assertFalse(method(self.lt5_product_id))
+        self.assertFalse(method(self.le7_product_id))
         self.assertTrue(method(self.lc8_product_id))
         self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
 
     def test_is_lt8(self):
         method = sensor.is_lt8
 
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
+        self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
+        self.assertFalse(method(self.lt4_product_id))
+        self.assertFalse(method(self.lt5_product_id))
+        self.assertFalse(method(self.le7_product_id))
+        self.assertFalse(method(self.lc8_product_id))
         self.assertTrue(method(self.lt8_product_id))
         self.assertFalse(method(self.lo8_product_id))
 
     def test_is_lo8(self):
         method = sensor.is_lo8
 
-        self.assertTrue(method(self.lo8_product_id))
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
+        self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
         self.assertFalse(method(self.lt4_product_id))
+        self.assertFalse(method(self.lt5_product_id))
+        self.assertFalse(method(self.le7_product_id))
+        self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertTrue(method(self.lo8_product_id))
 
     def test_is_lt04(self):
         method = sensor.is_lt04
 
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
         self.assertTrue(method(self.lt04_product_id))
         self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
+        self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
+        self.assertFalse(method(self.lt4_product_id))
+        self.assertFalse(method(self.lt5_product_id))
+        self.assertFalse(method(self.le7_product_id))
+        self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
 
     def test_is_lt05(self):
         method = sensor.is_lt05
 
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
         self.assertTrue(method(self.lt05_product_id))
         self.assertFalse(method(self.le07_product_id))
+        self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
+        self.assertFalse(method(self.lt4_product_id))
+        self.assertFalse(method(self.lt5_product_id))
+        self.assertFalse(method(self.le7_product_id))
+        self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
 
     def test_is_le07(self):
         method = sensor.is_le07
 
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
         self.assertTrue(method(self.le07_product_id))
         self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
+        self.assertFalse(method(self.lt4_product_id))
+        self.assertFalse(method(self.lt5_product_id))
+        self.assertFalse(method(self.le7_product_id))
+        self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
 
     def test_is_lc08(self):
         method = sensor.is_lc08
 
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
         self.assertTrue(method(self.lc08_product_id))
         self.assertFalse(method(self.lt08_product_id))
+        self.assertFalse(method(self.lo08_product_id))
+
+        self.assertFalse(method(self.lt4_product_id))
+        self.assertFalse(method(self.lt5_product_id))
+        self.assertFalse(method(self.le7_product_id))
+        self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
 
     def test_is_lt08(self):
         method = sensor.is_lt08
 
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
+        self.assertFalse(method(self.lc08_product_id))
         self.assertTrue(method(self.lt08_product_id))
         self.assertFalse(method(self.lo08_product_id))
 
-    def test_is_lo08(self):
-        method = sensor.is_lo08
-
-        self.assertTrue(method(self.lo08_product_id))
-        self.assertFalse(method(self.lt04_product_id))
-
-    def test_is_landsat4(self):
-        method = sensor.is_landsat4
-
+        self.assertFalse(method(self.lt4_product_id))
+        self.assertFalse(method(self.lt5_product_id))
+        self.assertFalse(method(self.le7_product_id))
         self.assertFalse(method(self.lc8_product_id))
         self.assertFalse(method(self.lt8_product_id))
         self.assertFalse(method(self.lo8_product_id))
 
+    def test_is_lo08(self):
+        method = sensor.is_lo08
+
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
+        self.assertFalse(method(self.lc08_product_id))
+        self.assertFalse(method(self.lt08_product_id))
+        self.assertTrue(method(self.lo08_product_id))
+
+        self.assertFalse(method(self.lt4_product_id))
+        self.assertFalse(method(self.lt5_product_id))
+        self.assertFalse(method(self.le7_product_id))
+        self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
+
+    def test_is_landsat4(self):
+        method = sensor.is_landsat4
+
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertTrue(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
         self.assertFalse(method(self.lc08_product_id))
         self.assertFalse(method(self.lt08_product_id))
         self.assertFalse(method(self.lo08_product_id))
@@ -148,18 +346,19 @@ class TestSensor(unittest.TestCase):
         self.assertTrue(method(self.lt4_product_id))
         self.assertFalse(method(self.lt5_product_id))
         self.assertFalse(method(self.le7_product_id))
-
-        self.assertTrue(method(self.lt04_product_id))
-        self.assertFalse(method(self.lt05_product_id))
-        self.assertFalse(method(self.le07_product_id))
-
-    def test_is_landsat5(self):
-        method = sensor.is_landsat5
-
         self.assertFalse(method(self.lc8_product_id))
         self.assertFalse(method(self.lt8_product_id))
         self.assertFalse(method(self.lo8_product_id))
 
+    def test_is_landsat5(self):
+        method = sensor.is_landsat5
+
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertTrue(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
         self.assertFalse(method(self.lc08_product_id))
         self.assertFalse(method(self.lt08_product_id))
         self.assertFalse(method(self.lo08_product_id))
@@ -167,18 +366,19 @@ class TestSensor(unittest.TestCase):
         self.assertFalse(method(self.lt4_product_id))
         self.assertTrue(method(self.lt5_product_id))
         self.assertFalse(method(self.le7_product_id))
-
-        self.assertFalse(method(self.lt04_product_id))
-        self.assertTrue(method(self.lt05_product_id))
-        self.assertFalse(method(self.le07_product_id))
-
-    def test_is_landsat7(self):
-        method = sensor.is_landsat7
-
         self.assertFalse(method(self.lc8_product_id))
         self.assertFalse(method(self.lt8_product_id))
         self.assertFalse(method(self.lo8_product_id))
 
+    def test_is_landsat7(self):
+        method = sensor.is_landsat7
+
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertTrue(method(self.le07_product_id))
         self.assertFalse(method(self.lc08_product_id))
         self.assertFalse(method(self.lt08_product_id))
         self.assertFalse(method(self.lo08_product_id))
@@ -186,18 +386,19 @@ class TestSensor(unittest.TestCase):
         self.assertFalse(method(self.lt4_product_id))
         self.assertFalse(method(self.lt5_product_id))
         self.assertTrue(method(self.le7_product_id))
-
-        self.assertFalse(method(self.lt04_product_id))
-        self.assertFalse(method(self.lt05_product_id))
-        self.assertTrue(method(self.le07_product_id))
+        self.assertFalse(method(self.lc8_product_id))
+        self.assertFalse(method(self.lt8_product_id))
+        self.assertFalse(method(self.lo8_product_id))
 
     def test_is_landsat8(self):
         method = sensor.is_landsat8
 
-        self.assertTrue(method(self.lc8_product_id))
-        self.assertTrue(method(self.lt8_product_id))
-        self.assertTrue(method(self.lo8_product_id))
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
 
+        self.assertFalse(method(self.lt04_product_id))
+        self.assertFalse(method(self.lt05_product_id))
+        self.assertFalse(method(self.le07_product_id))
         self.assertTrue(method(self.lc08_product_id))
         self.assertTrue(method(self.lt08_product_id))
         self.assertTrue(method(self.lo08_product_id))
@@ -205,20 +406,16 @@ class TestSensor(unittest.TestCase):
         self.assertFalse(method(self.lt4_product_id))
         self.assertFalse(method(self.lt5_product_id))
         self.assertFalse(method(self.le7_product_id))
+        self.assertTrue(method(self.lc8_product_id))
+        self.assertTrue(method(self.lt8_product_id))
+        self.assertTrue(method(self.lo8_product_id))
 
-        self.assertFalse(method(self.lt04_product_id))
-        self.assertFalse(method(self.lt05_product_id))
-        self.assertFalse(method(self.le07_product_id))
 
     def test_is_landsat_historical(self):
         method = sensor.is_landsat_historical
 
-        self.assertTrue(method(self.lt4_product_id))
-        self.assertTrue(method(self.lt5_product_id))
-        self.assertTrue(method(self.le7_product_id))
-        self.assertTrue(method(self.lc8_product_id))
-        self.assertTrue(method(self.lt8_product_id))
-        self.assertTrue(method(self.lo8_product_id))
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
 
         self.assertFalse(method(self.lt04_product_id))
         self.assertFalse(method(self.lt05_product_id))
@@ -227,8 +424,18 @@ class TestSensor(unittest.TestCase):
         self.assertFalse(method(self.lt08_product_id))
         self.assertFalse(method(self.lo08_product_id))
 
+        self.assertTrue(method(self.lt4_product_id))
+        self.assertTrue(method(self.lt5_product_id))
+        self.assertTrue(method(self.le7_product_id))
+        self.assertTrue(method(self.lc8_product_id))
+        self.assertTrue(method(self.lt8_product_id))
+        self.assertTrue(method(self.lo8_product_id))
+
     def test_is_landsat_collection(self):
         method = sensor.is_landsat_collection
+
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
 
         self.assertTrue(method(self.lt04_product_id))
         self.assertTrue(method(self.lt05_product_id))
