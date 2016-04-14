@@ -22,12 +22,13 @@ import xmlrpclib
 import urllib
 from datetime import datetime
 from argparse import ArgumentParser
+from ConfigParser import ConfigParser
+from functools import partial
 
 
-import settings
-
-
-LOGGER_NAME 'espa.cron.ondemand'
+LOGGER_NAME = 'espa.cron.ondemand'
+CRON_CFG_FILENAME = 'cron.conf'
+PROC_CFG_FILENAME = 'processing.conf'
 
 
 def execute_cmd(cmd):
@@ -66,7 +67,129 @@ def execute_cmd(cmd):
     return output
 
 
-def process_requests(args, queue_priority, request_priority):
+def get_cfg_file_path(filename):
+    """Build the full path to the config file
+
+    Args:
+        filename (str): The name of the file to append to the full path.
+
+    Raises:
+        Exception(message)
+    """
+
+    # Use the users home directory as the base source directory for
+    # configuration
+    if 'HOME' not in os.environ:
+        raise Exception('[HOME] not found in environment')
+    home_dir = os.environ.get('HOME')
+
+    # Build the full path to the configuration file
+    config_path = os.path.join(home_dir, '.usgs', 'espa', filename)
+
+    return config_path
+
+
+def retrieve_cron_cfg():
+    """Retrieve the configuration for the cron
+
+    Returns:
+        cfg (ConfigParser): Configuration for ESPA cron.
+
+    Raises:
+        Exception(message)
+    """
+
+    # Build the full path to the configuration file
+    config_path = get_cfg_file_path(CRON_CFG_FILENAME)
+
+    if not os.path.isfile(config_path):
+        raise Exception('Missing configuration file [{}]'.format(config_path))
+
+    # Create the object and load the configuration
+    cfg = ConfigParser()
+    cfg.read(config_path)
+
+    return cfg
+
+
+def retrieve_proc_cfg():
+    """Retrieve the configuration for the processing code
+
+    Returns:
+        cfg (ConfigParser): Configuration for ESPA.
+
+    Raises:
+        Exception(message)
+    """
+
+    # Build the full path to the configuration file
+    config_path = get_cfg_file_path(PROC_CFG_FILENAME)
+
+    if not os.path.isfile(config_path):
+        raise Exception('Missing configuration file [{}]'.format(config_path))
+
+    # Create the object and load the configuration
+    cfg = ConfigParser()
+    cfg.read(config_path)
+
+    return cfg
+
+
+def queue_keys(cfg):
+    """Retrieve the sorted keys for the queue mapping
+
+    Args:
+        cfg (ConfigParser): Configuration for the ondemand cron.
+
+    Returns:
+        keys (list): A sorted list of the keys.
+    """
+
+    keys = [key for key, value in cfg.items('hadoop_queue_mapping')]
+
+    return sorted(keys)
+
+
+def get_queue_name(cfg, priority):
+    """Retrieve the queue name for priority
+
+    Args:
+        cfg (ConfigParser): Configuration for the ESPA cron.
+        priority (str): The priority of the queue to find.
+
+    Returns:
+        queue (str): The name of the queue for the priority.
+
+    Raises:
+        Exception(message)
+    """
+
+    for key, value in cfg.items('hadoop_queue_mapping'):
+        if key == priority:
+            return value
+
+    raise Exception('priority [{}] not found in configuration'
+                    .format(priority))
+
+
+def gen_cmdenv_from_cfg(cfg, section, option):
+    """Build a string suitable for the hadoop -cmdenv command line argument
+
+    Args:
+        cfg (ConfigParser): Configuration for the ESPA cron.
+        section (str): The section for the option to find.
+        option (str): The option to find.
+
+    Returns:
+        cmdenv (str): The command environment string required to setup the
+                      environment.
+    """
+
+    return '{}={}'.format(option.upper(), cfg.get(section, option))
+
+
+def process_requests(cron_cfg, proc_cfg, args,
+                     queue_priority, request_priority):
     """Retrieves and kicks off processes
 
     Queries the xmlrpc service to see if there are any requests that need
@@ -75,6 +198,8 @@ def process_requests(args, queue_priority, request_priority):
     for each request through the xmlrpc service."
 
     Args:
+        cron_cfg (ConfigParser): Configuration for ESPA cron.
+        proc_cfg (ConfigParser): Configuration for ESPA processing.
         args (struct): The arguments retireved from the command line.
         queue_priority (str): The queue to use or None.
         request_priority (str): The request to use or None.
@@ -91,7 +216,7 @@ def process_requests(args, queue_priority, request_priority):
 
     # check the number of hadoop jobs and don't do anything if they
     # are over a limit
-    job_limit = settings.HADOOP_MAX_JOBS
+    job_limit = cron_cfg.getint('hadoop', 'max_jobs')
     cmd = "hadoop job -list|awk '{print $1}'|grep -c job 2>/dev/null"
     try:
         job_count = execute_cmd(cmd)
@@ -143,10 +268,15 @@ def process_requests(args, queue_priority, request_priority):
     ondemand_enabled = server.get_configuration('system.ondemand_enabled')
 
     # Determine the appropriate hadoop queue to use
-    hadoop_job_queue = settings.HADOOP_QUEUE_MAPPING[queue_priority]
+    hadoop_job_queue = get_queue_name(cron_cfg, queue_priority)
 
     if not ondemand_enabled.lower() == 'true':
         raise Exception('on demand disabled... exiting')
+
+    # Create a partial function to reduce duplication in some of the
+    # following code
+    proc_cmdenv = partial(gen_cmdenv_from_cfg,
+                          cfg=proc_cfg, section='processing', option)
 
     try:
         logger.info('Checking for requests to process...')
@@ -215,7 +345,7 @@ def process_requests(args, queue_priority, request_priority):
             hadoop_run_command = \
                 [hadoop_executable, 'jar', jars_path,
                  '-D', ('mapred.task.timeout={0}'
-                        .format(settings.HADOOP_TIMEOUT)),
+                        .format(cron_cfg.getint('hadoop', 'timeout'))),
                  '-D', 'mapred.reduce.tasks=0',
                  '-D', 'mapred.job.queue.name={0}'.format(hadoop_job_queue),
                  '-D', 'mapred.job.name="{0}"'.format(job_name),
@@ -237,13 +367,26 @@ def process_requests(args, queue_priority, request_priority):
                  '-file', os.path.join(code_dir, 'utilities.py'),
                  '-file', os.path.join(code_dir, 'warp.py'),
                  '-file', os.path.join(common_dir, 'logger_factory.py'),
+                 '-file', get_cfg_file_path(PROC_CFG_FILENAME),
                  '-mapper', mapper_path,
-                 '-cmdenv', 'ESPA_WORK_DIR=$ESPA_WORK_DIR',
-                 '-cmdenv', 'HOME=$HOME',
-                 '-cmdenv', 'USER=$USER',
-                 '-cmdenv', 'LEDAPS_AUX_DIR=$LEDAPS_AUX_DIR',
-                 '-cmdenv', 'L8_AUX_DIR=$L8_AUX_DIR',
-                 '-cmdenv', 'ESUN=$ESUN',
+                 '-cmdenv', proc_cmdenv(option='espa_work_dir'),
+                 '-cmdenv', proc_cmdenv(option='espa_distribution_method'),
+                 '-cmdenv', proc_cmdenv(option='espa_distribution_dir'),
+                 '-cmdenv', proc_cmdenv(option='espa_schema'),
+                 '-cmdenv', proc_cmdenv(option='espa_land_mass_polygon'),
+                 '-cmdenv', proc_cmdenv(option='espa_xmlrpc'),
+                 '-cmdenv', proc_cmdenv(option='espa_cache_host_list'),
+                 '-cmdenv', proc_cmdenv(option='espa_elevation_dir'),
+                 '-cmdenv', proc_cmdenv(option='ias_data_dir'),
+                 '-cmdenv', proc_cmdenv(option='pythonpath'),
+                 '-cmdenv', proc_cmdenv(option='ledaps_aux_dir'),
+                 '-cmdenv', proc_cmdenv(option='l8_aux_dir'),
+                 '-cmdenv', proc_cmdenv(option='esun'),
+                 '-cmdenv', proc_cmdenv(option='lst_aux_dir'),
+                 '-cmdenv', proc_cmdenv(option='lst_data_dir'),
+                 '-cmdenv', proc_cmdenv(option='modtran_path'),
+                 '-cmdenv', proc_cmdenv(option='modtran_data_dir'),
+                 '-cmdenv', proc_cmdenv(option='aster_ged_server_name'),
                  '-input', hdfs_target,
                  '-output', hdfs_target + '-out']
 
@@ -337,13 +480,16 @@ def process_requests(args, queue_priority, request_priority):
 def main():
     """Execute the core processing routine"""
 
+    cron_cfg = retrieve_cron_cfg()
+    proc_cfg = retrieve_proc_cfg()
+
     # Create a command line argument parser
     description = ('Builds and kicks-off hadoop jobs for the espa processing'
                    ' system (to process product requests)')
     parser = ArgumentParser(description=description)
 
     # Add parameters
-    valid_priorities = sorted(settings.HADOOP_QUEUE_MAPPING.keys())
+    valid_priorities = queue_keys(cron_cfg)
     valid_product_types = ['landsat', 'modis', 'plot']
 
     parser.add_argument('--priority',
@@ -381,9 +527,9 @@ def main():
         sys.exit(1)  # EXIT_FAILURE
 
     # Configure and get the logger for this task
-    logger_filename = '/tmp/espa-cron.log'
+    logger_filename = cron_cfg.get('logging', 'log_filename')
     if 'plot' in args.product_types:
-        logger_filename = '/tmp/espa-plot-cron.log'
+        logger_filename = cron_cfg.get('logging', 'plot_log_filename')
 
     logger_format = ('%(asctime)s.%(msecs)03d %(process)d'
                      ' %(levelname)-8s {0:>6}'
@@ -425,7 +571,8 @@ def main():
 
     # Setup and submit products to hadoop for processing
     try:
-        process_requests(args, queue_priority, request_priority)
+        process_requests(cron_cfg, proc_cfg, args,
+                         queue_priority, request_priority)
     except Exception:
         logger.exception('Processing failed')
         sys.exit(1)  # EXIT_FAILURE
