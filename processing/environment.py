@@ -45,7 +45,11 @@ class Environment(object):
              'base_work_directory': {'env_var': 'ESPA_WORK_DIR',
                                      'required': False,
                                      'valid_values': None,
-                                     'value': None}}
+                                     'value': None},
+             'cache_host_list': {'env_var': 'ESPA_CACHE_HOST_LIST',
+                                 'required': True,
+                                 'valid_values': None,
+                                 'value': None}}
 
         self.validate_environment()
 
@@ -89,3 +93,7 @@ class Environment(object):
     def get_base_work_directory(self):
         '''Returns the base working directory'''
         return self._keys['base_work_directory']['value']
+
+    def get_cache_host_list(self):
+        '''Returns the cache host list'''
+        return self._keys['cache_host_list']['value'].split(',')

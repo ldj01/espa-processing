@@ -34,10 +34,6 @@ MAX_DISTRIBUTION_ATTEMPTS = 5
 # Maximum number of times to attempt setting the scene error
 MAX_SET_SCENE_ERROR_ATTEMPTS = 5
 
-# List of hostnames to choose from for the access to the online cache
-# Runs over 10Gb line
-ESPA_CACHE_HOST_LIST = ['edclxs67p', 'edclxs140p']
-
 # Specify the checksum tool and filename extension
 ESPA_CHECKSUM_TOOL = 'md5sum'
 ESPA_CHECKSUM_EXTENSION = 'md5'

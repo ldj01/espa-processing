@@ -491,8 +491,10 @@ def distribute_product_remote(product_name, source_path, packaging_path,
 
     opts = parms['options']
 
+    env = Environment()
+
     # Determine the remote hostname to use
-    destination_host = utilities.get_cache_hostname()
+    destination_host = utilities.get_cache_hostname(env.get_cache_host_list())
 
     # Deliver the product files
     # Attempt X times sleeping between each attempt
@@ -681,8 +683,11 @@ def distribute_statistics(source_path, packaging_path, parms):
         distribute_statistics_local(product_id, source_path, package_path)
 
     else:  # remote
+        env = Environment()
+
         # Determine the remote hostname to use
-        destination_host = utilities.get_cache_hostname()
+        destination_host = utilities.get_cache_hostname(env
+                                                        .get_cache_host_list())
         # Use the remote cache path
         cache_path = os.path.join(settings.ESPA_REMOTE_CACHE_DIRECTORY,
                                   order_id)

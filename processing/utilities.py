@@ -12,9 +12,6 @@ import commands
 import random
 
 
-import settings
-
-
 def date_from_year_doy(year, doy):
     """Returns a python date object given a year and day of year
 
@@ -71,7 +68,7 @@ def execute_cmd(cmd):
     return output
 
 
-def get_cache_hostname():
+def get_cache_hostname(host_names):
     """Poor mans load balancer for accessing the online cache over the private
        network
 
@@ -82,7 +79,7 @@ def get_cache_hostname():
         Exception(message)
     """
 
-    host_list = settings.ESPA_CACHE_HOST_LIST
+    host_list = list(host_names)
 
     def check_host_status(hostname):
         """Check to see if the host is reachable
