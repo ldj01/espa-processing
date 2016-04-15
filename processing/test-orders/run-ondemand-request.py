@@ -13,12 +13,13 @@ import socket
 import logging
 import json
 from argparse import ArgumentParser
+from ConfigParser import ConfigParser
 
 import sensor
 import utilities
 
 
-MODIS_HOST = 'e4ftl01.cr.usgs.gov'
+DAAC_HOSTNAME = 'e4ftl01.cr.usgs.gov'
 
 
 def build_argument_parser():
@@ -227,7 +228,7 @@ def process_test_order(args, request_file, products_file, env_vars):
 
                     if sensor.is_modis(product_id):
                         download_url = ('http://{0}/{1}/{2}.hdf'
-                                        .format(MODIS_HOST, product_path,
+                                        .format(DAAC_HOSTNAME, product_path,
                                                 product_id))
 
                 sensor_name = 'plot'
@@ -278,6 +279,14 @@ def process_test_order(args, request_file, products_file, env_vars):
     return status
 
 
+def export_environment_variables(cfg):
+    """Export the configuration to environment variables
+    """
+
+    for key, value in cfg.items('processing'):
+        os.environ[key.upper()] = value
+
+
 def main():
     """Main code for executing a test order
     """
@@ -293,6 +302,12 @@ def main():
 
     # Build the command line argument parser
     parser = build_argument_parser()
+
+    # Load up the environment variables from the processing configuration
+    cfg = ConfigParser()
+    cfg.read('processing.conf')
+
+    export_environment_variables(cfg)
 
     env_vars = dict()
     env_vars = {'dev_data_dir': {'name': 'DEV_DATA_DIRECTORY',
