@@ -23,8 +23,10 @@ import urllib
 import commands
 from datetime import datetime
 from argparse import ArgumentParser
-from ConfigParser import ConfigParser
 from functools import partial
+
+
+from config_utils import get_cfg_file_path, retrieve_cfg
 
 
 LOGGER_NAME = 'espa.cron.ondemand'
@@ -66,74 +68,6 @@ def execute_cmd(cmd):
         raise Exception(message)
 
     return output
-
-
-def get_cfg_file_path(filename):
-    """Build the full path to the config file
-
-    Args:
-        filename (str): The name of the file to append to the full path.
-
-    Raises:
-        Exception(message)
-    """
-
-    # Use the users home directory as the base source directory for
-    # configuration
-    if 'HOME' not in os.environ:
-        raise Exception('[HOME] not found in environment')
-    home_dir = os.environ.get('HOME')
-
-    # Build the full path to the configuration file
-    config_path = os.path.join(home_dir, '.usgs', 'espa', filename)
-
-    return config_path
-
-
-def retrieve_cron_cfg():
-    """Retrieve the configuration for the cron
-
-    Returns:
-        cfg (ConfigParser): Configuration for ESPA cron.
-
-    Raises:
-        Exception(message)
-    """
-
-    # Build the full path to the configuration file
-    config_path = get_cfg_file_path(CRON_CFG_FILENAME)
-
-    if not os.path.isfile(config_path):
-        raise Exception('Missing configuration file [{}]'.format(config_path))
-
-    # Create the object and load the configuration
-    cfg = ConfigParser()
-    cfg.read(config_path)
-
-    return cfg
-
-
-def retrieve_proc_cfg():
-    """Retrieve the configuration for the processing code
-
-    Returns:
-        cfg (ConfigParser): Configuration for ESPA.
-
-    Raises:
-        Exception(message)
-    """
-
-    # Build the full path to the configuration file
-    config_path = get_cfg_file_path(PROC_CFG_FILENAME)
-
-    if not os.path.isfile(config_path):
-        raise Exception('Missing configuration file [{}]'.format(config_path))
-
-    # Create the object and load the configuration
-    cfg = ConfigParser()
-    cfg.read(config_path)
-
-    return cfg
 
 
 def queue_keys(cfg):
@@ -481,8 +415,8 @@ def process_requests(cron_cfg, proc_cfg, args,
 def main():
     """Execute the core processing routine"""
 
-    cron_cfg = retrieve_cron_cfg()
-    proc_cfg = retrieve_proc_cfg()
+    cron_cfg = retrieve_cfg(CRON_CFG_FILENAME)
+    proc_cfg = retrieve_cfg(PROC_CFG_FILENAME)
 
     # Create a command line argument parser
     description = ('Builds and kicks-off hadoop jobs for the espa processing'

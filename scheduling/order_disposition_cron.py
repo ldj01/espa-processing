@@ -18,11 +18,15 @@ import logging
 import xmlrpclib
 
 
+from config_utils import get_cfg_file_path, retrieve_cfg
+
+
 LOGGER_NAME = 'espa.cron.orderdisp'
-LOGGER_FILENAME = '/tmp/espa-order-disposition-cron.log'
+CRON_CFG_FILENAME = 'cron.conf'
+PROC_CFG_FILENAME = 'processing.conf'
 
 
-def determine_order_disposition():
+def determine_order_disposition(proc_cfg):
     """Accomplishes order dispossition tasks
 
       Interact with the web service to accomplish order dispossition tasks
@@ -33,7 +37,7 @@ def determine_order_disposition():
     # Get the logger for this task
     logger = logging.getLogger(LOGGER_NAME)
 
-    rpcurl = os.environ.get('ESPA_XMLRPC')
+    rpcurl = proc_cfg.get('processing', 'espa_xmlrpc')
     server = None
 
     # Create a server object if the rpcurl seems valid
@@ -43,7 +47,7 @@ def determine_order_disposition():
 
         server = xmlrpclib.ServerProxy(rpcurl)
     else:
-        raise Exception('Missing or invalid environment variable ESPA_XMLRPC')
+        raise Exception('Missing or invalid XMLRPC URL')
 
     # Verify xmlrpc server
     if server is None:
@@ -73,6 +77,12 @@ def determine_order_disposition():
 def main():
     """Execute the order disposition determination routine"""
 
+    cron_cfg = retrieve_cfg(CRON_CFG_FILENAME)
+    proc_cfg = retrieve_cfg(PROC_CFG_FILENAME)
+
+    # Configure and get the logger for this task
+    logger_filename = cron_cfg.get('logging', 'disposition_log_filename')
+
     # Configure and get the logger for this task
     logging.basicConfig(format=('%(asctime)s.%(msecs)03d %(process)d'
                                 ' %(levelname)-8s'
@@ -80,22 +90,12 @@ def main():
                                 '%(funcName)s -- %(message)s'),
                         datefmt='%Y-%m-%d %H:%M:%S',
                         level=logging.INFO,
-                        filename=LOGGER_FILENAME)
+                        filename=logger_filename)
 
     logger = logging.getLogger(LOGGER_NAME)
 
-    # Check required variables that this script should fail on if they are not
-    # defined
-    required_vars = ['ESPA_XMLRPC']
-    for env_var in required_vars:
-        if (env_var not in os.environ or os.environ.get(env_var) is None or
-                len(os.environ.get(env_var)) < 1):
-
-            logger.critical('${0} is not defined... exiting'.format(env_var))
-            sys.exit(1)  # EXIT_FAILURE
-
     try:
-        determine_order_disposition()
+        determine_order_disposition(proc_cfg)
     except Exception:
         logger.exception('Processing failed')
         sys.exit(1)  # EXIT_FAILURE
