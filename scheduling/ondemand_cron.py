@@ -233,7 +233,7 @@ def process_requests(cron_cfg, proc_cfg, args,
                     ' is below {0}'.format(job_limit))
         return
 
-    rpcurl = proc_cfg.get('processing', 'espa_xmlrpc'))),
+    rpcurl = proc_cfg.get('processing', 'espa_xmlrpc')
     server = None
 
     # Create a server object if the rpcurl seems valid
