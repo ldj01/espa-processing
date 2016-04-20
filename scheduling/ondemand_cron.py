@@ -20,6 +20,7 @@ import logging
 import json
 import xmlrpclib
 import urllib
+import commands
 from datetime import datetime
 from argparse import ArgumentParser
 from ConfigParser import ConfigParser
