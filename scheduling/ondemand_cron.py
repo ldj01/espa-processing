@@ -212,7 +212,7 @@ def process_requests(cron_cfg, proc_cfg, args,
     """
 
     # Get the logger for this task
-    logger = logging.get_logger(LOGGER_NAME)
+    logger = logging.getLogger(LOGGER_NAME)
 
     # check the number of hadoop jobs and don't do anything if they
     # are over a limit
@@ -276,7 +276,7 @@ def process_requests(cron_cfg, proc_cfg, args,
     # Create a partial function to reduce duplication in some of the
     # following code
     proc_cmdenv = partial(gen_cmdenv_from_cfg,
-                          cfg=proc_cfg, section='processing', option)
+                          cfg=proc_cfg, section='processing')
 
     try:
         logger.info('Checking for requests to process...')
@@ -542,7 +542,7 @@ def main():
                         level=logging.INFO,
                         filename=logger_filename)
 
-    logger = logging.get_logger(LOGGER_NAME)
+    logger = logging.getLogger(LOGGER_NAME)
 
     # Check required variables that this script should fail on if they are not
     # defined
