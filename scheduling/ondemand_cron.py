@@ -233,7 +233,7 @@ def process_requests(cron_cfg, proc_cfg, args,
                     ' is below {0}'.format(job_limit))
         return
 
-    rpcurl = os.environ.get('ESPA_XMLRPC')
+    rpcurl = proc_cfg.get('processing', 'espa_xmlrpc'))),
     server = None
 
     # Create a server object if the rpcurl seems valid
@@ -243,7 +243,7 @@ def process_requests(cron_cfg, proc_cfg, args,
 
         server = xmlrpclib.ServerProxy(rpcurl, allow_none=True)
     else:
-        raise Exception('Missing or invalid environment variable ESPA_XMLRPC')
+        raise Exception('Missing or invalid XMLRPC URL')
 
     home_dir = os.environ.get('HOME')
     hadoop_executable = os.path.join(home_dir, 'bin/hadoop/bin/hadoop')
@@ -543,17 +543,6 @@ def main():
                         filename=logger_filename)
 
     logger = logging.getLogger(LOGGER_NAME)
-
-    # Check required variables that this script should fail on if they are not
-    # defined
-    required_vars = ['ESPA_XMLRPC', 'ESPA_WORK_DIR', 'LEDAPS_AUX_DIR',
-                     'L8_AUX_DIR', 'PATH', 'HOME']
-    for env_var in required_vars:
-        if (env_var not in os.environ or os.environ.get(env_var) is None or
-                len(os.environ.get(env_var)) < 1):
-
-            logger.critical('${0} is not defined... exiting'.format(env_var))
-            sys.exit(1)  # EXIT_FAILURE
 
     # Determine the appropriate priority value to use for the queue and request
     queue_priority = args.priority.lower()
