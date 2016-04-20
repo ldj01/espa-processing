@@ -270,7 +270,6 @@ def process_requests(cron_cfg, proc_cfg, args,
                                      'hadoop-streaming*.jar')
 
             code_dir = os.path.join(home_dir, 'espa-site/processing')
-            common_dir = os.path.join(home_dir, 'espa-site/espa_common')
 
             # Specify the mapper application
             mapper_path = os.path.join(code_dir, 'ondemand_mapper.py')
@@ -290,18 +289,18 @@ def process_requests(cron_cfg, proc_cfg, args,
                  '-file', os.path.join(code_dir, 'distribution.py'),
                  '-file', os.path.join(code_dir, 'environment.py'),
                  '-file', os.path.join(code_dir, 'espa_exception.py'),
-                 '-file', os.path.join(code_dir, 'metadata.py'),
                  '-file', os.path.join(code_dir, 'initialization.py'),
+                 '-file', os.path.join(code_dir, 'landsat_metadata.py'),
+                 '-file', os.path.join(code_dir, 'logging_tools.py'),
                  '-file', os.path.join(code_dir, 'parameters.py'),
                  '-file', os.path.join(code_dir, 'processor.py'),
                  '-file', os.path.join(code_dir, 'sensor.py'),
+                 '-file', os.path.join(code_dir, 'settings.py'),
                  '-file', os.path.join(code_dir, 'staging.py'),
                  '-file', os.path.join(code_dir, 'statistics.py'),
-                 '-file', os.path.join(code_dir, 'settings.py'),
                  '-file', os.path.join(code_dir, 'transfer.py'),
                  '-file', os.path.join(code_dir, 'utilities.py'),
                  '-file', os.path.join(code_dir, 'warp.py'),
-                 '-file', os.path.join(common_dir, 'logger_factory.py'),
                  '-file', get_cfg_file_path(PROC_CFG_FILENAME),
                  '-mapper', mapper_path,
                  '-cmdenv', proc_cmdenv(option='espa_work_dir'),
