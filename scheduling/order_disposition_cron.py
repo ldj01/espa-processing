@@ -31,7 +31,7 @@ def determine_order_disposition():
     """
 
     # Get the logger for this task
-    logger = logging.get_logger(LOGGER_NAME)
+    logger = logging.getLogger(LOGGER_NAME)
 
     rpcurl = os.environ.get('ESPA_XMLRPC')
     server = None
@@ -82,7 +82,7 @@ def main():
                         level=logging.INFO,
                         filename=LOGGER_FILENAME)
 
-    logger = logging.get_logger(LOGGER_NAME)
+    logger = logging.getLogger(LOGGER_NAME)
 
     # Check required variables that this script should fail on if they are not
     # defined
