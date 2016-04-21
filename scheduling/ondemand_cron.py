@@ -277,8 +277,8 @@ def process_requests(cron_cfg, proc_cfg, args,
             # Define command line to execute the hadoop job
             # Be careful it is possible to have conflicts between module names
             #
-            # When Hadoop kicks off a job task, it doesn't set $HOME and $USER
-            # But one or both are required to be set for matplotlib
+            # When Hadoop kicks off a job task, it doesn't set $HOME
+            # However matplotlib requires it to be set
             hadoop_run_command = \
                 [hadoop_executable, 'jar', jars_path,
                  '-D', ('mapred.task.timeout={0}'
@@ -304,10 +304,8 @@ def process_requests(cron_cfg, proc_cfg, args,
                  '-file', os.path.join(code_dir, 'transfer.py'),
                  '-file', os.path.join(code_dir, 'utilities.py'),
                  '-file', os.path.join(code_dir, 'warp.py'),
-                 '-file', get_cfg_file_path(PROC_CFG_FILENAME),
                  '-mapper', mapper_path,
                  '-cmdenv', 'HOME=$HOME',
-                 '-cmdenv', 'USER=$USER',
                  '-cmdenv', proc_cmdenv(option='espa_work_dir'),
                  '-cmdenv', proc_cmdenv(option='espa_distribution_method'),
                  '-cmdenv', proc_cmdenv(option='espa_distribution_dir'),
