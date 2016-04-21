@@ -276,6 +276,9 @@ def process_requests(cron_cfg, proc_cfg, args,
 
             # Define command line to execute the hadoop job
             # Be careful it is possible to have conflicts between module names
+            #
+            # When Hadoop kicks off a job task, it doesn't set $HOME and $USER
+            # But one or both are required to be set for matplotlib
             hadoop_run_command = \
                 [hadoop_executable, 'jar', jars_path,
                  '-D', ('mapred.task.timeout={0}'
