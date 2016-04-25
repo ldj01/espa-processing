@@ -3,7 +3,7 @@
 '''
     FILE: ondemand_cron.py
 
-    PURPOSE: Master script for new Hadoop jobs.  Queries the xmlrpc
+    PURPOSE: Master script for new Hadoop jobs.  Queries the API
              service to find requests that need to be processed and
              builds/executes a Hadoop job to process them.
 
@@ -126,10 +126,10 @@ def process_requests(cron_cfg, proc_cfg, args,
                      queue_priority, request_priority):
     """Retrieves and kicks off processes
 
-    Queries the xmlrpc service to see if there are any requests that need
+    Queries the API service to see if there are any requests that need
     to be processed with the specified type, priority and/or user.  If there
     are, this method builds and executes a hadoop job and updates the status
-    for each request through the xmlrpc service."
+    for each request through the API service."
 
     Args:
         cron_cfg (ConfigParser): Configuration for ESPA cron.
@@ -182,7 +182,7 @@ def process_requests(cron_cfg, proc_cfg, args,
     home_dir = os.environ.get('HOME')
     hadoop_executable = os.path.join(home_dir, 'bin/hadoop/bin/hadoop')
 
-    # Verify xmlrpc server
+    # Verify API server
     if server is None:
         raise Exception('ESPA API did not respond... exiting')
 
@@ -310,7 +310,7 @@ def process_requests(cron_cfg, proc_cfg, args,
                  '-cmdenv', proc_cmdenv(option='espa_distribution_dir'),
                  '-cmdenv', proc_cmdenv(option='espa_schema'),
                  '-cmdenv', proc_cmdenv(option='espa_land_mass_polygon'),
-                 '-cmdenv', proc_cmdenv(option='espa_xmlrpc'),
+                 '-cmdenv', proc_cmdenv(option='espa_api'),
                  '-cmdenv', proc_cmdenv(option='espa_cache_host_list'),
                  '-cmdenv', proc_cmdenv(option='espa_elevation_dir'),
                  '-cmdenv', proc_cmdenv(option='ias_data_dir'),

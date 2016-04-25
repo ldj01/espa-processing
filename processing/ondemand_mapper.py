@@ -34,7 +34,7 @@ MAPPER_LOG_FILENAME = '.'.join([MAPPER_LOG_PREFIX, 'log'])
 
 
 def set_product_error(server, order_id, product_id, processing_location):
-    """Call the xmlrpc server routine to set a product request to error
+    """Call the API server routine to set a product request to error
 
     Provides a sleep retry implementation to hopefully by-pass any errors
     encountered, so that we do not get requests that have failed, but
@@ -68,7 +68,7 @@ def set_product_error(server, order_id, product_id, processing_location):
                 break
 
             except Exception:
-                logger.critical('Failed processing xmlrpc call to'
+                logger.critical('Failed processing API call to'
                                 ' set_scene_error')
                 logger.exception('Exception encountered and follows')
 
@@ -218,9 +218,9 @@ def process(developer_sleep_mode=False):
             logger.info('Processing {}:{}'.format(order_id, product_id))
 
             # Update the status in the database
-            if parameters.test_for_parameter(parms, 'ESPA_API'):
-                if parms['ESPA_API'] != 'skip_api':
-                    server = api_interface.api_connect(parms['ESPA_API'])
+            if parameters.test_for_parameter(parms, 'espa_api'):
+                if parms['espa_api'] != 'skip_api':
+                    server = api_interface.api_connect(parms['espa_api'])
                     if server is not None:
                         status = server.update_status(product_id, order_id,
                                                       processing_location,
