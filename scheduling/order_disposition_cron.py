@@ -37,7 +37,7 @@ def determine_order_disposition(proc_cfg):
     # Get the logger for this task
     logger = logging.getLogger(LOGGER_NAME)
 
-    rpcurl = proc_cfg.request('processing', 'ESPA_API')
+    rpcurl = proc_cfg.get('processing', 'ESPA_API')
     server = None
 
     # Create a server object if the rpcurl seems valid
