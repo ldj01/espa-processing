@@ -13,26 +13,24 @@ import socket
 import logging
 import json
 from argparse import ArgumentParser
+from ConfigParser import ConfigParser
 
 import sensor
 import utilities
 
 
-MODIS_HOST = 'e4ftl01.cr.usgs.gov'
+DAAC_HOSTNAME = 'e4ftl01.cr.usgs.gov'
 
 
 def build_argument_parser():
-    """Build the command line argument parser"""
+    """Build the command line argument parser
+    """
 
     # Create a command line argument parser
     description = 'Configures and executes a test order'
     parser = ArgumentParser(description=description)
 
     # Add parameters
-    parser.add_argument('--keep-log',
-                        action='store_true', dest='keep_log', default=False,
-                        help='keep the log file')
-
     parser.add_argument('--request',
                         action='store', dest='request', required=True,
                         help='request to process')
@@ -53,6 +51,16 @@ def build_argument_parser():
                         action='store_true', dest='post', default=False,
                         help='use a -POST order suffix')
 
+    parser.add_argument('--include_dswe',
+                        action='store_true', dest='include_dswe',
+                        default=False,
+                        help='include DSWE processing')
+
+    parser.add_argument('--include_lst',
+                        action='store_true', dest='include_lst',
+                        default=False,
+                        help='include LST processing')
+
     return parser
 
 
@@ -65,13 +73,22 @@ def get_satellite_sensor_code(product_id):
                           ID is prefixed on the filename.
     """
 
-    three_digit_prefixes = [LT4_SENSOR_CODE, LT5_SENSOR_CODE, LE7_SENSOR_CODE,
-                            LT8_SENSOR_CODE, LC8_SENSOR_CODE, LO8_SENSOR_CODE,
-                            TERRA_SENSOR_CODE, AQUA_SENSOR_CODE]
+    three_digit_prefixes = [sensor.LT4_SENSOR_CODE,
+                            sensor.LT5_SENSOR_CODE,
+                            sensor.LE7_SENSOR_CODE,
+                            sensor.LT8_SENSOR_CODE,
+                            sensor.LC8_SENSOR_CODE,
+                            sensor.LO8_SENSOR_CODE,
+                            sensor.TERRA_SENSOR_CODE,
+                            sensor.AQUA_SENSOR_CODE]
 
-    four_digit_prefixes = [LT04_SENSOR_CODE, LT05_SENSOR_CODE,
-                           LE07_SENSOR_CODE, LT08_SENSOR_CODE,
-                           LC08_SENSOR_CODE, LO08_SENSOR_CODE]
+    four_digit_prefixes = [sensor.LT04_SENSOR_CODE,
+                           sensor.LT05_SENSOR_CODE,
+                           sensor.LE07_SENSOR_CODE,
+                           sensor.LT08_SENSOR_CODE,
+                           sensor.LC08_SENSOR_CODE,
+                           sensor.LO08_SENSOR_CODE,
+                           'PLOT']
 
     # For older Landsat processing, and MODIS data, the Sensor Code is
     # the first 3 characters of the Scene ID
@@ -90,23 +107,21 @@ def get_satellite_sensor_code(product_id):
                               .format(product_id[0:3], product_id[0:4]))
 
 
-def process_test_order(request, request_file, products_file, env_vars,
-                       keep_log, plot, pre, post):
-    """Process the test order file"""
+def process_test_order(args, request_file, products_file, env_vars):
+    """Process the test order file
+    """
 
     logger = logging.getLogger(__name__)
 
     template_file = 'template.json'
     template_dict = None
 
-    tmp_order = 'tmp-test-order'
+    order_id = args.request
 
-    order_id = request
-
-    if pre:
+    if args.pre:
         order_id = ''.join([order_id, '-PRE'])
 
-    if post:
+    if args.post:
         order_id = ''.join([order_id, '-POST'])
 
     have_error = False
@@ -114,7 +129,7 @@ def process_test_order(request, request_file, products_file, env_vars,
     error_msg = ''
 
     products = list()
-    if not plot:
+    if not args.plot:
         with open(products_file, 'r') as scenes_fd:
             while (1):
                 product = scenes_fd.readline().strip()
@@ -138,6 +153,8 @@ def process_test_order(request, request_file, products_file, env_vars,
 
     for product_id in products:
         logger.info('Processing Product [{0}]'.format(product_id))
+
+        tmp_order = 'test-{0}-{1}'.format(order_id, product_id)
 
         with open(request_file, 'r') as request_fd:
             request_contents = request_fd.read()
@@ -173,7 +190,7 @@ def process_test_order(request, request_file, products_file, env_vars,
                 download_url = 'null'
 
                 # for plots
-                if not sensor.is_modis(product_id) and not plot:
+                if not sensor.is_modis(product_id) and not args.plot:
                     product_path = ('{0}/{1}/{2}{3}'
                                     .format(env_vars['dev_data_dir']['value'],
                                             sensor_code, product_id,
@@ -189,7 +206,7 @@ def process_test_order(request, request_file, products_file, env_vars,
 
                     download_url = 'file://{0}'.format(product_path)
 
-                elif not plot:
+                elif not args.plot:
                     if sensor.is_terra(product_id) == 'MOD':
                         base_source_path = '/MOLT'
                     else:
@@ -211,11 +228,11 @@ def process_test_order(request, request_file, products_file, env_vars,
 
                     if sensor.is_modis(product_id):
                         download_url = ('http://{0}/{1}/{2}.hdf'
-                                        .format(MODIS_HOST, product_path,
+                                        .format(DAAC_HOSTNAME, product_path,
                                                 product_id))
 
                 sensor_name = 'plot'
-                if not plot:
+                if not args.plot:
                     sensor_name = sensor.info(product_id).sensor_name
                     logger.info('Processing Sensor [{0}]'.format(sensor_name))
                 else:
@@ -240,19 +257,12 @@ def process_test_order(request, request_file, products_file, env_vars,
                 parms = json.loads(tmp_line)
                 print(json.dumps(parms, indent=4, sort_keys=True))
 
-            # END - with tmp_order
-        # END - with request_file
-
         if have_error:
             logger.error(error_msg)
             return False
 
-        keep_log_str = ''
-        if keep_log:
-            keep_log_str = '--keep-log'
-
-        cmd = ('cd ..; cat test-orders/{0} | ./ondemand_mapper.py {1}'
-               .format(tmp_order, keep_log_str))
+        cmd = ('cd ..; cat test-orders/{0} | ./ondemand_mapper.py --developer'
+               .format(tmp_order))
 
         output = ''
         try:
@@ -264,13 +274,22 @@ def process_test_order(request, request_file, products_file, env_vars,
             logger.exception('Processing failed')
             status = False
 
-    os.unlink(tmp_order)
+        os.unlink(tmp_order)
 
     return status
 
 
+def export_environment_variables(cfg):
+    """Export the configuration to environment variables
+    """
+
+    for key, value in cfg.items('processing'):
+        os.environ[key.upper()] = value
+
+
 def main():
-    """Main code for executing a test order"""
+    """Main code for executing a test order
+    """
 
     logging.basicConfig(format=('%(asctime)s.%(msecs)03d %(process)d'
                                 ' %(levelname)-8s'
@@ -283,6 +302,12 @@ def main():
 
     # Build the command line argument parser
     parser = build_argument_parser()
+
+    # Load up the environment variables from the processing configuration
+    cfg = ConfigParser()
+    cfg.read('processing.conf')
+
+    export_environment_variables(cfg)
 
     env_vars = dict()
     env_vars = {'dev_data_dir': {'name': 'DEV_DATA_DIRECTORY',
@@ -327,9 +352,7 @@ def main():
     # Avoid the creation of the *.pyc files
     os.environ['PYTHONDONTWRITEBYTECODE'] = '1'
 
-    if not process_test_order(args.request, request_file, products_file,
-                              env_vars, args.keep_log, args.plot, args.pre,
-                              args.post):
+    if not process_test_order(args, request_file, products_file, env_vars):
         logger.critical('Request [{0}] failed to process'
                         .format(args.request))
         sys.exit(1)  # EXIT_FAILURE

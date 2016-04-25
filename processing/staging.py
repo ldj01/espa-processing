@@ -69,7 +69,9 @@ def stage_remote_statistics_data(stage_dir, work_dir, order_id):
         Stages the statistics using scp from a remote location.
     '''
 
-    cache_host = utilities.get_cache_hostname()
+    env = Environment()
+
+    cache_host = utilities.get_cache_hostname(env.get_cache_host_list())
     cache_dir = os.path.join(settings.ESPA_REMOTE_CACHE_DIRECTORY, order_id)
     cache_dir = os.path.join(cache_dir, 'stats')
 

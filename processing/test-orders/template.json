@@ -27,7 +27,6 @@
         "include_statistics": false,
         "keep_directory": true,
         "keep_intermediate_data": false,
-        "keep_log": true,
         "latitude_true_scale": null,
         "longitude_pole": null,
         "maxx": null,

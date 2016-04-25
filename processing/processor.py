@@ -15,14 +15,17 @@ import json
 import datetime
 import copy
 from cStringIO import StringIO
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from matplotlib import pyplot as mpl_plot
 from matplotlib import dates as mpl_dates
 from matplotlib import lines as mpl_lines
 from matplotlib.ticker import MaxNLocator
 import numpy as np
 
-# local objects and methods
+
+from espa import Metadata
+
+
 import settings
 import utilities
 from logging_tools import EspaLogging
@@ -32,7 +35,6 @@ import sensor
 import initialization
 import parameters
 import landsat_metadata
-import metadata_api
 import warp
 import staging
 import statistics
@@ -41,25 +43,22 @@ import distribution
 
 
 class ProductProcessor(object):
-    '''
-    Description:
-        Provides the super class for all product request processing.  It
-        performs the tasks needed by all processors.
+    """Provides the super class for all product request processing
 
-        It initializes the logger object and keeps it around for all the
-        child-classes to use.
+    It performs the tasks needed by all processors.
 
-        It implements initialization of the order and product directory
-        structures.
+    It initializes the logger object and keeps it around for all the
+    child-classes to use.
 
-        It also implements the cleanup of the product directory.
-    '''
+    It implements initialization of the order and product directory
+    structures.
+
+    It also implements the cleanup of the product directory.
+    """
 
     def __init__(self, parms):
-        '''
-        Description:
-            Initialization for the object.
-        '''
+        """Initialization for the object.
+        """
 
         self._logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
 
@@ -67,14 +66,14 @@ class ProductProcessor(object):
         if isinstance(parms, dict):
             self._parms = parms
         else:
-            raise Exception('Input parameters was of type [{0}],'
+            raise Exception('Input parameters was of type [{}],'
                             ' where dict is required'.format(type(parms)))
 
         # Create an environment object (which also validates it)
         self._environment = Environment()
 
         # Log the distribution method that will be used
-        self._logger.info('Using distribution method [{0}]'.
+        self._logger.info('Using distribution method [{}]'.
                           format(self._environment.get_distribution_method()))
 
         # Validate the parameters
@@ -89,17 +88,15 @@ class ProductProcessor(object):
         self._output_dir = None
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for the processor.
-        '''
+        """Validates the parameters required for the processor
+        """
 
         # Test for presence of required top-level parameters
         keys = ['orderid', 'scene', 'product_type', 'options']
         for key in keys:
             if not parameters.test_for_parameter(self._parms, key):
-                raise RuntimeError("Missing required input parameter [%s]"
-                                   % key)
+                raise RuntimeError('Missing required input parameter [{}]'
+                                   .format(key))
 
         # Set the download URL to None if not provided
         if not parameters.test_for_parameter(self._parms, 'download_url'):
@@ -107,8 +104,8 @@ class ProductProcessor(object):
 
         # TODO - Remove this once we have converted
         if not parameters.test_for_parameter(self._parms, 'product_id'):
-            self._logger.warning("'product_id' parameter missing defaulting to"
-                                 " 'scene'")
+            self._logger.warning('[product_id] parameter missing defaulting'
+                                 ' to [scene]')
             self._parms['product_id'] = self._parms['scene']
 
         # Validate the options
@@ -130,10 +127,8 @@ class ProductProcessor(object):
             options['destination_pw'] = 'localhost'
 
     def log_order_parameters(self):
-        '''
-        Description:
-            Log the order parameters in json format.
-        '''
+        """Log the order parameters in json format
+        """
 
         # Override the usernames and passwords for logging
         parms = copy.deepcopy(self._parms)
@@ -142,25 +137,24 @@ class ProductProcessor(object):
         parms['options']['source_pw'] = 'XXXXXXX'
         parms['options']['destination_pw'] = 'XXXXXXX'
 
-        self._logger.info("MAPPER OPTION LINE %s"
-                          % json.dumps(parms, sort_keys=True))
+        self._logger.info('MAPPER OPTION LINE {}'
+                          .format(json.dumps(parms, sort_keys=True)))
 
         del parms
 
     def initialize_processing_directory(self):
-        '''
-        Description:
-            Initializes the processing directory.  Creates the following
-            directories.
+        """Initializes the processing directory
 
-            .../output
-            .../stage
-            .../work
+        Creates the following directories.
+
+           .../output
+           .../stage
+           .../work
 
         Note:
             order_id and product_id along with the ESPA_WORK_DIR environment
             variable provide the path to the processing locations.
-        '''
+        """
 
         product_id = self._parms['product_id']
         order_id = self._parms['orderid']
@@ -189,21 +183,19 @@ class ProductProcessor(object):
         # Create each of the sub-directories
         self._stage_dir = \
             initialization.create_stage_directory(self._product_dir)
-        self._logger.info("Created directory [{0}]".format(self._stage_dir))
+        self._logger.info('Created directory [{}]'.format(self._stage_dir))
 
         self._work_dir = \
             initialization.create_work_directory(self._product_dir)
-        self._logger.info("Created directory [{0}]".format(self._work_dir))
+        self._logger.info('Created directory [{}]'.format(self._work_dir))
 
         self._output_dir = \
             initialization.create_output_directory(self._product_dir)
-        self._logger.info("Created directory [{0}]".format(self._output_dir))
+        self._logger.info('Created directory [{}]'.format(self._output_dir))
 
     def remove_product_directory(self):
-        '''
-        Description:
-            Remove the product directory.
-        '''
+        """Remove the product directory
+        """
 
         options = self._parms['options']
 
@@ -215,25 +207,21 @@ class ProductProcessor(object):
             shutil.rmtree(self._product_dir, ignore_errors=True)
 
     def get_product_name(self):
-        '''
-        Description:
-            Build the product name from the product information and current
-            time.
+        """Build the product name from the product information and current
+           time
 
         Note:
             Not implemented here.
-        '''
+        """
 
-        msg = ("[%s] Requires implementation in the child class"
-               % self.get_product_name.__name__)
-        raise NotImplementedError(msg)
+        raise NotImplementedError('[{}] Requires implementation in the child'
+                                  ' class'.format(self.get_product_name
+                                                  .__name__))
 
     def distribute_product(self):
-        '''
-        Description:
-            Does both the packaging and distribution of the product using
-            the distribution module.
-        '''
+        """Does both the packaging and distribution of the product using
+           the distribution module
+        """
 
         product_name = self.get_product_name()
 
@@ -251,38 +239,35 @@ class ProductProcessor(object):
                                    ' the product')
             raise
 
-        self._logger.info("*** Product Delivery Complete ***")
+        self._logger.info('*** Product Delivery Complete ***')
 
         # Let the caller know where we put these on the destination system
         return (product_file, cksum_file)
 
     def process_product(self):
-        '''
-        Description:
-            Perform the processor specific processing to generate the
-            requested product.
+        """Perform the processor specific processing to generate the
+           requested product
 
         Note:
             Not implemented here.
 
         Note:
             Must return the destination product and cksum file names.
-        '''
+        """
 
-        msg = ("[%s] Requires implementation in the child class"
-               % self.process_product.__name__)
-        raise NotImplementedError(msg)
+        raise NotImplementedError('[{}] Requires implementation in the child'
+                                  ' class'.format(self.process_product
+                                                  .__name__))
 
     def process(self):
-        '''
-        Description:
-            Generates a product through a defined process.
-            This method must cleanup everything it creates by calling the
-            remove_product_directory() method.
+        """Generates a product through a defined process
+
+        This method must cleanup everything it creates by calling the
+        remove_product_directory() method.
 
         Note:
             Must return the destination product and cksum file names.
-        '''
+        """
 
         # Logs the order parameters that can be passed to the mapper for this
         # processor
@@ -304,11 +289,10 @@ class ProductProcessor(object):
 
 
 class CustomizationProcessor(ProductProcessor):
-    '''
-    Description:
-        Provides the super class implementation for customization processing,
-        which warps the products to the user requested projection.
-    '''
+    """Provides the super class implementation for customization processing
+
+    Allows for warping the products to the user requested projection.
+    """
 
     def __init__(self, parms):
 
@@ -317,10 +301,8 @@ class CustomizationProcessor(ProductProcessor):
         super(CustomizationProcessor, self).__init__(parms)
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for the processor.
-        '''
+        """Validates the parameters required for the processor
+        """
 
         # Call the base class parameter validation
         super(CustomizationProcessor, self).validate_parameters()
@@ -328,7 +310,7 @@ class CustomizationProcessor(ProductProcessor):
         product_id = self._parms['product_id']
         options = self._parms['options']
 
-        self._logger.info("Validating [CustomizationProcessor] parameters")
+        self._logger.info('Validating [CustomizationProcessor] parameters')
 
         parameters. validate_reprojection_parameters(options, product_id)
 
@@ -336,10 +318,8 @@ class CustomizationProcessor(ProductProcessor):
         self._xml_filename = '.'.join([product_id, 'xml'])
 
     def customize_products(self):
-        '''
-        Description:
-            Performs the customization of the products.
-        '''
+        """Performs the customization of the products
+        """
 
         # Nothing to do if the user did not specify anything to build
         if not self._build_products:
@@ -361,70 +341,56 @@ class CustomizationProcessor(ProductProcessor):
 
 
 class CDRProcessor(CustomizationProcessor):
-    '''
-    Description:
-        Provides the super class implementation for generating CDR products.
-    '''
+    """Provides the super class implementation for generating CDR products
+    """
 
     def __init__(self, parms):
         super(CDRProcessor, self).__init__(parms)
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for all processors.
-        '''
+        """Validates the parameters required for all processors
+        """
 
         # Call the base class parameter validation
         super(CDRProcessor, self).validate_parameters()
 
     def stage_input_data(self):
-        '''
-        Description:
-            Stages the input data required for the processor.
+        """Stages the input data required for the processor
 
-        Note:
-            Not implemented here.
-        '''
+        Not implemented here.
+        """
 
-        msg = ("[%s] Requires implementation in the child class"
+        msg = ('[%s] Requires implementation in the child class'
                % self.stage_input_data.__name__)
         raise NotImplementedError(msg)
 
     def build_science_products(self):
-        '''
-        Description:
-            Build the science products requested by the user.
+        """Build the science products requested by the user
 
-        Note:
-            Not implemented here.
-        '''
+        Not implemented here.
+        """
 
-        msg = ("[%s] Requires implementation in the child class"
-               % self.build_science_products.__name__)
-        raise NotImplementedError(msg)
+        raise NotImplementedError('[{}] Requires implementation in the child'
+                                  ' class'.format(self.build_science_products
+                                                  .__name__))
 
     def cleanup_work_dir(self):
-        '''
-        Description:
-            Cleanup all the intermediate non-products and the science
-            products not requested.
+        """Cleanup all the intermediate non-products and the science
+           products not requested
 
-        Note:
-            Not implemented here.
-        '''
+        Not implemented here.
+        """
 
-        msg = ("[%s] Requires implementation in the child class"
-               % self.cleanup_work_dir.__name__)
-        raise NotImplementedError(msg)
+        raise NotImplementedError('[{}] Requires implementation in the child'
+                                  ' class'.format(self.cleanup_work_dir
+                                                  .__name__))
 
     def remove_products_from_xml(self):
-        '''
-        Description:
-            Remove the specified products from the XML file.  The file is
-            read into memory, processed, and written back out with out the
-            specified products.
-        '''
+        """Remove the specified products from the XML file
+
+        The file is read into memory, processed, and written back out with out
+        the specified products.
+        """
 
         # Nothing to do if the user did not specify anything to build
         if not self._build_products:
@@ -473,65 +439,47 @@ class CDRProcessor(CustomizationProcessor):
         products_to_remove.append('elevation')
 
         if products_to_remove is not None:
-            espa_xml = metadata_api.parse(self._xml_filename, silence=True)
-            bands = espa_xml.get_bands()
+            # Create and load the metadata object
+            espa_metadata = Metadata()
+            espa_metadata.parse(xml_filename=self._xml_filename)
 
-            file_names = []
+            # Search for and remove the items
+            for band in espa_metadata.xml_object.bands.band:
+                if band.attrib['product'] in products_to_remove:
+                    img_filename = str(band.file_name)
+                    hdr_filename = img_filename.replace('.img', '.hdr')
 
-            # Remove them from the file system first
-            for band in bands.band:
-                if band.product in products_to_remove:
-                    # Add the .img file
-                    file_names.append(band.file_name)
-                    # Add the .hdr file
-                    hdr_file_name = band.file_name.replace('.img', '.hdr')
-                    file_names.append(hdr_file_name)
+                    # Remove the files
+                    if os.path.exists(img_filename):
+                        os.unlink(img_filename)
+                    if os.path.exists(hdr_filename):
+                        os.unlink(hdr_filename)
 
-            # Only remove files if we found some
-            if len(file_names) > 0:
-                # First remove from disk
-                for filename in file_names:
-                    if os.path.exists(filename):
-                        os.unlink(filename)
+                    # Remove the element
+                    parent = band.getparent()
+                    parent.remove(band)
 
-                # Second remove from the metadata XML
-                # Remove them from the XML by creating a new list of all the
-                # others
-                bands.band[:] = [band for band in bands.band
-                                 if band.product not in products_to_remove]
+            # Validate the XML
+            espa_metadata.validate()
 
-                try:
-                    # Export to the file with validation
-                    with open(self._xml_filename, 'w') as xml_fd:
-                        metadata_api.export(xml_fd, espa_xml)
+            # Write it to the XML file
+            espa_metadata.write(xml_filename=self._xml_filename)
 
-                except Exception:
-                    self._logger.exception('An exception occurred validating'
-                                           ' metadata XML')
-                    raise
-
-            # Cleanup
-            del bands
-            del espa_xml
+            del espa_metadata
 
     def generate_statistics(self):
-        '''
-        Description:
-            Generates statistics if required for the processor.
+        """Generates statistics if required for the processor
 
-        Note:
-            Not implemented here.
-        '''
+        Not implemented here.
+        """
 
-        msg = ("[%s] Requires implementation in the child class"
-               % self.generate_statistics.__name__)
-        raise NotImplementedError(msg)
+        raise NotImplementedError('[{}] Requires implementation in the child'
+                                  ' class'.format(self.generate_statistics
+                                                  .__name__))
 
     def distribute_statistics(self):
-        '''
-        Description:
-            Distributes statistics if required for the processor.
-        '''
+        """Distributes statistics if required for the processor
+        """
 
         options = self._parms['options']
 
@@ -545,13 +493,11 @@ class CDRProcessor(CustomizationProcessor):
                                        ' the stats')
                 raise
 
-            self._logger.info("*** Statistics Distribution Complete ***")
+            self._logger.info('*** Statistics Distribution Complete ***')
 
     def reformat_products(self):
-        '''
-        Description:
-            Reformat the customized products if required for the processor.
-        '''
+        """Reformat the customized products if required for the processor
+        """
 
         # Nothing to do if the user did not specify anything to build
         if not self._build_products:
@@ -566,11 +512,9 @@ class CDRProcessor(CustomizationProcessor):
                       options['output_format'])
 
     def process_product(self):
-        '''
-        Description:
-            Perform the processor specific processing to generate the
-            requested product.
-        '''
+        """Perform the processor specific processing to generate the
+           requested product
+        """
 
         # Stage the required input data
         self.stage_input_data()
@@ -601,11 +545,9 @@ class CDRProcessor(CustomizationProcessor):
 
 
 class LandsatProcessor(CDRProcessor):
-    '''
-    Description:
-        Implements the common processing between all of the landsat
-        processors.
-    '''
+    """Implements the common processing between all of the Landsat
+       processors
+    """
 
     def __init__(self, parms):
         super(LandsatProcessor, self).__init__(parms)
@@ -615,15 +557,13 @@ class LandsatProcessor(CDRProcessor):
         self._metadata_filename = None
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for the processor.
-        '''
+        """Validates the parameters required for the processor
+        """
 
         # Call the base class parameter validation
         super(LandsatProcessor, self).validate_parameters()
 
-        self._logger.info("Validating [LandsatProcessor] parameters")
+        self._logger.info('Validating [LandsatProcessor] parameters')
 
         options = self._parms['options']
 
@@ -649,8 +589,8 @@ class LandsatProcessor(CDRProcessor):
 
         for parameter in required_includes:
             if not parameters.test_for_parameter(options, parameter):
-                self._logger.warning("'%s' parameter missing defaulting to"
-                                     " False" % parameter)
+                self._logger.warning('[{}] parameter missing defaulting to'
+                                     ' False'.format(parameter))
                 options[parameter] = False
 
         # Determine if we need to build products
@@ -669,16 +609,14 @@ class LandsatProcessor(CDRProcessor):
                 not options['include_dswe'] and
                 not options['include_lst']):
 
-            self._logger.info("***NO SCIENCE PRODUCTS CHOSEN***")
+            self._logger.info('***NO SCIENCE PRODUCTS CHOSEN***')
             self._build_products = False
         else:
             self._build_products = True
 
     def stage_input_data(self):
-        '''
-        Description:
-            Stages the input data required for the processor.
-        '''
+        """Stages the input data required for the processor
+        """
 
         product_id = self._parms['product_id']
         download_url = self._parms['download_url']
@@ -699,11 +637,9 @@ class LandsatProcessor(CDRProcessor):
             landsat_metadata.get_filename(self._work_dir, product_id)
 
     def convert_to_raw_binary(self):
-        '''
-        Description:
-            Converts the Landsat(LPGS) input data to our internal raw binary
-            format.
-        '''
+        """Converts the Landsat(LPGS) input data to our internal raw binary
+           format
+        """
 
         options = self._parms['options']
 
@@ -726,16 +662,15 @@ class LandsatProcessor(CDRProcessor):
                 self._logger.info(output)
 
     def elevation_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate the elevation
-            product.
-            Evaluates the options requested by the user to define the command
-            line string to use, or returns None indicating nothing todo.
+        """Returns the command line required to generate the elevation
+           product
+
+        Evaluates the options requested by the user to define the command
+        line string to use, or returns None indicating nothing todo.
 
         Note:
             Provides the L4, L5, L7, and L8 command line.
-        '''
+        """
 
         options = self._parms['options']
 
@@ -751,11 +686,9 @@ class LandsatProcessor(CDRProcessor):
         return cmd
 
     def generate_elevation_product(self):
-        '''
-        Description:
-            Generates an elevation product using the metadata from the source
-            data.
-        '''
+        """Generates an elevation product using the metadata from the source
+           data
+        """
 
         cmd = self.elevation_command_line()
 
@@ -772,20 +705,16 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     def land_water_mask_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate a land/water mask.
+        """Returns the command line required to generate a land/water mask
 
         Note:
             Only for L8 OLITIRS processing
-        '''
+        """
         return None
 
     def generate_land_water_mask(self):
-        '''
-        Description:
-            Generates a land water mask.
-        '''
+        """Generates a land water mask
+        """
 
         cmd = self.land_water_mask_command_line()
 
@@ -802,16 +731,15 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     def sr_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate surface reflectance.
-            Evaluates the options requested by the user to define the command
-            line string to use, or returns None indicating nothing todo.
+        """Returns the command line required to generate surface reflectance
+
+        Evaluates the options requested by the user to define the command
+        line string to use, or returns None indicating nothing todo.
 
         Note:
             Provides the L4, L5, and L7 command line.  L8 processing overrides
             this method.
-        '''
+        """
 
         options = self._parms['options']
 
@@ -857,10 +785,8 @@ class LandsatProcessor(CDRProcessor):
         return cmd
 
     def generate_sr_products(self):
-        '''
-        Description:
-            Generates surface reflectance products.
-        '''
+        """Generates surface reflectance products
+        """
 
         cmd = self.sr_command_line()
 
@@ -877,10 +803,8 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     def generate_cloud_masking(self):
-        '''
-        Description:
-            Generates cloud mask products.
-        '''
+        """Generates cloud mask products
+        """
 
         options = self._parms['options']
         cmd = None
@@ -903,10 +827,8 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     def generate_spectral_indices(self):
-        '''
-        Description:
-            Generates the requested spectral indices.
-        '''
+        """Generates the requested spectral indices
+        """
 
         options = self._parms['options']
 
@@ -952,16 +874,15 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     def surface_water_extent_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate Dynamic Surface
-            Water Extent.  Evaluates the options requested by the user to
-            define the command line string to use, or returns None indicating
-            nothing todo.
+        """Returns the command line required to generate Dynamic Surface
+           Water Extent
+
+        Evaluates the options requested by the user to define the command line
+        string to use, or returns None indicating nothing todo.
 
         Note:
             Provides the L4, L5, L7, and L8(LC8) command line.
-        '''
+        """
 
         options = self._parms['options']
 
@@ -977,10 +898,8 @@ class LandsatProcessor(CDRProcessor):
         return cmd
 
     def generate_surface_water_extent(self):
-        '''
-        Description:
-            Generates the Dynamic Surface Water Extent product.
-        '''
+        """Generates the Dynamic Surface Water Extent product
+        """
 
         cmd = self.surface_water_extent_command_line()
 
@@ -998,10 +917,8 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     def generate_land_surface_temperature(self):
-        '''
-        Description:
-            Generates the Land Surface Temperature product.
-        '''
+        """Generates the Land Surface Temperature product
+        """
 
         options = self._parms['options']
 
@@ -1027,16 +944,14 @@ class LandsatProcessor(CDRProcessor):
                     self._logger.info(output)
 
     def build_science_products(self):
-        '''
-        Description:
-            Build the science products requested by the user.
-        '''
+        """Build the science products requested by the user
+        """
 
         # Nothing to do if the user did not specify anything to build
         if not self._build_products:
             return
 
-        self._logger.info("[LandsatProcessor] Building Science Products")
+        self._logger.info('[LandsatProcessor] Building Science Products')
 
         # Change to the working directory
         current_directory = os.getcwd()
@@ -1064,11 +979,9 @@ class LandsatProcessor(CDRProcessor):
             os.chdir(current_directory)
 
     def cleanup_work_dir(self):
-        '''
-        Description:
-            Cleanup all the intermediate non-products and the science
-            products not requested.
-        '''
+        """Cleanup all the intermediate non-products and the science
+           products not requested
+        """
 
         product_id = self._parms['product_id']
         options = self._parms['options']
@@ -1141,10 +1054,8 @@ class LandsatProcessor(CDRProcessor):
             os.chdir(current_directory)
 
     def generate_statistics(self):
-        '''
-        Description:
-            Generates statistics if required for the processor.
-        '''
+        """Generates statistics if required for the processor
+        """
 
         options = self._parms['options']
 
@@ -1172,11 +1083,9 @@ class LandsatProcessor(CDRProcessor):
                                        files_to_search_for)
 
     def get_product_name(self):
-        '''
-        Description:
-            Build the product name from the product information and current
-            time.
-        '''
+        """Build the product name from the product information and current
+           time
+        """
 
         if self._product_name is None:
             product_id = self._parms['product_id']
@@ -1202,77 +1111,65 @@ class LandsatProcessor(CDRProcessor):
 
 
 class LandsatTMProcessor(LandsatProcessor):
-    '''
-    Description:
-        Implements TM specific processing.
+    """Implements TM specific processing
 
     Note:
         Today all processing is inherited from the LandsatProcessors because
         the TM and ETM processors are identical.
-    '''
+    """
 
     def __init__(self, parms):
         super(LandsatTMProcessor, self).__init__(parms)
 
 
 class Landsat4TMProcessor(LandsatTMProcessor):
-    '''
-    Description:
-        Implements L4 TM specific processing.
+    """Implements L4 TM specific processing
 
     Note:
         Today all processing is inherited from the LandsatProcessors because
         the TM and ETM processors are identical.
-    '''
+    """
 
     def __init__(self, parms):
         super(Landsat4TMProcessor, self).__init__(parms)
 
 
 class LandsatETMProcessor(LandsatProcessor):
-    '''
-    Description:
-        Implements ETM specific processing.
+    """Implements ETM specific processing
 
     Note:
         Today all processing is inherited from the LandsatProcessors because
         the TM and ETM processors are identical.
-    '''
+    """
 
     def __init__(self, parms):
         super(LandsatETMProcessor, self).__init__(parms)
 
 
 class LandsatOLITIRSProcessor(LandsatProcessor):
-    '''
-    Description:
-        Implements OLITIRS (LC8) specific processing.
-    '''
+    """Implements OLITIRS (LC8) specific processing
+    """
 
     def __init__(self, parms):
         super(LandsatOLITIRSProcessor, self).__init__(parms)
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for the processor.
-        '''
+        """Validates the parameters required for the processor
+        """
 
         # Call the base class parameter validation
         super(LandsatOLITIRSProcessor, self).validate_parameters()
 
-        self._logger.info("Validating [LandsatOLITIRSProcessor] parameters")
+        self._logger.info('Validating [LandsatOLITIRSProcessor] parameters')
 
         options = self._parms['options']
 
     def land_water_mask_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate a land/water mask.
+        """Returns the command line required to generate a land/water mask
 
         Note:
             Only for L8 OLITIRS processing
-        '''
+        """
 
         options = self._parms['options']
 
@@ -1292,12 +1189,11 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
         return cmd
 
     def sr_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate surface reflectance.
-            Evaluates the options requested by the user to define the command
-            line string to use, or returns None indicating nothing todo.
-        '''
+        """Returns the command line required to generate surface reflectance
+
+        Evaluates the options requested by the user to define the command
+        line string to use, or returns None indicating nothing todo.
+        """
 
         options = self._parms['options']
 
@@ -1328,7 +1224,8 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
         if (options['include_sr_toa'] or
                 options['include_sr_thermal'] or
                 options['include_sr'] or
-                options['include_cfmask']):
+                options['include_cfmask'] or
+                options['include_dswe']):
 
             cmd.append('--write_toa')
             execute_do_l8_sr = True
@@ -1343,74 +1240,68 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
 
 class LandsatOLIProcessor(LandsatOLITIRSProcessor):
-    '''
-    Description:
-        Implements OLI only (LO8) specific processing.
-    '''
+    """Implements OLI only (LO8) specific processing
+    """
 
     def __init__(self, parms):
         super(LandsatOLIProcessor, self).__init__(parms)
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for the processor.
-        '''
+        """Validates the parameters required for the processor
+        """
 
         # Call the base class parameter validation
         super(LandsatOLIProcessor, self).validate_parameters()
 
-        self._logger.info("Validating [LandsatOLIProcessor] parameters")
+        self._logger.info('Validating [LandsatOLIProcessor] parameters')
 
         options = self._parms['options']
 
         if options['include_sr'] is True:
-            raise Exception("include_sr is an unavailable product option"
-                            " for OLI-Only data")
+            raise Exception('include_sr is an unavailable product option'
+                            ' for OLI-Only data')
 
         if options['include_sr_thermal'] is True:
-            raise Exception("include_sr_thermal is an unavailable product"
-                            " option for OLI-Only data")
+            raise Exception('include_sr_thermal is an unavailable product'
+                            ' option for OLI-Only data')
 
         if options['include_cfmask'] is True:
-            raise Exception("include_cfmask is an unavailable product option"
-                            " for OLI-Only data")
+            raise Exception('include_cfmask is an unavailable product option'
+                            ' for OLI-Only data')
 
         if options['include_dswe'] is True:
-            raise Exception("include_dswe is an unavailable product option"
-                            " for OLI-Only data")
+            raise Exception('include_dswe is an unavailable product option'
+                            ' for OLI-Only data')
 
     def land_water_mask_command_line(self):
-        '''
-        Description:
-            Returns the command line required to generate a land/water mask.
+        """Returns the command line required to generate a land/water mask
 
         Note:
             Only for L8 OLITIRS processing
-        '''
+        """
         return None
 
     def generate_cloud_masking(self):
-        '''
-        Description:
-            Cloud Masking processing requires both OLI and TIRS bands.  So OLI
-            only processing can not produce cloud mask products.
-        '''
+        """Cloud Masking processing requires both OLI and TIRS bands
 
+        So OLI only processing can not produce cloud mask products.
+        """
         pass
 
     def generate_spectral_indices(self):
-        '''
-        Description:
-            Spectral Indices processing requires surface reflectance products
-            as input.  So since, SR products can not be produced with OLI
-            only data, OLI only processing can not produce spectral indices.
-        '''
+        """ Spectral Indices processing requires surface reflectance products
+            as input
 
+        So since, SR products can not be produced with OLI only data, OLI only
+        processing can not produce spectral indices.
+        """
         pass
 
 
 class ModisProcessor(CDRProcessor):
+    """Implements the common processing between all of the MODIS
+       processors
+    """
 
     def __init__(self, parms):
         super(ModisProcessor, self).__init__(parms)
@@ -1418,15 +1309,13 @@ class ModisProcessor(CDRProcessor):
         self._hdf_filename = None
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for the processor.
-        '''
+        """Validates the parameters required for the processor
+        """
 
         # Call the base class parameter validation
         super(ModisProcessor, self).validate_parameters()
 
-        self._logger.info("Validating [ModisProcessor] parameters")
+        self._logger.info('Validating [ModisProcessor] parameters')
 
         options = self._parms['options']
 
@@ -1438,23 +1327,21 @@ class ModisProcessor(CDRProcessor):
 
         for parameter in required_includes:
             if not parameters.test_for_parameter(options, parameter):
-                self._logger.warning("'%s' parameter missing defaulting to"
-                                     " False" % parameter)
+                self._logger.warning('[{}] parameter missing defaulting to'
+                                     ' False'.format(parameter))
                 options[parameter] = False
 
         # Determine if we need to build products
         if not options['include_customized_source_data']:
 
-            self._logger.info("***NO CUSTOMIZED PRODUCTS CHOSEN***")
+            self._logger.info('***NO CUSTOMIZED PRODUCTS CHOSEN***')
             self._build_products = False
         else:
             self._build_products = True
 
     def stage_input_data(self):
-        '''
-        Description:
-            Stages the input data required for the processor.
-        '''
+        """Stages the input data required for the processor
+        """
 
         product_id = self._parms['product_id']
         download_url = self._parms['download_url']
@@ -1474,11 +1361,9 @@ class ModisProcessor(CDRProcessor):
         os.unlink(staged_file)
 
     def convert_to_raw_binary(self):
-        '''
-        Description:
-            Converts the Landsat(LPGS) input data to our internal raw binary
-            format.
-        '''
+        """Converts the Landsat(LPGS) input data to our internal raw binary
+           format
+        """
 
         options = self._parms['options']
 
@@ -1501,21 +1386,19 @@ class ModisProcessor(CDRProcessor):
                 self._logger.info(output)
 
     def build_science_products(self):
-        '''
-        Description:
-            Build the science products requested by the user.
+        """Build the science products requested by the user
 
         Note:
             We get science products as the input, so the only thing really
             happening here is generating a customized product for the
             statistics generation.
-        '''
+        """
 
         # Nothing to do if the user did not specify anything to build
         if not self._build_products:
             return
 
-        self._logger.info("[ModisProcessor] Building Science Products")
+        self._logger.info('[ModisProcessor] Building Science Products')
 
         # Change to the working directory
         current_directory = os.getcwd()
@@ -1529,20 +1412,16 @@ class ModisProcessor(CDRProcessor):
             os.chdir(current_directory)
 
     def cleanup_work_dir(self):
-        '''
-        Description:
-            Cleanup all the intermediate non-products and the science
-            products not requested.
-        '''
+        """Cleanup all the intermediate non-products and the science
+           products not requested
+        """
 
         # Nothing to do for Modis products
         return
 
     def generate_statistics(self):
-        '''
-        Description:
-            Generates statistics if required for the processor.
-        '''
+        """Generates statistics if required for the processor
+        """
 
         options = self._parms['options']
 
@@ -1570,11 +1449,9 @@ class ModisProcessor(CDRProcessor):
                                        files_to_search_for)
 
     def get_product_name(self):
-        '''
-        Description:
-            Build the product name from the product information and current
-            time.
-        '''
+        """Build the product name from the product information and current
+           time
+        """
 
         if self._product_name is None:
             product_id = self._parms['product_id']
@@ -1600,30 +1477,24 @@ class ModisProcessor(CDRProcessor):
 
 
 class ModisAQUAProcessor(ModisProcessor):
-    '''
-    Description:
-        Implements AQUA specific processing.
-    '''
+    """Implements AQUA specific processing
+    """
 
     def __init__(self, parms):
         super(ModisAQUAProcessor, self).__init__(parms)
 
 
 class ModisTERRAProcessor(ModisProcessor):
-    '''
-    Description:
-        Implements TERRA specific processing.
-    '''
+    """Implements TERRA specific processing
+    """
 
     def __init__(self, parms):
         super(ModisTERRAProcessor, self).__init__(parms)
 
 
 class PlotProcessor(ProductProcessor):
-    '''
-    Description:
-        Implements Plot processing.
-    '''
+    """Implements Plot processing
+    """
 
     def __init__(self, parms):
 
@@ -1793,205 +1664,326 @@ class PlotProcessor(ProductProcessor):
         TERRA_NAME = 'Terra'
         AQUA_NAME = 'Aqua'
 
+        SearchInfo = namedtuple('SearchInfo', ('key', 'filter_list'))
+
         # Only MODIS SR band 5 files
-        self._sr_swir_modis_b5_sensor_info = \
-            [('MOD*sur_refl*b05.stats', TERRA_NAME),
-             ('MYD*sur_refl*b05.stats', AQUA_NAME)]
+        _sr_swir_modis_b5_info = [SearchInfo(TERRA_NAME,
+                                             ['MOD*sur_refl*b05.stats']),
+                                  SearchInfo(AQUA_NAME,
+                                             ['MYD*sur_refl*b05.stats'])]
 
         # SR (L4-L7 B5) (L8 B6) (MODIS B6)
-        self._sr_swir1_sensor_info = [('LT4*_sr_band5.stats', L4_NAME),
-                                      ('LT5*_sr_band5.stats', L5_NAME),
-                                      ('LE7*_sr_band5.stats', L7_NAME),
-                                      ('LC8*_sr_band6.stats', L8_NAME),
-                                      ('MOD*sur_refl_b06*.stats', TERRA_NAME),
-                                      ('MYD*sur_refl_b06*.stats', AQUA_NAME)]
+        _sr_swir1_info = [SearchInfo(L4_NAME, ['LT4*_sr_band5.stats',
+                                               'LT04*_sr_band5.stats']),
+                          SearchInfo(L5_NAME, ['LT5*_sr_band5.stats',
+                                               'LT05*_sr_band5.stats']),
+                          SearchInfo(L7_NAME, ['LE7*_sr_band5.stats',
+                                               'LE07*_sr_band5.stats']),
+                          SearchInfo(L8_NAME, ['LC8*_sr_band6.stats'
+                                               'LC08*_sr_band6.stats']),
+                          SearchInfo(TERRA_NAME, ['MOD*sur_refl_b06*.stats']),
+                          SearchInfo(AQUA_NAME, ['MYD*sur_refl_b06*.stats'])]
 
         # SR (L4-L8 B7) (MODIS B7)
-        self._sr_swir2_sensor_info = [('LT4*_sr_band7.stats', L4_NAME),
-                                      ('LT5*_sr_band7.stats', L5_NAME),
-                                      ('LE7*_sr_band7.stats', L7_NAME),
-                                      ('LC8*_sr_band7.stats', L8_NAME),
-                                      ('MOD*sur_refl_b07*.stats', TERRA_NAME),
-                                      ('MYD*sur_refl_b07*.stats', AQUA_NAME)]
+        _sr_swir2_info = [SearchInfo(L4_NAME, ['LT4*_sr_band7.stats',
+                                               'LT04*_sr_band7.stats']),
+                          SearchInfo(L5_NAME, ['LT5*_sr_band7.stats',
+                                               'LT05*_sr_band7.stats']),
+                          SearchInfo(L7_NAME, ['LE7*_sr_band7.stats',
+                                               'LE07*_sr_band7.stats']),
+                          SearchInfo(L8_NAME, ['LC8*_sr_band7.stats',
+                                               'LC08*_sr_band7.stats']),
+                          SearchInfo(TERRA_NAME, ['MOD*sur_refl_b07*.stats']),
+                          SearchInfo(AQUA_NAME, ['MYD*sur_refl_b07*.stats'])]
 
         # SR (L8 B1)  coastal aerosol
-        self._sr_coastal_sensor_info = [('LC8*_sr_band1.stats', L8_NAME)]
+        _sr_coastal_info = [SearchInfo(L8_NAME, ['LC8*_sr_band1.stats',
+                                                 'LC08*_sr_band1.stats'])]
 
         # SR (L4-L7 B1) (L8 B2) (MODIS B3)
-        self._sr_blue_sensor_info = [('LT4*_sr_band1.stats', L4_NAME),
-                                     ('LT5*_sr_band1.stats', L5_NAME),
-                                     ('LE7*_sr_band1.stats', L7_NAME),
-                                     ('LC8*_sr_band2.stats', L8_NAME),
-                                     ('MOD*sur_refl_b03*.stats', TERRA_NAME),
-                                     ('MYD*sur_refl_b03*.stats', AQUA_NAME)]
+        _sr_blue_info = [SearchInfo(L4_NAME, ['LT4*_sr_band1.stats',
+                                              'LT04*_sr_band1.stats']),
+                         SearchInfo(L5_NAME, ['LT5*_sr_band1.stats',
+                                              'LT05*_sr_band1.stats']),
+                         SearchInfo(L7_NAME, ['LE7*_sr_band1.stats',
+                                              'LE07*_sr_band1.stats']),
+                         SearchInfo(L8_NAME, ['LC8*_sr_band2.stats',
+                                              'LC08*_sr_band2.stats']),
+                         SearchInfo(TERRA_NAME, ['MOD*sur_refl_b03*.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*sur_refl_b03*.stats'])]
 
         # SR (L4-L7 B2) (L8 B3) (MODIS B4)
-        self._sr_green_sensor_info = [('LT4*_sr_band2.stats', L4_NAME),
-                                      ('LT5*_sr_band2.stats', L5_NAME),
-                                      ('LE7*_sr_band2.stats', L7_NAME),
-                                      ('LC8*_sr_band3.stats', L8_NAME),
-                                      ('MOD*sur_refl_b04*.stats', TERRA_NAME),
-                                      ('MYD*sur_refl_b04*.stats', AQUA_NAME)]
+        _sr_green_info = [SearchInfo(L4_NAME, ['LT4*_sr_band2.stats',
+                                               'LT04*_sr_band2.stats']),
+                          SearchInfo(L5_NAME, ['LT5*_sr_band2.stats',
+                                               'LT05*_sr_band2.stats']),
+                          SearchInfo(L7_NAME, ['LE7*_sr_band2.stats',
+                                               'LE07*_sr_band2.stats']),
+                          SearchInfo(L8_NAME, ['LC8*_sr_band3.stats',
+                                               'LC08*_sr_band3.stats']),
+                          SearchInfo(TERRA_NAME, ['MOD*sur_refl_b04*.stats']),
+                          SearchInfo(AQUA_NAME, ['MYD*sur_refl_b04*.stats'])]
 
         # SR (L4-L7 B3) (L8 B4) (MODIS B1)
-        self._sr_red_sensor_info = [('LT4*_sr_band3.stats', L4_NAME),
-                                    ('LT5*_sr_band3.stats', L5_NAME),
-                                    ('LE7*_sr_band3.stats', L7_NAME),
-                                    ('LC8*_sr_band4.stats', L8_NAME),
-                                    ('MOD*sur_refl_b01*.stats', TERRA_NAME),
-                                    ('MYD*sur_refl_b01*.stats', AQUA_NAME)]
+        _sr_red_info = [SearchInfo(L4_NAME, ['LT4*_sr_band3.stats',
+                                             'LT04*_sr_band3.stats']),
+                        SearchInfo(L5_NAME, ['LT5*_sr_band3.stats',
+                                             'LT05*_sr_band3.stats']),
+                        SearchInfo(L7_NAME, ['LE7*_sr_band3.stats',
+                                             'LE07*_sr_band3.stats']),
+                        SearchInfo(L8_NAME, ['LC8*_sr_band4.stats',
+                                             'LC08*_sr_band4.stats']),
+                        SearchInfo(TERRA_NAME, ['MOD*sur_refl_b01*.stats']),
+                        SearchInfo(AQUA_NAME, ['MYD*sur_refl_b01*.stats'])]
 
         # SR (L4-L7 B4) (L8 B5) (MODIS B2)
-        self._sr_nir_sensor_info = [('LT4*_sr_band4.stats', L4_NAME),
-                                    ('LT5*_sr_band4.stats', L5_NAME),
-                                    ('LE7*_sr_band4.stats', L7_NAME),
-                                    ('LC8*_sr_band5.stats', L8_NAME),
-                                    ('MOD*sur_refl_b02*.stats', TERRA_NAME),
-                                    ('MYD*sur_refl_b02*.stats', AQUA_NAME)]
+        _sr_nir_info = [SearchInfo(L4_NAME, ['LT4*_sr_band4.stats',
+                                             'LT04*_sr_band4.stats']),
+                        SearchInfo(L5_NAME, ['LT5*_sr_band4.stats',
+                                             'LT05*_sr_band4.stats']),
+                        SearchInfo(L7_NAME, ['LE7*_sr_band4.stats',
+                                             'LE07*_sr_band4.stats']),
+                        SearchInfo(L8_NAME, ['LC8*_sr_band5.stats',
+                                             'LC08*_sr_band5.stats']),
+                        SearchInfo(TERRA_NAME, ['MOD*sur_refl_b02*.stats']),
+                        SearchInfo(AQUA_NAME, ['MYD*sur_refl_b02*.stats'])]
 
         # SR (L8 B9)
-        self._sr_cirrus_sensor_info = [('LC8*_sr_band9.stats', L8_NAME)]
+        _sr_cirrus_info = [SearchInfo(L8_NAME, ['LC8*_sr_band9.stats',
+                                                'LC08*_sr_band9.stats'])]
 
         # Only Landsat TOA band 6(L4-7) band 10(L8) band 11(L8)
-        self._toa_thermal_sensor_info = \
-            [('LT4*_toa_band6.stats', L4_NAME),
-             ('LT5*_toa_band6.stats', L5_NAME),
-             ('LE7*_toa_band6.stats', L7_NAME),
-             ('LC8*_toa_band10.stats', L8_TIRS1_NAME),
-             ('LC8*_toa_band11.stats', L8_TIRS2_NAME)]
+        _toa_thermal_info = [SearchInfo(L4_NAME, ['LT4*_toa_band6.stats',
+                                                  'LT04*_toa_band6.stats']),
+                             SearchInfo(L5_NAME, ['LT5*_toa_band6.stats',
+                                                  'LT05*_toa_band6.stats']),
+                             SearchInfo(L7_NAME, ['LE7*_toa_band6.stats',
+                                                  'LE07*_toa_band6.stats']),
+                             SearchInfo(L8_TIRS1_NAME,
+                                        ['LC8*_toa_band10.stats',
+                                         'LC08*_toa_band10.stats']),
+                             SearchInfo(L8_TIRS2_NAME,
+                                        ['LC8*_toa_band11.stats',
+                                         'LC08*_toa_band11.stats'])]
 
         # Only Landsat TOA (L4-L7 B5) (L8 B6)
-        self._toa_swir1_sensor_info = [('LT4*_toa_band5.stats', L4_NAME),
-                                       ('LT5*_toa_band5.stats', L5_NAME),
-                                       ('LE7*_toa_band5.stats', L7_NAME),
-                                       ('L[C,O]8*_toa_band6.stats', L8_NAME)]
+        _toa_swir1_info = [SearchInfo(L4_NAME, ['LT4*_toa_band5.stats',
+                                                'LT04*_toa_band5.stats']),
+                           SearchInfo(L5_NAME, ['LT5*_toa_band5.stats',
+                                                'LT05*_toa_band5.stats']),
+                           SearchInfo(L7_NAME, ['LE7*_toa_band5.stats',
+                                                'LE07*_toa_band5.stats']),
+                           SearchInfo(L8_NAME, ['L[C,O]8*_toa_band6.stats',
+                                                'L[C,O]08*_toa_band6.stats'])]
 
         # Only Landsat TOA (L4-L8 B7)
-        self._toa_swir2_sensor_info = [('LT4*_toa_band7.stats', L4_NAME),
-                                       ('LT5*_toa_band7.stats', L5_NAME),
-                                       ('LE7*_toa_band7.stats', L7_NAME),
-                                       ('L[C,O]8*_toa_band7.stats', L8_NAME)]
+        _toa_swir2_info = [SearchInfo(L4_NAME, ['LT4*_toa_band7.stats',
+                                                'LT04*_toa_band7.stats']),
+                           SearchInfo(L5_NAME, ['LT5*_toa_band7.stats',
+                                                'LT05*_toa_band7.stats']),
+                           SearchInfo(L7_NAME, ['LE7*_toa_band7.stats',
+                                                'LE07*_toa_band7.stats']),
+                           SearchInfo(L8_NAME, ['L[C,O]8*_toa_band7.stats',
+                                                'L[C,O]08*_toa_band7.stats'])]
 
         # Only Landsat TOA (L8 B1)
-        self._toa_coastal_sensor_info = [('L[C,O]8*_toa_band1.stats', L8_NAME)]
+        _toa_coastal_info = [SearchInfo(L8_NAME,
+                                        ['L[C,O]8*_toa_band1.stats',
+                                         'L[C,O]08*_toa_band1.stats'])]
 
         # Only Landsat TOA (L4-L7 B1) (L8 B2)
-        self._toa_blue_sensor_info = [('LT4*_toa_band1.stats', L4_NAME),
-                                      ('LT5*_toa_band1.stats', L5_NAME),
-                                      ('LE7*_toa_band1.stats', L7_NAME),
-                                      ('L[C,O]8*_toa_band2.stats', L8_NAME)]
+        _toa_blue_info = [SearchInfo(L4_NAME, ['LT4*_toa_band1.stats',
+                                               'LT04*_toa_band1.stats']),
+                          SearchInfo(L5_NAME, ['LT5*_toa_band1.stats',
+                                               'LT05*_toa_band1.stats']),
+                          SearchInfo(L7_NAME, ['LE7*_toa_band1.stats',
+                                               'LE07*_toa_band1.stats']),
+                          SearchInfo(L8_NAME, ['L[C,O]8*_toa_band2.stats',
+                                               'L[C,O]08*_toa_band2.stats'])]
 
         # Only Landsat TOA (L4-L7 B2) (L8 B3)
-        self._toa_green_sensor_info = [('LT4*_toa_band2.stats', L4_NAME),
-                                       ('LT5*_toa_band2.stats', L5_NAME),
-                                       ('LE7*_toa_band2.stats', L7_NAME),
-                                       ('L[C,O]8*_toa_band3.stats', L8_NAME)]
+        _toa_green_info = [SearchInfo(L4_NAME, ['LT4*_toa_band2.stats',
+                                                'LT04*_toa_band2.stats']),
+                           SearchInfo(L5_NAME, ['LT5*_toa_band2.stats',
+                                                'LT05*_toa_band2.stats']),
+                           SearchInfo(L7_NAME, ['LE7*_toa_band2.stats',
+                                                'LE07*_toa_band2.stats']),
+                           SearchInfo(L8_NAME, ['L[C,O]8*_toa_band3.stats',
+                                                'L[C,O]08*_toa_band3.stats'])]
 
         # Only Landsat TOA (L4-L7 B3) (L8 B4)
-        self._toa_red_sensor_info = [('LT4*_toa_band3.stats', L4_NAME),
-                                     ('LT5*_toa_band3.stats', L5_NAME),
-                                     ('LE7*_toa_band3.stats', L7_NAME),
-                                     ('L[C,O]8*_toa_band4.stats', L8_NAME)]
+        _toa_red_info = [SearchInfo(L4_NAME, ['LT4*_toa_band3.stats',
+                                              'LT04*_toa_band3.stats']),
+                         SearchInfo(L5_NAME, ['LT5*_toa_band3.stats',
+                                              'LT05*_toa_band3.stats']),
+                         SearchInfo(L7_NAME, ['LE7*_toa_band3.stats',
+                                              'LE07*_toa_band3.stats']),
+                         SearchInfo(L8_NAME, ['L[C,O]8*_toa_band4.stats',
+                                              'L[C,O]08*_toa_band4.stats'])]
 
         # Only Landsat TOA (L4-L7 B4) (L8 B5)
-        self._toa_nir_sensor_info = [('LT4*_toa_band4.stats', L4_NAME),
-                                     ('LT5*_toa_band4.stats', L5_NAME),
-                                     ('LE7*_toa_band4.stats', L7_NAME),
-                                     ('L[C,O]8*_toa_band5.stats', L8_NAME)]
+        _toa_nir_info = [SearchInfo(L4_NAME, ['LT4*_toa_band4.stats',
+                                              'LT04*_toa_band4.stats']),
+                         SearchInfo(L5_NAME, ['LT5*_toa_band4.stats',
+                                              'LT05*_toa_band4.stats']),
+                         SearchInfo(L7_NAME, ['LE7*_toa_band4.stats',
+                                              'LE07*_toa_band4.stats']),
+                         SearchInfo(L8_NAME, ['L[C,O]8*_toa_band5.stats',
+                                              'L[C,O]08*_toa_band5.stats'])]
 
         # Only Landsat TOA (L8 B9)
-        self._toa_cirrus_sensor_info = [('L[C,O]8*_toa_band9.stats', L8_NAME)]
+        _toa_cirrus_info = [SearchInfo(L8_NAME, ['L[C,O]8*_toa_band9.stats'])]
 
         # Only MODIS band 20 files
-        self._emis_20_sensor_info = [('MOD*Emis_20.stats', TERRA_NAME),
-                                     ('MYD*Emis_20.stats', AQUA_NAME)]
+        _emis_20_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_20.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*Emis_20.stats'])]
 
         # Only MODIS band 22 files
-        self._emis_22_sensor_info = [('MOD*Emis_22.stats', TERRA_NAME),
-                                     ('MYD*Emis_22.stats', AQUA_NAME)]
+        _emis_22_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_22.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*Emis_22.stats'])]
 
         # Only MODIS band 23 files
-        self._emis_23_sensor_info = [('MOD*Emis_23.stats', TERRA_NAME),
-                                     ('MYD*Emis_23.stats', AQUA_NAME)]
+        _emis_23_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_23.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*Emis_23.stats'])]
 
         # Only MODIS band 29 files
-        self._emis_29_sensor_info = [('MOD*Emis_29.stats', TERRA_NAME),
-                                     ('MYD*Emis_29.stats', AQUA_NAME)]
+        _emis_29_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_29.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*Emis_29.stats'])]
 
         # Only MODIS band 31 files
-        self._emis_31_sensor_info = [('MOD*Emis_31.stats', TERRA_NAME),
-                                     ('MYD*Emis_31.stats', AQUA_NAME)]
+        _emis_31_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_31.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*Emis_31.stats'])]
 
         # Only MODIS band 32 files
-        self._emis_32_sensor_info = [('MOD*Emis_32.stats', TERRA_NAME),
-                                     ('MYD*Emis_32.stats', AQUA_NAME)]
+        _emis_32_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_32.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*Emis_32.stats'])]
 
         # Only MODIS Day files
-        self._lst_day_sensor_info = [('MOD*LST_Day_*.stats', TERRA_NAME),
-                                     ('MYD*LST_Day_*.stats', AQUA_NAME)]
+        _lst_day_info = [SearchInfo(TERRA_NAME, ['MOD*LST_Day_*.stats']),
+                         SearchInfo(AQUA_NAME, ['MYD*LST_Day_*.stats'])]
 
         # Only MODIS Night files
-        self._lst_night_sensor_info = [('MOD*LST_Night_*.stats', TERRA_NAME),
-                                       ('MYD*LST_Night_*.stats', AQUA_NAME)]
+        _lst_night_info = [SearchInfo(TERRA_NAME, ['MOD*LST_Night_*.stats']),
+                           SearchInfo(AQUA_NAME, ['MYD*LST_Night_*.stats'])]
 
         # MODIS and Landsat files
-        self._ndvi_sensor_info = [('LT4*_sr_ndvi.stats', L4_NAME),
-                                  ('LT5*_sr_ndvi.stats', L5_NAME),
-                                  ('LE7*_sr_ndvi.stats', L7_NAME),
-                                  ('LC8*_sr_ndvi.stats', L8_NAME),
-                                  ('MOD*_NDVI.stats', TERRA_NAME),
-                                  ('MYD*_NDVI.stats', AQUA_NAME)]
+        _ndvi_info = [SearchInfo(L4_NAME, ['LT4*_sr_ndvi.stats',
+                                           'LT04*_sr_ndvi.stats']),
+                      SearchInfo(L5_NAME, ['LT5*_sr_ndvi.stats',
+                                           'LT05*_sr_ndvi.stats']),
+                      SearchInfo(L7_NAME, ['LE7*_sr_ndvi.stats',
+                                           'LE07*_sr_ndvi.stats']),
+                      SearchInfo(L8_NAME, ['LC8*_sr_ndvi.stats',
+                                           'LC08*_sr_ndvi.stats']),
+                      SearchInfo(TERRA_NAME, ['MOD*_NDVI.stats']),
+                      SearchInfo(AQUA_NAME, ['MYD*_NDVI.stats'])]
 
         # MODIS and Landsat files
-        self._evi_sensor_info = [('LT4*_sr_evi.stats', L4_NAME),
-                                 ('LT5*_sr_evi.stats', L5_NAME),
-                                 ('LE7*_sr_evi.stats', L7_NAME),
-                                 ('LC8*_sr_evi.stats', L8_NAME),
-                                 ('MOD*_EVI.stats', TERRA_NAME),
-                                 ('MYD*_EVI.stats', AQUA_NAME)]
+        _evi_info = [SearchInfo(L4_NAME, ['LT4*_sr_evi.stats',
+                                          'LT04*_sr_evi.stats']),
+                     SearchInfo(L5_NAME, ['LT5*_sr_evi.stats',
+                                          'LT05*_sr_evi.stats']),
+                     SearchInfo(L7_NAME, ['LE7*_sr_evi.stats',
+                                          'LE07*_sr_evi.stats']),
+                     SearchInfo(L8_NAME, ['LC8*_sr_evi.stats',
+                                          'LC08*_sr_evi.stats']),
+                     SearchInfo(TERRA_NAME, ['MOD*_EVI.stats']),
+                     SearchInfo(AQUA_NAME, ['MYD*_EVI.stats'])]
 
         # Only Landsat SAVI files
-        self._savi_sensor_info = [('LT4*_sr_savi.stats', L4_NAME),
-                                  ('LT5*_sr_savi.stats', L5_NAME),
-                                  ('LE7*_sr_savi.stats', L7_NAME),
-                                  ('LC8*_sr_savi.stats', L8_NAME)]
+        _savi_info = [SearchInfo(L4_NAME, ['LT4*_sr_savi.stats',
+                                           'LT04*_sr_savi.stats']),
+                      SearchInfo(L5_NAME, ['LT5*_sr_savi.stats',
+                                           'LT05*_sr_savi.stats']),
+                      SearchInfo(L7_NAME, ['LE7*_sr_savi.stats',
+                                           'LE07*_sr_savi.stats']),
+                      SearchInfo(L8_NAME, ['LC8*_sr_savi.stats',
+                                           'LC08*_sr_savi.stats'])]
 
         # Only Landsat MSAVI files
-        self._msavi_sensor_info = [('LT4*_sr_msavi.stats', L4_NAME),
-                                   ('LT5*_sr_msavi.stats', L5_NAME),
-                                   ('LE7*_sr_msavi.stats', L7_NAME),
-                                   ('LC8*_sr_msavi.stats', L8_NAME)]
+        _msavi_info = [SearchInfo(L4_NAME, ['LT4*_sr_msavi.stats',
+                                            'LT04*_sr_msavi.stats']),
+                       SearchInfo(L5_NAME, ['LT5*_sr_msavi.stats',
+                                            'LT05*_sr_msavi.stats']),
+                       SearchInfo(L7_NAME, ['LE7*_sr_msavi.stats',
+                                            'LE07*_sr_msavi.stats']),
+                       SearchInfo(L8_NAME, ['LC8*_sr_msavi.stats',
+                                            'LC08*_sr_msavi.stats'])]
 
         # Only Landsat NBR files
-        self._nbr_sensor_info = [('LT4*_sr_nbr.stats', L4_NAME),
-                                 ('LT5*_sr_nbr.stats', L5_NAME),
-                                 ('LE7*_sr_nbr.stats', L7_NAME),
-                                 ('LC8*_sr_nbr.stats', L8_NAME)]
+        _nbr_info = [SearchInfo(L4_NAME, ['LT4*_sr_nbr.stats',
+                                          'LT04*_sr_nbr.stats']),
+                     SearchInfo(L5_NAME, ['LT5*_sr_nbr.stats',
+                                          'LT05*_sr_nbr.stats']),
+                     SearchInfo(L7_NAME, ['LE7*_sr_nbr.stats',
+                                          'LE07*_sr_nbr.stats']),
+                     SearchInfo(L8_NAME, ['LC8*_sr_nbr.stats',
+                                          'LC08*_sr_nbr.stats'])]
 
         # Only Landsat NBR2 files
-        self._nbr2_sensor_info = [('LT4*_sr_nbr2.stats', L4_NAME),
-                                  ('LT5*_sr_nbr2.stats', L5_NAME),
-                                  ('LE7*_sr_nbr2.stats', L7_NAME),
-                                  ('LC8*_sr_nbr2.stats', L8_NAME)]
+        _nbr2_info = [SearchInfo(L4_NAME, ['LT4*_sr_nbr2.stats',
+                                           'LT04*_sr_nbr2.stats']),
+                      SearchInfo(L5_NAME, ['LT5*_sr_nbr2.stats',
+                                           'LT05*_sr_nbr2.stats']),
+                      SearchInfo(L7_NAME, ['LE7*_sr_nbr2.stats',
+                                           'LE07*_sr_nbr2.stats']),
+                      SearchInfo(L8_NAME, ['LC8*_sr_nbr2.stats',
+                                           'LC08*_sr_nbr2.stats'])]
 
         # Only Landsat NDMI files
-        self._ndmi_sensor_info = [('LT4*_sr_ndmi.stats', L4_NAME),
-                                  ('LT5*_sr_ndmi.stats', L5_NAME),
-                                  ('LE7*_sr_ndmi.stats', L7_NAME),
-                                  ('LC8*_sr_ndmi.stats', L8_NAME)]
+        _ndmi_info = [SearchInfo(L4_NAME, ['LT4*_sr_ndmi.stats',
+                                           'LT04*_sr_ndmi.stats']),
+                      SearchInfo(L5_NAME, ['LT5*_sr_ndmi.stats',
+                                           'LT05*_sr_ndmi.stats']),
+                      SearchInfo(L7_NAME, ['LE7*_sr_ndmi.stats',
+                                           'LE07*_sr_ndmi.stats']),
+                      SearchInfo(L8_NAME, ['LC8*_sr_ndmi.stats',
+                                           'LC08*_sr_ndmi.stats'])]
+
+        self.work_list = [(_sr_coastal_info, 'SR COASTAL AEROSOL'),
+                          (_sr_blue_info, 'SR Blue'),
+                          (_sr_green_info, 'SR Green'),
+                          (_sr_red_info, 'SR Red'),
+                          (_sr_nir_info, 'SR NIR'),
+                          (_sr_swir1_info, 'SR SWIR1'),
+                          (_sr_swir2_info, 'SR SWIR2'),
+                          (_sr_cirrus_info, 'SR CIRRUS'),
+                          (_sr_swir_modis_b5_info, 'SR SWIR B5'),
+                          (_toa_thermal_info, 'SR Thermal'),
+                          (_toa_coastal_info, 'TOA COASTAL AEROSOL'),
+                          (_toa_blue_info, 'TOA Blue'),
+                          (_toa_green_info, 'TOA Green'),
+                          (_toa_red_info, 'TOA Red'),
+                          (_toa_nir_info, 'TOA NIR'),
+                          (_toa_swir1_info, 'TOA SWIR1'),
+                          (_toa_swir2_info, 'TOA SWIR2'),
+                          (_toa_cirrus_info, 'TOA CIRRUS'),
+                          (_emis_20_info, 'Emis Band 20'),
+                          (_emis_22_info, 'Emis Band 22'),
+                          (_emis_23_info, 'Emis Band 23'),
+                          (_emis_29_info, 'Emis Band 29'),
+                          (_emis_31_info, 'Emis Band 31'),
+                          (_emis_32_info, 'Emis Band 32'),
+                          (_lst_day_info, 'LST Day'),
+                          (_lst_night_info, 'LST Night'),
+                          (_ndvi_info, 'NDVI'),
+                          (_evi_info, 'EVI'),
+                          (_savi_info, 'SAVI'),
+                          (_msavi_info, 'MSAVI'),
+                          (_nbr_info, 'NBR'),
+                          (_nbr2_info, 'NBR2'),
+                          (_ndmi_info, 'NDMI')]
 
         super(PlotProcessor, self).__init__(parms)
 
     def validate_parameters(self):
-        '''
-        Description:
-            Validates the parameters required for the processor.
-        '''
+        """Validates the parameters required for the processor
+        """
 
         # Call the base class parameter validation
         super(PlotProcessor, self).validate_parameters()
 
-        self._logger.info("Validating [PlotProcessor] parameters")
+        self._logger.info('Validating [PlotProcessor] parameters')
 
         options = self._parms['options']
 
@@ -2048,33 +2040,19 @@ class PlotProcessor(ProductProcessor):
             options['marker_edge_width'] = self._marker_edge_width
 
     def read_statistics(self, statistics_file):
-        '''
-        Description:
-          Read the file contents and return as a list of key values.
-        '''
+        """Read the file contents and return as a list of key values
+        """
 
-        found_valid = False
         with open(statistics_file, 'r') as statistics_fd:
             for line in statistics_fd:
                 line_lower = line.strip().lower()
                 parts = line_lower.split('=')
-                # Some files may not contain the field so detect that
-                # TODO - This can be removed after version 2.6.1
-                if parts[0] == 'valid':
-                    found_valid = True
                 yield parts
 
-        # Some files may not contain the field so report valid for them
-        # TODO - This can be removed after version 2.6.1
-        if not found_valid:
-            yield(['valid', 'yes'])
-
     def get_sensor_string_from_filename(self, filename):
-        '''
-        Description:
-          Determine the year, month, day_of_month, and sensor from the
-          scene name.
-        '''
+        """Determine the year, month, day_of_month, and sensor from the
+           scene name
+        """
 
         sensor_name = sensor.info(filename).sensor_name
         sensor_string = sensor_name
@@ -2083,19 +2061,17 @@ class PlotProcessor(ProductProcessor):
             # We plot both TIRS bands in the thermal plot so they need to
             # be separatly identified
             if 'toa_band10' in filename:
-                sensor_string = '{0}-TIRS1'.format(sensor_name)
+                sensor_string = '{}-TIRS1'.format(sensor_name)
             elif 'toa_band11' in filename:
-                sensor_string = '{0}-TIRS2'.format(sensor_name)
+                sensor_string = '{}-TIRS2'.format(sensor_name)
         else:
             sensor_string = sensor_name
 
         return sensor_string
 
     def combine_sensor_stats(self, stats_name, stats_files):
-        '''
-        Description:
-          Combines all the stat files for one sensor into one csv file.
-        '''
+        """Combines all the stat files for one sensor into one csv file
+        """
 
         stats = dict()
 
@@ -2113,15 +2089,12 @@ class PlotProcessor(ProductProcessor):
         # Process through and create records
         for filename, obj in stats.items():
             self._logger.debug(filename)
-            # Figure out the date for stats record
-            sensor_inst = sensor
-            (year, month, day_of_month, day_of_year, sensor_string) = \
-                self.get_ymds_from_filename(filename)
-            date = ('%04d-%02d-%02d'
-                    % (int(year), int(month), int(day_of_month)))
-            self._logger.debug(date)
 
-            line = ','.join([date, '%03d' % day_of_year,
+            # Figure out the date information for the stats record
+            date = sensor.info(filename).date_acquired
+            day_of_year = date.timetuple().tm_yday
+
+            line = ','.join([date.isoformat(), '{0:03}'.format(day_of_year),
                              obj['minimum'], obj['maximum'],
                              obj['mean'], obj['stddev'], obj['valid']])
             self._logger.debug(line)
@@ -2149,10 +2122,8 @@ class PlotProcessor(ProductProcessor):
             output_fd.write(data)
 
     def scale_data_to_range(self, in_high, in_low, out_high, out_low, data):
-        '''
-        Description:
-          Scale the values in the data array to the specified output range.
-        '''
+        """Scale the values in the data array to the specified output range
+        """
 
         # Figure out the ranges
         in_range = in_high - in_low
@@ -2161,18 +2132,15 @@ class PlotProcessor(ProductProcessor):
         return out_high - ((out_range * (in_high - data)) / in_range)
 
     def generate_plot(self, plot_name, subjects, band_type, stats,
-                      plot_type="Value"):
-        '''
-        Description:
-          Builds a plot and then generates a png formatted image of the plot.
-        '''
+                      plot_type='Value'):
+        """Builds a plot and then generates a png formatted image of the plot
+        """
 
         # Test for a valid plot_type parameter
         # For us 'Range' mean min, max, and mean
         if plot_type not in ('Range', 'Value'):
-            error = ("Error plot_type='%s' must be one of ('Range', 'Value')"
-                     % plot_type)
-            raise ValueError(error)
+            raise ValueError('Error plot_type={} must be one of'
+                             ' (Range, Value)'.format(plot_type))
 
         # Create the subplot objects
         fig = mpl_plot.figure()
@@ -2188,12 +2156,12 @@ class PlotProcessor(ProductProcessor):
             if band_type.startswith(range_type):
                 use_data_range = range_type
                 break
-        self._logger.info("Using use_data_range [%s] for band_type [%s]"
-                          % (use_data_range, band_type))
+        self._logger.info('Using use_data_range [{}] for band_type [{}]'
+                          .format(use_data_range, band_type))
 
         # Make sure the band_type has been coded (help the developer)
         if use_data_range == '':
-            raise ValueError("Error unable to determine 'use_data_range'")
+            raise ValueError('Error unable to determine [use_data_range]')
 
         data_max = self._band_type_data_ranges[use_data_range]['DATA_MAX']
         data_min = self._band_type_data_ranges[use_data_range]['DATA_MIN']
@@ -2218,7 +2186,7 @@ class PlotProcessor(ProductProcessor):
 
         sensor_dict = defaultdict(list)
 
-        if plot_type == "Range":
+        if plot_type == 'Range':
             lower_subject = 'mean'  # Since Range force to the mean
         else:
             lower_subject = subjects[0].lower()
@@ -2229,7 +2197,7 @@ class PlotProcessor(ProductProcessor):
             self._logger.debug(filename)
 
             date = sensor.info(filename).date_acquired
-            sensor_string = get_sensor_string_from_filename(self, filename)
+            sensor_string = self.get_sensor_string_from_filename(filename)
             min_value = float(obj['minimum'])
             max_value = float(obj['maximum'])
             mean = float(obj['mean'])
@@ -2281,7 +2249,7 @@ class PlotProcessor(ProductProcessor):
                                                      stddev_values)
 
             # Draw the min to max line for these dates
-            if plot_type == "Range":
+            if plot_type == 'Range':
                 min_plot.vlines(dates, min_values, max_values,
                                 colors=self._sensor_colors[sensor_name],
                                 linestyles='solid', linewidths=1)
@@ -2397,7 +2365,7 @@ class PlotProcessor(ProductProcessor):
         # Configure the legend
         legend = mpl_plot.legend(proxy_artists, sorted_sensors,
                                  bbox_to_anchor=(0.0, 1.01, 1.0, 0.5),
-                                 loc=3, ncol=6, mode="expand",
+                                 loc=3, ncol=6, mode='expand',
                                  borderaxespad=0.0, numpoints=1,
                                  prop={'size': 12})
 
@@ -2422,11 +2390,9 @@ class PlotProcessor(ProductProcessor):
         mpl_plot.close()
 
     def generate_plots(self, plot_name, stats_files, band_type):
-        '''
-        Description:
-          Gather all the information needed for plotting from the files and
-          generate a plot for each statistic
-        '''
+        """Gather all the information needed for plotting from the files and
+           generate a plot for each statistic
+        """
 
         stats = dict()
 
@@ -2438,19 +2404,20 @@ class PlotProcessor(ProductProcessor):
                      in self.read_statistics(stats_file))
             if stats[stats_file]['valid'] == 'no':
                 # Remove it so we do not have it in the plot
-                self._logger.warning("[%s] Data is not valid:"
-                                     " Will not be used for plot generation"
-                                     % stats_file)
+                self._logger.warning('[{}] Data is not valid:'
+                                     ' Will not be used for plot generation'
+                                     .format(stats_file))
                 del stats[stats_file]
 
         # Check if we have enough stuff to plot or not
         if len(stats) < 2:
-            self._logger.warning("Not enough points to plot [%s]"
-                                 " skipping plotting" % plot_name)
+            self._logger.warning('Not enough points to plot [{}]'
+                                 ' skipping plotting'.format(plot_name))
             return
 
         plot_subjects = ['Minimum', 'Maximum', 'Mean']
-        self.generate_plot(plot_name, plot_subjects, band_type, stats, "Range")
+        self.generate_plot(plot_name, plot_subjects, band_type, stats,
+                           'Range')
 
         plot_subjects = ['Minimum']
         self.generate_plot(plot_name, plot_subjects, band_type, stats)
@@ -2464,21 +2431,22 @@ class PlotProcessor(ProductProcessor):
         plot_subjects = ['StdDev']
         self.generate_plot(plot_name, plot_subjects, band_type, stats)
 
-    def process_band_type(self, sensor_info, band_type):
-        '''
-        Description:
-          A generic processing routine which finds the files to process based
-          on the provided search criteria.  Utilizes the provided band type as
-          part of the plot names and filenames.  If no files are found, no
-          plots or combined statistics will be generated.
-        '''
+    def process_band_type(self, (search_list, band_type)):
+        """A generic processing routine which finds the files to process based
+           on the provided search criteria
 
-        single_sensor_files = list()
+        Utilizes the provided band type as part of the plot names and
+        filenames.  If no files are found, no plots or combined statistics
+        will be generated.
+        """
+
         multi_sensor_files = list()
         single_sensor_name = ''
         sensor_count = 0  # How many sensors were found....
-        for (search_string, sensor_name) in sensor_info:
-            single_sensor_files = glob.glob(search_string)
+        for (sensor_name, filter_list) in search_list:
+            single_sensor_files = list()
+            for filter_item in filter_list:
+                single_sensor_files.extend(glob.glob(filter_item))
             if single_sensor_files and single_sensor_files is not None:
                 if len(single_sensor_files) > 0:
                     sensor_count += 1  # We found another sensor
@@ -2488,13 +2456,13 @@ class PlotProcessor(ProductProcessor):
                                               single_sensor_files)
                     multi_sensor_files.extend(single_sensor_files)
 
-        # Cleanup the memory for this while we process the multi-sensor list
-        del single_sensor_files
+            # Cleanup the memory for this
+            del single_sensor_files
 
         # We always use the multi sensor variable here because it will only
         # have the single sensor in it, if that is the case
         if sensor_count > 1:
-            self.generate_plots("Multi Sensor %s" % band_type,
+            self.generate_plots('Multi Sensor {}'.format(band_type),
                                 multi_sensor_files, band_type)
         elif sensor_count == 1 and len(multi_sensor_files) > 1:
             self.generate_plots(' '.join([single_sensor_name, band_type]),
@@ -2510,85 +2478,33 @@ class PlotProcessor(ProductProcessor):
         del multi_sensor_files
 
     def process_stats(self):
-        '''
-        Description:
-          Process the stat results to plots.  If any bands/files do not exist,
-          plots will not be generated for them.
-        '''
+        """Process the stat results to plots
+
+        If any bands/files do not exist, plots will not be generated for them.
+        """
 
         # Change to the working directory
         current_directory = os.getcwd()
         os.chdir(self._work_dir)
 
         try:
-            self.process_band_type(self._sr_coastal_sensor_info,
-                                   "SR COASTAL AEROSOL")
-            self.process_band_type(self._sr_blue_sensor_info, "SR Blue")
-            self.process_band_type(self._sr_green_sensor_info, "SR Green")
-            self.process_band_type(self._sr_red_sensor_info, "SR Red")
-            self.process_band_type(self._sr_nir_sensor_info, "SR NIR")
-            self.process_band_type(self._sr_swir1_sensor_info, "SR SWIR1")
-            self.process_band_type(self._sr_swir2_sensor_info, "SR SWIR2")
-            self.process_band_type(self._sr_cirrus_sensor_info, "SR CIRRUS")
-
-            self.process_band_type(self._sr_swir_modis_b5_sensor_info,
-                                   "SR SWIR B5")
-
-            self.process_band_type(self._toa_thermal_sensor_info, "SR Thermal")
-
-            self.process_band_type(self._toa_coastal_sensor_info,
-                                   "TOA COASTAL AEROSOL")
-            self.process_band_type(self._toa_blue_sensor_info, "TOA Blue")
-            self.process_band_type(self._toa_green_sensor_info, "TOA Green")
-            self.process_band_type(self._toa_red_sensor_info, "TOA Red")
-            self.process_band_type(self._toa_nir_sensor_info, "TOA NIR")
-            self.process_band_type(self._toa_swir1_sensor_info, "TOA SWIR1")
-            self.process_band_type(self._toa_swir2_sensor_info, "TOA SWIR2")
-            self.process_band_type(self._toa_cirrus_sensor_info, "TOA CIRRUS")
-
-            self.process_band_type(self._emis_20_sensor_info, "Emis Band 20")
-            self.process_band_type(self._emis_22_sensor_info, "Emis Band 22")
-            self.process_band_type(self._emis_23_sensor_info, "Emis Band 23")
-            self.process_band_type(self._emis_29_sensor_info, "Emis Band 29")
-            self.process_band_type(self._emis_31_sensor_info, "Emis Band 31")
-            self.process_band_type(self._emis_32_sensor_info, "Emis Band 32")
-
-            self.process_band_type(self._lst_day_sensor_info, "LST Day")
-            self.process_band_type(self._lst_night_sensor_info, "LST Night")
-
-            self.process_band_type(self._ndvi_sensor_info, "NDVI")
-
-            self.process_band_type(self._evi_sensor_info, "EVI")
-
-            self.process_band_type(self._savi_sensor_info, "SAVI")
-
-            self.process_band_type(self._msavi_sensor_info, "MSAVI")
-
-            self.process_band_type(self._nbr_sensor_info, "NBR")
-
-            self.process_band_type(self._nbr2_sensor_info, "NBR2")
-
-            self.process_band_type(self._ndmi_sensor_info, "NDMI")
+            map(self.process_band_type, self.work_list)
 
         finally:
             # Change back to the previous directory
             os.chdir(current_directory)
 
     def stage_input_data(self):
-        '''
-        Description:
-            Stages the input data required for the processor.
-        '''
+        """Stages the input data required for the processor
+        """
 
         staging.stage_statistics_data(self._output_dir, self._stage_dir,
                                       self._work_dir, self._parms)
 
     def get_product_name(self):
-        '''
-        Description:
-            Return the product name for that statistics and plot product from
-            the product request information.
-        '''
+        """Return the product name for that statistics and plot product from
+           the product request information
+        """
 
         if self._product_name is None:
             self._product_name = '-'.join([self._parms['orderid'],
@@ -2597,11 +2513,9 @@ class PlotProcessor(ProductProcessor):
         return self._product_name
 
     def process_product(self):
-        '''
-        Description:
-            Perform the processor specific processing to generate the
-            requested product.
-        '''
+        """Perform the processor specific processing to generate the
+           requested product
+        """
 
         # Stage the required input data
         self.stage_input_data()
@@ -2618,11 +2532,9 @@ class PlotProcessor(ProductProcessor):
 
 # ===========================================================================
 def get_instance(parms):
-    '''
-    Description:
-        Provides a method to retrieve the proper processor for the specified
-        product.
-    '''
+    """Provides a method to retrieve the proper processor for the specified
+       product.
+    """
 
     product_id = parms['product_id']
 
@@ -2644,8 +2556,8 @@ def get_instance(parms):
     elif sensor.is_lo8(product_id):
         return LandsatOLIProcessor(parms)
     elif sensor.is_lt8(product_id):
-        msg = "A processor for [%s] has not been implemented" % product_id
-        raise NotImplementedError(msg)
+        raise NotImplementedError('A processor for [{}] has not been'
+                                  ' implemented'.format(product_id))
     elif sensor.is_lc8(product_id):
         return LandsatOLITIRSProcessor(parms)
     elif sensor.is_terra(product_id):
@@ -2653,5 +2565,5 @@ def get_instance(parms):
     elif sensor.is_aqua(product_id):
         return ModisAQUAProcessor(parms)
     else:
-        msg = "A processor for [%s] has not been implemented" % product_id
-        raise NotImplementedError(msg)
+        raise NotImplementedError('A processor for [{}] has not been'
+                                  ' implemented'.format(product_id))

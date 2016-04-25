@@ -61,7 +61,9 @@ DEFAULT_PIXEL_SIZE = {
         '13A2': 1000,
         '13A1': 500,
         'LC8': 30,
+        'LC08': 30,
         'LO8': 30,
+        'LO08': 30,
         'LE7': 30,
         'LE07': 30,
         'LT5': 30,
@@ -79,7 +81,9 @@ DEFAULT_PIXEL_SIZE = {
         '13A2': 0.0089831,
         '13A1': 0.00449155,
         'LC8': 0.0002695,
+        'LC08': 0.0002695,
         'LO8': 0.0002695,
+        'LO08': 0.0002695,
         'LE7': 0.0002695,
         'LE07': 0.0002695,
         'LT5': 0.0002695,
@@ -191,15 +195,15 @@ def modis_sensor_info(product_id):
     date_YYYYDDD = parts[1][1:]
     date_acquired = datetime.datetime.strptime(date_YYYYDDD, '%Y%j').date()
 
-    year = self.date_acquired.year
-    doy = self.date_acquired.timetuple().tm_yday
+    year = date_acquired.year
+    doy = date_acquired.timetuple().tm_yday
 
     horizontal = parts[2][1:3]
     vertical = parts[2][4:6]
 
     # Determine the product prefix
     product_prefix = ('{0}h{1:>02}v{2:>02}{3:>04}{4:>03}'
-                      .format(sensor_code, horizontal, vertical, year, doy))
+                      .format(short_name, horizontal, vertical, year, doy))
 
     # Determine the default pixel sizes
     _product_code = short_name[3:]
@@ -234,6 +238,12 @@ LANDSAT_COLLECTION_REGEXP_MAPPING = {
              landsat_collection_sensor_info),
 
     'le07': (r'^le07_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
+             landsat_collection_sensor_info),
+
+    'lc08': (r'^lc08_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
+             landsat_collection_sensor_info),
+
+    'lo08': (r'^lo08_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
              landsat_collection_sensor_info)
 }
 
@@ -367,6 +377,18 @@ def is_lo08(a):
     return a.upper().startswith(LO08_SENSOR_CODE)
 
 
+def is_landsat4(a):
+    return any([is_lt4(a), is_lt04(a)])
+
+
+def is_landsat5(a):
+    return any([is_lt5(a), is_lt05(a)])
+
+
+def is_landsat7(a):
+    return any([is_le7(a), is_le07(a)])
+
+
 def is_landsat8(a):
     return any([is_lc8(a), is_lo8(a), is_lt8(a),
                 is_lc08(a), is_lo08(a), is_lt08(a)])
@@ -407,6 +429,10 @@ class ProductNotImplemented(NotImplementedError):
 
 class sensor_memoize(object):
     """Implements a special memoize decorator for sensor information
+
+    Note: This is because the Product ID, may not be just the Product ID, it
+          may be a filename.  And we want to use the Product ID, not the
+          filename for the key.
     """
 
     def __init__(self, function):
@@ -417,13 +443,14 @@ class sensor_memoize(object):
         self.memory = dict()
 
     def __call__(self, *args):
-        """Constructor
+        """Executes the wrapped function
         """
 
         # Make sure we use a clean Product ID.
         temp_id = args[0].strip()
         product_id = None
 
+        # Only usethe Product ID
         if is_landsat_collection(temp_id):
             product_id = temp_id[:39]
         elif is_landsat_historical(temp_id):
@@ -434,10 +461,11 @@ class sensor_memoize(object):
             raise ProductNotImplemented('[{0}] is not a supported product'
                                         .format(temp_id))
 
+        # Check if we already have it before creating a new one
         try:
             return self.memory[product_id]
         except KeyError:
-            self.memory[_product_id] = self.function(_product_id)
+            self.memory[product_id] = self.function(product_id)
             return self.memory[product_id]
 
 

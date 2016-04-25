@@ -33,13 +33,12 @@ MAPPER_LOG_FILENAME = '.'.join([MAPPER_LOG_PREFIX, 'log'])
 
 
 def set_product_error(server, order_id, product_id, processing_location):
-    '''
-    Description:
-        Call the xmlrpc server routine to set a product request to error.
-        Provides a sleep retry implementation to hopefully by-pass any errors
-        encountered, so that we do not get requests that have failed, but
-        show a status of processing.
-    '''
+    """Call the xmlrpc server routine to set a product request to error
+
+    Provides a sleep retry implementation to hopefully by-pass any errors
+    encountered, so that we do not get requests that have failed, but
+    show a status of processing.
+    """
 
     if server is not None:
         logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
@@ -48,19 +47,10 @@ def set_product_error(server, order_id, product_id, processing_location):
         sleep_seconds = settings.DEFAULT_SLEEP_SECONDS
         while True:
             try:
-                if product_id is None:
-                    logger.info("DEBUG: Product ID is [None]")
-                else:
-                    logger.info("DEBUG: Product ID is [%s]" % product_id)
-                if order_id is None:
-                    logger.info("DEBUG: Order ID is [None]")
-                else:
-                    logger.info("DEBUG: Order ID is [%s]" % order_id)
-                if processing_location is None:
-                    logger.info("DEBUG: Processing Location is [None]")
-                else:
-                    logger.info("DEBUG: Processing Location is [%s]"
-                                % processing_location)
+                logger.info('Product ID is [{}]'.format(product_id))
+                logger.info('Order ID is [{}]'.format(order_id))
+                logger.info('Processing Location is [{}]'
+                            .format(processing_location))
 
                 logged_contents = \
                     EspaLogging.read_logger_file(settings.PROCESSING_LOGGER)
@@ -70,16 +60,16 @@ def set_product_error(server, order_id, product_id, processing_location):
                                                 logged_contents)
 
                 if not status:
-                    logger.critical("Failed processing xmlrpc call to"
-                                    " set_scene_error")
+                    logger.critical('Failed processing xmlrpc call to'
+                                    ' set_scene_error')
                     return False
 
                 break
 
             except Exception:
-                logger.critical("Failed processing xmlrpc call to"
-                                " set_scene_error")
-                logger.exception("Exception encountered and follows")
+                logger.critical('Failed processing xmlrpc call to'
+                                ' set_scene_error')
+                logger.exception('Exception encountered and follows')
 
                 if attempt < settings.MAX_SET_SCENE_ERROR_ATTEMPTS:
                     sleep(sleep_seconds)  # sleep before trying again
@@ -92,7 +82,7 @@ def set_product_error(server, order_id, product_id, processing_location):
     return True
 
 
-def get_sleep_duration(start_time):
+def get_sleep_duration(start_time, dont_sleep):
     """Logs details and returns number of seconds to sleep
     """
 
@@ -104,12 +94,12 @@ def get_sleep_duration(start_time):
     logger.info('Processing Time Elapsed {0} Seconds'.format(seconds_elapsed))
 
     seconds_to_sleep = 1
-    if seconds_elapsed < settings.MIN_REQUEST_DURATION_IN_SECONDS:
-        # Joe-Developer doesn't want to wait so check and skip
-        # This directory will not exist for HADOOP processing
-        if not os.path.isdir('unittests'):
-            seconds_to_sleep = (settings.MIN_REQUEST_DURATION_IN_SECONDS -
-                                seconds_elapsed)
+    if dont_sleep:
+        # We don't need to sleep
+        seconds_to_sleep = 1
+    elif seconds_elapsed < settings.MIN_REQUEST_DURATION_IN_SECONDS:
+        seconds_to_sleep = (settings.MIN_REQUEST_DURATION_IN_SECONDS -
+                            seconds_elapsed)
 
     logger.info('Sleeping An Additional {0} Seconds'.format(seconds_to_sleep))
 
@@ -150,17 +140,17 @@ def archive_log_files(order_id, product_id):
     except Exception:
         # We don't care because we are at the end of processing
         # And if we are on the successful path, we don't care either
-        logger.exception("Exception encountered and follows")
+        logger.exception('Exception encountered and follows')
 
 
-def process(args):
-    '''
-    Description:
-      Read all lines from STDIN and process them.  Each line is converted to
-      a JSON dictionary of the parameters for processing.  Validation is
-      performed on the JSON dictionary to test if valid for this mapper.
-      After validation the generation of the products is performed.
-    '''
+def process(developer_sleep_mode=False):
+    """Read all lines from STDIN and process them
+
+    Each line is converted to a JSON dictionary of the parameters for
+    processing.  Validation is performed on the JSON dictionary to test if
+    valid for this mapper.  After validation the generation of the products
+    is performed.
+    """
 
     # Initially set to the base logger
     logger = EspaLogging.get_logger('base')
@@ -172,32 +162,38 @@ def process(args):
         if not line or len(line) < 1 or not line.strip().find('{') > -1:
             # this is how the nlineinputformat is supplying values:
             # 341104        {"orderid":
-            # logger.info("BAD LINE:%s##" % line)
+            # logger.info('BAD LINE:{}##'.format(line))
             continue
         else:
             # take the entry starting at the first opening parenth to the end
-            line = line[line.find("{"):]
+            line = line[line.find('{'):]
             line = line.strip()
 
         # Reset these for each line
         (server, order_id, product_id) = (None, None, None)
 
-        # Default to the command line value
-        mapper_keep_log = args.keep_log
-
         start_time = datetime.datetime.now()
+
+        # Initialize so that we don't sleep
+        dont_sleep = True
 
         try:
             line = line.replace('#', '')
             parms = json.loads(line)
 
             if not parameters.test_for_parameter(parms, 'options'):
-                raise ValueError("Error missing JSON 'options' record")
+                raise ValueError('Error missing JSON [options] record')
 
             # TODO scene will be replaced with product_id someday
             (order_id, product_id, product_type, options) = \
                 (parms['orderid'], parms['scene'], parms['product_type'],
                  parms['options'])
+
+            if product_id != 'plot':
+                # Developer mode is always false unless you are a developer
+                # so sleeping will always occur for none plotting requests
+                # Override with the developer mode
+                dont_sleep = developer_sleep_mode
 
             # Fix the orderid in-case it contains any single quotes
             # The processors can not handle single quotes in the email
@@ -218,14 +214,7 @@ def process(args):
                                   product=product_id, debug=debug)
             logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
 
-            # If the command line option is True don't use the scene option
-            if not mapper_keep_log:
-                if not parameters.test_for_parameter(options, 'keep_log'):
-                    options['keep_log'] = False
-
-                mapper_keep_log = options['keep_log']
-
-            logger.info("Processing %s:%s" % (order_id, product_id))
+            logger.info('Processing {}:{}'.format(order_id, product_id))
 
             # Update the status in the database
             if parameters.test_for_parameter(parms, 'xmlrpcurl'):
@@ -237,8 +226,8 @@ def process(args):
                                                       processing_location,
                                                       'processing')
                         if not status:
-                            logger.warning("Failed processing xmlrpc call"
-                                           " to update_status to processing")
+                            logger.warning('Failed processing xmlrpc call'
+                                           ' to update_status to processing')
 
             if product_id != 'plot':
                 # Make sure we can process the sensor
@@ -247,15 +236,15 @@ def process(args):
 
                 # Make sure we have a valid output format
                 if not parameters.test_for_parameter(options, 'output_format'):
-                    logger.warning("'output_format' parameter missing"
-                                   " defaulting to envi")
+                    logger.warning('[output_format] parameter missing'
+                                   ' defaulting to envi')
                     options['output_format'] = 'envi'
 
                 if (options['output_format']
                         not in parameters.VALID_OUTPUT_FORMATS):
 
-                    raise ValueError("Invalid Output format %s"
-                                     % options['output_format'])
+                    raise ValueError('Invalid Output format {}'
+                                     .format(options['output_format']))
 
             # ----------------------------------------------------------------
             # NOTE: The first thing the product processor does during
@@ -273,11 +262,11 @@ def process(args):
 
             finally:
                 # Free disk space to be nice to the whole system.
-                if not mapper_keep_log and pp is not None:
+                if pp is not None:
                     pp.remove_product_directory()
 
             # Sleep the number of seconds for minimum request duration
-            sleep(get_sleep_duration(start_time))
+            sleep(get_sleep_duration(start_time, dont_sleep))
 
             archive_log_files(order_id, product_id)
 
@@ -286,18 +275,19 @@ def process(args):
                 status = server.mark_scene_complete(product_id, order_id,
                                                     processing_location,
                                                     destination_product_file,
-                                                    destination_cksum_file, "")
+                                                    destination_cksum_file,
+                                                    '')
                 if not status:
-                    logger.warning("Failed processing xmlrpc call to"
-                                   " mark_scene_complete")
+                    logger.warning('Failed processing xmlrpc call to'
+                                   ' mark_scene_complete')
 
         except Exception as excep:
 
             # First log the exception
-            logger.exception("Exception encountered stacktrace follows")
+            logger.exception('Exception encountered stacktrace follows')
 
             # Sleep the number of seconds for minimum request duration
-            sleep(get_sleep_duration(start_time))
+            sleep(get_sleep_duration(start_time, dont_sleep))
 
             archive_log_files(order_id, product_id)
 
@@ -308,24 +298,27 @@ def process(args):
                                                product_id,
                                                processing_location)
                 except Exception:
-                    logger.exception("Exception encountered stacktrace"
-                                     " follows")
+                    logger.exception('Exception encountered stacktrace'
+                                     ' follows')
         finally:
             # Reset back to the base logger
             logger = EspaLogging.get_logger('base')
 
 
-if __name__ == '__main__':
-    '''
-    Description:
-        Some parameter and logging setup, then call the process routine.
-    '''
+def main():
+    """Some parameter and logging setup, then call the process routine
+    """
 
-    # Grab our only command line parameter
-    parser = ArgumentParser(
-        description="Processes a list of scenes from stdin")
-    parser.add_argument('--keep-log', action='store_true', dest='keep_log',
-                        default=False, help="keep the generated log file")
+    # Create a command line argument parser
+    description = 'Main mapper for a request'
+    parser = ArgumentParser(description=description)
+
+    # Add our only options to determine if we are a developer or not
+    parser.add_argument('--developer',
+                        action='store_true', dest='developer', default=False,
+                        help='use a developer mode for sleeping')
+
+    # Parse the command line arguments
     args = parser.parse_args()
 
     EspaLogging.configure_base_logger(filename=MAPPER_LOG_FILENAME)
@@ -333,8 +326,13 @@ if __name__ == '__main__':
     logger = EspaLogging.get_logger('base')
 
     try:
-        process(args)
-    except Exception:
-        logger.exception("Processing failed stacktrace follows")
+        # Joe-Developer doesn't want to wait so if set skip sleeping
+        developer_sleep_mode = args.developer
 
-    sys.exit(0)
+        process(developer_sleep_mode)
+    except Exception:
+        logger.exception('Processing failed stacktrace follows')
+
+
+if __name__ == '__main__':
+    main()
