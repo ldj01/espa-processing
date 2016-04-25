@@ -179,7 +179,7 @@ def process_requests(cron_cfg, proc_cfg, args,
     else:
         raise Exception('Missing or invalid environment variable ESPA_API')
 
-    home_dir = os.environ.get('HOME')
+    home_dir = os.environ.request('HOME')
     hadoop_executable = os.path.join(home_dir, 'bin/hadoop/bin/hadoop')
 
     # Verify xmlrpc server

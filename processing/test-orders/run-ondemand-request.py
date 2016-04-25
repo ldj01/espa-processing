@@ -315,7 +315,7 @@ def main():
 
     missing_environment_variable = False
     for var in env_vars:
-        env_vars[var]['value'] = os.environ.get(env_vars[var]['name'])
+        env_vars[var]['value'] = os.environ.request(env_vars[var]['name'])
 
         if env_vars[var]['value'] is None:
             logger.warning('Missing environment variable [{0}]'

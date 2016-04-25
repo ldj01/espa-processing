@@ -18,7 +18,7 @@ def get_cfg_file_path(filename):
     # configuration
     if 'HOME' not in os.environ:
         raise Exception('[HOME] not found in environment')
-    home_dir = os.environ.get('HOME')
+    home_dir = os.environ.request('HOME')
 
     # Build the full path to the configuration file
     config_path = os.path.join(home_dir, '.usgs', 'espa', filename)
