@@ -11,6 +11,7 @@ import os
 import sys
 import socket
 import logging
+import datetime
 import json
 from argparse import ArgumentParser
 from ConfigParser import ConfigParser
@@ -207,20 +208,22 @@ def process_test_order(args, request_file, products_file, env_vars):
                     download_url = 'file://{0}'.format(product_path)
 
                 elif not args.plot:
-                    if sensor.is_terra(product_id) == 'MOD':
+                    if sensor.is_terra(product_id):
                         base_source_path = '/MOLT'
                     else:
                         base_source_path = '/MOLA'
 
-                    short_name = sensor.instance(product_id).short_name
-                    version = sensor.instance(product_id).version
-                    archive_date = utilities.date_from_doy(
-                        sensor.instance(product_id).year,
-                        sensor.instance(product_id).doy)
+                    parts = product_id.split('.')
+                    short_name = parts[0]
+                    version = parts[3]
+                    date_YYYYDDD = parts[1][1:]
+                    date_acquired = datetime.datetime.strptime(date_YYYYDDD,
+                                                               '%Y%j').date()
+
                     xxx = ('{0}.{1}.{2}'
-                           .format(str(archive_date.year).zfill(4),
-                                   str(archive_date.month).zfill(2),
-                                   str(archive_date.day).zfill(2)))
+                           .format(str(date_acquired.year).zfill(4),
+                                   str(date_acquired.month).zfill(2),
+                                   str(date_acquired.day).zfill(2)))
 
                     product_path = ('{0}/{1}.{2}/{3}'
                                     .format(base_source_path, short_name,
