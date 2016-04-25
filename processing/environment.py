@@ -70,7 +70,7 @@ class Environment(object):
                 raise Exception("Environment variable ${0} is not defined".
                                 format(env_var))
 
-            env_value = os.environ.request(env_var, '')
+            env_value = os.environ.get(env_var, '')
 
             # If it has a strict set of values, verify that it is set to one
             # of them
