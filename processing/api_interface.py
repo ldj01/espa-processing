@@ -86,7 +86,7 @@ class APIServer(object):
 
         query = '&'.join([q for q in params if q])
 
-        url = '/production-api/v0/products?{}'.format(query)
+        url = '/v0/products?{}'.format(query)
 
         resp, status = self.request('get', url, status=200)
 
@@ -104,7 +104,7 @@ class APIServer(object):
 
         Returns:
         """
-        url = '/production-api/v0/update_status'
+        url = '/v0/update_status'
 
         data_dict = {'name': prod_id,
                      'orderid': order_id,
@@ -130,7 +130,7 @@ class APIServer(object):
 
         Returns:
         """
-        url = '/production-api/v0/mark_product_complete'
+        url = '/v0/mark_product_complete'
         data_dict = {'name': prod_id,
                      'orderid': order_id,
                      'processing_loc': proc_loc,
@@ -154,7 +154,7 @@ class APIServer(object):
 
         Returns:
         """
-        url = '/production-api/v0/set_product_error'
+        url = '/v0/set_product_error'
         data_dict = {'name': prod_id,
                      'orderid': order_id,
                      'processing_loc': proc_loc,
@@ -170,7 +170,7 @@ class APIServer(object):
 
         Returns: True if successful
         """
-        url = '/production-api/v0/handle-orders'
+        url = '/v0/handle-orders'
 
         resp, status = self.request('get', url, status=200)
 
