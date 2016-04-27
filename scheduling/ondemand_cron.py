@@ -235,7 +235,7 @@ def process_requests(cron_cfg, proc_cfg, args,
             # Create the order file full of all the scenes requested
             with open(job_filepath, 'w+') as espa_fd:
                 for request in requests:
-                    request['xmlrpcurl'] = rpcurl
+                    request['espa_api'] = rpcurl
 
                     # Log the request before passwords are added
                     line_entry = json.dumps(request)

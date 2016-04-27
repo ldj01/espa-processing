@@ -28,7 +28,7 @@ class APIServer(object):
 
         """
         valid_methods = ('get', 'put', 'delete', 'head', 'options')
-        status = kwargs.get('status')
+        status = kwargs.pop('status', None)
 
         if method not in valid_methods:
             raise APIException('Invalid method {}'.format(method))
@@ -48,7 +48,7 @@ class APIServer(object):
         if status and resp.status_code != status:
             self._unexpected_status(resp.status_code, url)
 
-        return resp.json(), resp.status_code
+        return resp, resp.status_code
 
     def get_configuration(self, key):
         """
@@ -86,7 +86,7 @@ class APIServer(object):
 
         query = '&'.join([q for q in params if q])
 
-        url = '/v0/products?{}'.format(query)
+        url = '/products?{}'.format(query)
 
         resp, status = self.request('get', url, status=200)
 
@@ -104,7 +104,7 @@ class APIServer(object):
 
         Returns:
         """
-        url = '/v0/update_status'
+        url = '/update_status'
 
         data_dict = {'name': prod_id,
                      'orderid': order_id,
@@ -130,7 +130,7 @@ class APIServer(object):
 
         Returns:
         """
-        url = '/v0/mark_product_complete'
+        url = '/mark_product_complete'
         data_dict = {'name': prod_id,
                      'orderid': order_id,
                      'processing_loc': proc_loc,
@@ -154,7 +154,7 @@ class APIServer(object):
 
         Returns:
         """
-        url = '/v0/set_product_error'
+        url = '/set_product_error'
         data_dict = {'name': prod_id,
                      'orderid': order_id,
                      'processing_loc': proc_loc,
@@ -170,7 +170,7 @@ class APIServer(object):
 
         Returns: True if successful
         """
-        url = '/v0/handle-orders'
+        url = '/handle-orders'
 
         resp, status = self.request('get', url, status=200)
 
