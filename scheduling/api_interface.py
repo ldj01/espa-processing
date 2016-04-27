@@ -16,7 +16,7 @@ class APIServer(object):
     def __init__(self, base_url):
         self.base = base_url
 
-    def request(self, method, resource=None, **kwargs):
+    def request(self, method, resource=None, status=None, **kwargs):
         """
         Make a call into the API
 
@@ -28,7 +28,6 @@ class APIServer(object):
 
         """
         valid_methods = ('get', 'put', 'delete', 'head', 'options')
-        status = kwargs.get('status')
 
         if method not in valid_methods:
             raise APIException('Invalid method {}'.format(method))
@@ -64,8 +63,9 @@ class APIServer(object):
 
         resp, status = self.request('get', config_url, status=200)
 
-        if key in resp.json():
-            return resp.json()[key]
+	    if key in resp.keys():
+		    return resp[key]
+
 
     def get_scenes_to_process(self, limit, user, priority, product_type):
         """
@@ -81,12 +81,12 @@ class APIServer(object):
         """
         params = ['record_limit={}'.format(limit) if limit else None,
                   'for_user={}'.format(user) if user else None,
-                  'request_priority={}'.format(priority) if priority else None,
+                  'priority={}'.format(priority) if priority else None,
                   'product_types={}'.format(product_type) if product_type else None]
 
         query = '&'.join([q for q in params if q])
 
-        url = '/v0/products?{}'.format(query)
+        url = '/products?{}'.format(query)
 
         resp, status = self.request('get', url, status=200)
 
@@ -104,7 +104,7 @@ class APIServer(object):
 
         Returns:
         """
-        url = '/v0/update_status'
+        url = '/update_status'
 
         data_dict = {'name': prod_id,
                      'orderid': order_id,
@@ -130,7 +130,7 @@ class APIServer(object):
 
         Returns:
         """
-        url = '/v0/mark_product_complete'
+        url = '/mark_product_complete'
         data_dict = {'name': prod_id,
                      'orderid': order_id,
                      'processing_loc': proc_loc,
@@ -154,7 +154,7 @@ class APIServer(object):
 
         Returns:
         """
-        url = '/v0/set_product_error'
+        url = '/set_product_error'
         data_dict = {'name': prod_id,
                      'orderid': order_id,
                      'processing_loc': proc_loc,
@@ -170,7 +170,7 @@ class APIServer(object):
 
         Returns: True if successful
         """
-        url = '/v0/handle-orders'
+        url = '/handle-orders'
 
         resp, status = self.request('get', url, status=200)
 
