@@ -27,7 +27,7 @@ class APIServer(object):
         Returns: response and status code
 
         """
-        valid_methods = ('get', 'put', 'delete', 'head', 'options')
+        valid_methods = ('get', 'put', 'delete', 'head', 'options', 'post')
 
         if method not in valid_methods:
             raise APIException('Invalid method {}'.format(method))
