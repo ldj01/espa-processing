@@ -110,7 +110,7 @@ class APIServer(object):
                      'processing_loc': proc_loc,
                      'status': val}
 
-        resp, status = self.request('post', url, data=data_dict, status=200)
+        resp, status = self.request('post', url, json=data_dict, status=200)
 
         return resp
 
@@ -137,7 +137,7 @@ class APIServer(object):
                      'cksum_file_location': dest_cksumfile,
                      'log_file_contents': val}
 
-        resp, status = self.request('post', url, data=data_dict, status=200)
+        resp, status = self.request('post', url, json=data_dict, status=200)
 
         return resp
 
@@ -159,7 +159,7 @@ class APIServer(object):
                      'processing_loc': proc_loc,
                      'error': log}
 
-        resp, status = self.request('post', url, data=data_dict, status=200)
+        resp, status = self.request('post', url, json=data_dict, status=200)
 
         return resp
 
@@ -170,7 +170,7 @@ class APIServer(object):
 
         url = '/queue-products'
 
-        resp, status = self.request('post', url, data=data_dict, status=200)
+        resp, status = self.request('post', url, json=data_dict, status=200)
 
         return resp
 
