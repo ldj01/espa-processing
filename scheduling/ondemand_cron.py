@@ -288,6 +288,7 @@ def process_requests(cron_cfg, proc_cfg, args,
                  '-inputformat', ('org.apache.hadoop.mapred.'
                                   'lib.NLineInputFormat'),
                  '-file', mapper_path,
+                 '-file', os.path.join(code_dir, 'api_interface.py'),
                  '-file', os.path.join(code_dir, 'distribution.py'),
                  '-file', os.path.join(code_dir, 'environment.py'),
                  '-file', os.path.join(code_dir, 'espa_exception.py'),
