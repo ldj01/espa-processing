@@ -163,6 +163,17 @@ class APIServer(object):
 
         return resp
 
+    def queue_products(self, prod_list, status, job_name):
+        data_dict = {'order_name_tuple_list': prod_list,
+                     'processing_location': status,
+                     'job_name': job_name}
+
+        url = '/queue-products'
+
+        resp, status = self.request('post', url, data=data_dict, status=200)
+
+        return resp
+
     def handle_orders(self):
         """
         Sends the handle_orders command to the API
