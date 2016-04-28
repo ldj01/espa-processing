@@ -173,7 +173,7 @@ class APIServer(object):
 
         resp, status = self.request('get', url, status=200)
 
-        return resp
+        return status == 200
 
     @staticmethod
     def _unexpected_status(code, url):
