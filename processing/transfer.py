@@ -206,8 +206,7 @@ def scp_transfer_file(source_host, source_file,
         logger.error(msg)
         raise Exception(msg)
 
-    cmd = ['scp', '-q', '-o', 'StrictHostKeyChecking=no', '-c', 'arcfour',
-           '-C']
+    cmd = ['scp', '-q', '-o', 'StrictHostKeyChecking=no', '-C']
 
     # Build the source portion of the command
     # Single quote the source to allow for wild cards
@@ -256,8 +255,7 @@ def scp_transfer_directory(source_host, source_directory,
         logger.error(msg)
         raise Exception(msg)
 
-    cmd = ['scp', '-r', '-q', '-o', 'StrictHostKeyChecking=no', '-c',
-           'arcfour', '-C']
+    cmd = ['scp', '-r', '-q', '-o', 'StrictHostKeyChecking=no', '-C']
 
     # Build the source portion of the command
     # Single quote the source to allow for wild cards
