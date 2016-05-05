@@ -1224,8 +1224,9 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
         if (options['include_sr_toa'] or
                 options['include_sr_thermal'] or
                 options['include_sr'] or
-                options['include_cfmask'] or
-                options['include_dswe']):
+                options['include_dswe'] or
+                options['include_lst'] or
+                options['include_cfmask']):
 
             cmd.append('--write_toa')
             execute_do_l8_sr = True
