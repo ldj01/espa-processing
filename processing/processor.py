@@ -645,8 +645,7 @@ class LandsatProcessor(CDRProcessor):
 
         # Build a command line arguments list
         cmd = ['convert_lpgs_to_espa',
-               '--mtl', self._metadata_filename,
-               '--xml', self._xml_filename]
+               '--mtl', self._metadata_filename]
         if not options['include_source_data']:
             cmd.append('--del_src_files')
 
@@ -1370,8 +1369,7 @@ class ModisProcessor(CDRProcessor):
 
         # Build a command line arguments list
         cmd = ['convert_modis_to_espa',
-               '--hdf', self._hdf_filename,
-               '--xml', self._xml_filename]
+               '--hdf', self._hdf_filename]
         if not options['include_source_data']:
             cmd.append('--del_src_files')
 
