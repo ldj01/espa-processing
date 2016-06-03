@@ -6,7 +6,7 @@
 .PHONY: all install clean check
 
 # Inherit from upper-level make.config
-TOP = ../..
+TOP = ..
 include $(TOP)/make.config
 
 SCRIPTS = \
