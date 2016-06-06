@@ -7,6 +7,8 @@ import json
 class CLIError(Exception):
     pass
 
+TEMPLATE_FILE = '/usr/local/share/espa/order_template.json'
+
 
 @click.command()
 @click.version_option(version='2.11.2')
@@ -67,15 +69,15 @@ def cli(order_id, product_id, input_source,
     """
 
     contents = None
-    with open('template_order.json', 'r') as template_fd:
+    with open(TEMPLATE_FILE, 'r') as template_fd:
         contents = template_fd.read()
 
     if not contents:
-        raise CLIError('template_order.json not found')
+        raise CLIError('{} not found'.format(TEMPLATE_FILE))
 
     template = json.loads(contents)
-    id template is None:
-        raise CLIError('Failed loading template_order.json')
+    if template is None:
+        raise CLIError('Failed loading {}'.format(TEMPLATE_FILE))
 
     print(order_id, product_id, input_source,
           include_cloud_masking,
