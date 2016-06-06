@@ -3,7 +3,7 @@
 '''
     FILE: ondemand_cron.py
 
-    PURPOSE: Master script for new Hadoop jobs.  Queries the xmlrpc
+    PURPOSE: Master script for new Hadoop jobs.  Queries the API
              service to find requests that need to be processed and
              builds/executes a Hadoop job to process them.
 
@@ -18,13 +18,12 @@ import os
 import sys
 import logging
 import json
-import xmlrpclib
-import urllib
 import commands
 from datetime import datetime
 from argparse import ArgumentParser
 from functools import partial
 
+import api_interface
 
 from config_utils import get_cfg_file_path, retrieve_cfg
 
@@ -127,10 +126,10 @@ def process_requests(cron_cfg, proc_cfg, args,
                      queue_priority, request_priority):
     """Retrieves and kicks off processes
 
-    Queries the xmlrpc service to see if there are any requests that need
+    Queries the API service to see if there are any requests that need
     to be processed with the specified type, priority and/or user.  If there
     are, this method builds and executes a hadoop job and updates the status
-    for each request through the xmlrpc service."
+    for each request through the API service."
 
     Args:
         cron_cfg (ConfigParser): Configuration for ESPA cron.
@@ -168,7 +167,7 @@ def process_requests(cron_cfg, proc_cfg, args,
                     ' is below {0}'.format(job_limit))
         return
 
-    rpcurl = proc_cfg.get('processing', 'espa_xmlrpc')
+    rpcurl = proc_cfg.get('processing', 'espa_api')
     server = None
 
     # Create a server object if the rpcurl seems valid
@@ -176,27 +175,27 @@ def process_requests(cron_cfg, proc_cfg, args,
             rpcurl.startswith('http://') and
             len(rpcurl) > 7):
 
-        server = xmlrpclib.ServerProxy(rpcurl, allow_none=True)
+        server = api_interface.api_connect(rpcurl)
     else:
-        raise Exception('Missing or invalid XMLRPC URL')
+        raise Exception('Missing or invalid environment variable ESPA_API')
 
     home_dir = os.environ.get('HOME')
     hadoop_executable = os.path.join(home_dir, 'bin/hadoop/bin/hadoop')
 
-    # Verify xmlrpc server
+    # Verify API server
     if server is None:
-        raise Exception('xmlrpc server was None... exiting')
+        raise Exception('ESPA API did not respond... exiting')
 
     user = server.get_configuration('landsatds.username')
-    if len(user) == 0:
+    if user is None:
         raise Exception('landsatds.username is not defined... exiting')
 
-    password = urllib.quote(server.get_configuration('landsatds.password'))
-    if len(password) == 0:
+    password = server.get_configuration('landsatds.password')
+    if password is None:
         raise Exception('landsatds.password is not defined... exiting')
 
     host = server.get_configuration('landsatds.host')
-    if len(host) == 0:
+    if host is None:
         raise Exception('landsatds.host is not defined... exiting')
 
     # Use ondemand_enabled to determine if we should be processing or not
@@ -236,7 +235,7 @@ def process_requests(cron_cfg, proc_cfg, args,
             # Create the order file full of all the scenes requested
             with open(job_filepath, 'w+') as espa_fd:
                 for request in requests:
-                    request['xmlrpcurl'] = rpcurl
+                    request['espa_api'] = rpcurl
 
                     # Log the request before passwords are added
                     line_entry = json.dumps(request)
@@ -289,6 +288,7 @@ def process_requests(cron_cfg, proc_cfg, args,
                  '-inputformat', ('org.apache.hadoop.mapred.'
                                   'lib.NLineInputFormat'),
                  '-file', mapper_path,
+                 '-file', os.path.join(code_dir, 'api_interface.py'),
                  '-file', os.path.join(code_dir, 'distribution.py'),
                  '-file', os.path.join(code_dir, 'environment.py'),
                  '-file', os.path.join(code_dir, 'espa_exception.py'),
@@ -311,7 +311,7 @@ def process_requests(cron_cfg, proc_cfg, args,
                  '-cmdenv', proc_cmdenv(option='espa_distribution_dir'),
                  '-cmdenv', proc_cmdenv(option='espa_schema'),
                  '-cmdenv', proc_cmdenv(option='espa_land_mass_polygon'),
-                 '-cmdenv', proc_cmdenv(option='espa_xmlrpc'),
+                 '-cmdenv', proc_cmdenv(option='espa_api'),
                  '-cmdenv', proc_cmdenv(option='espa_cache_host_list'),
                  '-cmdenv', proc_cmdenv(option='espa_elevation_dir'),
                  '-cmdenv', proc_cmdenv(option='ias_data_dir'),
@@ -404,7 +404,7 @@ def process_requests(cron_cfg, proc_cfg, args,
         else:
             logger.info('No requests to process....')
 
-    except xmlrpclib.ProtocolError:
+    except api_interface.APIException:
         logger.exception('A protocol error occurred')
 
     except Exception:

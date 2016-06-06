@@ -11,7 +11,6 @@ import sys
 import shutil
 import socket
 import json
-import xmlrpclib
 import datetime
 from time import sleep
 from argparse import ArgumentParser
@@ -27,13 +26,15 @@ from environment import Environment
 import parameters
 import processor
 
+import api_interface
+
 
 MAPPER_LOG_PREFIX = 'espa-mapper'
 MAPPER_LOG_FILENAME = '.'.join([MAPPER_LOG_PREFIX, 'log'])
 
 
 def set_product_error(server, order_id, product_id, processing_location):
-    """Call the xmlrpc server routine to set a product request to error
+    """Call the API server routine to set a product request to error
 
     Provides a sleep retry implementation to hopefully by-pass any errors
     encountered, so that we do not get requests that have failed, but
@@ -60,14 +61,14 @@ def set_product_error(server, order_id, product_id, processing_location):
                                                 logged_contents)
 
                 if not status:
-                    logger.critical('Failed processing xmlrpc call to'
+                    logger.critical('Failed processing API call to'
                                     ' set_scene_error')
                     return False
 
                 break
 
             except Exception:
-                logger.critical('Failed processing xmlrpc call to'
+                logger.critical('Failed processing API call to'
                                 ' set_scene_error')
                 logger.exception('Exception encountered and follows')
 
@@ -217,16 +218,15 @@ def process(developer_sleep_mode=False):
             logger.info('Processing {}:{}'.format(order_id, product_id))
 
             # Update the status in the database
-            if parameters.test_for_parameter(parms, 'xmlrpcurl'):
-                if parms['xmlrpcurl'] != 'skip_xmlrpc':
-                    server = xmlrpclib.ServerProxy(parms['xmlrpcurl'],
-                                                   allow_none=True)
+            if parameters.test_for_parameter(parms, 'espa_api'):
+                if parms['espa_api'] != 'skip_api':
+                    server = api_interface.api_connect(parms['espa_api'])
                     if server is not None:
                         status = server.update_status(product_id, order_id,
                                                       processing_location,
                                                       'processing')
                         if not status:
-                            logger.warning('Failed processing xmlrpc call'
+                            logger.warning('Failed processing API call'
                                            ' to update_status to processing')
 
             if product_id != 'plot':
@@ -278,7 +278,7 @@ def process(developer_sleep_mode=False):
                                                     destination_cksum_file,
                                                     '')
                 if not status:
-                    logger.warning('Failed processing xmlrpc call to'
+                    logger.warning('Failed processing API call to'
                                    ' mark_scene_complete')
 
         except Exception as excep:
