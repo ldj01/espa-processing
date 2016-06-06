@@ -1,6 +1,12 @@
 #! /usr/bin/env python
 
 import click
+import json
+
+
+class CLIError(Exception):
+    pass
+
 
 @click.command()
 @click.version_option(version='2.11.2')
@@ -8,13 +14,12 @@ import click
 @click.option('--product-id', required=True, help='Product ID')
 @click.option('--input-source', required=True,
               help='Source of the Input Data')
-
 @click.option('--include-cloud-masking', is_flag=True, default=False,
               help='Include Cloud Masking')
 @click.option('--include-customized-source-data', is_flag=True, default=False,
               help='Include Customized Source Data')
-@click.option('--include-land-surface-temperature', is_flag=True, default=False,
-              help='Include Land Surface Temperature')
+@click.option('--include-land-surface-temperature', is_flag=True,
+              default=False, help='Include Land Surface Temperature')
 @click.option('--include-source-metadata', is_flag=True, default=True,
               help='Include Source Metadata')
 @click.option('--include-surface-reflectance', is_flag=True, default=False,
@@ -58,7 +63,19 @@ def cli(order_id, product_id, input_source,
         include_brightness_temperature,
         include_surface_water_extent,
         include_statistics):
+    """
+    """
 
+    contents = None
+    with open('template_order.json', 'r') as template_fd:
+        contents = template_fd.read()
+
+    if not contents:
+        raise CLIError('template_order.json not found')
+
+    template = json.loads(contents)
+    id template is None:
+        raise CLIError('Failed loading template_order.json')
 
     print(order_id, product_id, input_source,
           include_cloud_masking,
