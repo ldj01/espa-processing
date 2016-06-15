@@ -43,8 +43,5 @@
         "target_projection": "ps",
         "utm_north_south": null,
         "utm_zone": null
-    },
-    "orderid": "ORDER_ID",
-    "scene": "LE72181092013069PFS00",
-    "xmlrpcurl": "skip_xmlrpc"
+    }
 }

@@ -1,5 +1,4 @@
 {
-    "download_url": "DOWNLOAD_URL",
     "options": {
         "central_meridian": null,
         "datum": "wgs84",
@@ -44,9 +43,5 @@
         "target_projection": null,
         "utm_north_south": "north",
         "utm_zone": null
-    },
-    "orderid": "ORDER_ID",
-    "scene": "SCENE_ID",
-    "product_type": "PRODUCT_TYPE",
-    "xmlrpcurl": "skip_xmlrpc"
+    }
 }

@@ -1,6 +1,6 @@
 {
+    "download_url": "DOWNLOAD_URL",
     "options": {
-        "download_url": "DOWNLOAD_URL",
         "include_customized_source_data": true
     },
     "orderid": "ORDER_ID",
