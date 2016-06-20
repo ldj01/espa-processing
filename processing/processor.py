@@ -400,7 +400,8 @@ class CDRProcessor(CustomizationProcessor):
 
         # Map order options to the products in the XML files
         order2xml_mapping = {
-            'include_customized_source_data': ['L1T', 'L1G', 'L1GT'],
+            'include_customized_source_data': ['L1T', 'L1G',
+                                               'L1TP', 'L1GT', 'L1GS'],
             'include_sr': 'sr_refl',
             'include_sr_toa': 'toa_refl',
             'include_sr_thermal': 'toa_bt',
@@ -926,7 +927,7 @@ class LandsatProcessor(CDRProcessor):
 
             cmd = ['land_surface_temperature.py',
                    '--xml', self._xml_filename,
-                   '--keep-lst-temp-data']
+                   '--keep-intermediate-data']
 
             cmd = ' '.join(cmd)
 
