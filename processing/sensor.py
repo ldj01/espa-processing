@@ -228,22 +228,22 @@ def modis_sensor_info(product_id):
    Product ID parser.
 
    Example Collection Product ID Format:
-       LT05_L1T_038038_19950624_20160302_01_T1
+       LT05_L1TP_038038_19950624_20160302_01_T1
 """
 LANDSAT_COLLECTION_REGEXP_MAPPING = {
-    'lt04': (r'^lt04_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
+    'lt04': (r'^lt04_[a-z0-9]{4}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
              landsat_collection_sensor_info),
 
-    'lt05': (r'^lt05_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
+    'lt05': (r'^lt05_[a-z0-9]{4}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
              landsat_collection_sensor_info),
 
-    'le07': (r'^le07_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
+    'le07': (r'^le07_[a-z0-9]{4}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
              landsat_collection_sensor_info),
 
-    'lc08': (r'^lc08_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
+    'lc08': (r'^lc08_[a-z0-9]{4}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
              landsat_collection_sensor_info),
 
-    'lo08': (r'^lo08_[a-z0-9]{3}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
+    'lo08': (r'^lo08_[a-z0-9]{4}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
              landsat_collection_sensor_info)
 }
 
@@ -427,6 +427,11 @@ class ProductNotImplemented(NotImplementedError):
     pass
 
 
+LANDSAT_COLLECTION_ID_LENGTH = 40
+LANDSAT_HISTORICAL_ID_LENGTH = 21
+MODIS_COLLECTION_ID_LENGTH = 41
+
+
 class sensor_memoize(object):
     """Implements a special memoize decorator for sensor information
 
@@ -452,11 +457,11 @@ class sensor_memoize(object):
 
         # Only usethe Product ID
         if is_landsat_collection(temp_id):
-            product_id = temp_id[:39]
+            product_id = temp_id[:LANDSAT_COLLECTION_ID_LENGTH]
         elif is_landsat_historical(temp_id):
-            product_id = temp_id[:21]
+            product_id = temp_id[:LANDSAT_HISTORICAL_ID_LENGTH]
         elif is_modis(temp_id):
-            product_id = temp_id[:41]
+            product_id = temp_id[:MODIS_COLLECTION_ID_LENGTH]
         else:
             raise ProductNotImplemented('[{0}] is not a supported product'
                                         .format(temp_id))
