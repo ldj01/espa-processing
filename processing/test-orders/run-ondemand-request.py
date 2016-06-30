@@ -300,7 +300,7 @@ def get_cfg_file_path(filename):
         Exception(<str>)
     """
 
-    # Use the users home directory as the base source directory for
+    # Use the user's home directory as the base source directory for
     # configuration
     if 'HOME' not in os.environ:
         raise Exception('[HOME] not found in environment')
