@@ -28,6 +28,8 @@ import processor
 
 import api_interface
 
+from config_utils import retrieve_cfg
+
 
 MAPPER_LOG_PREFIX = 'espa-mapper'
 MAPPER_LOG_FILENAME = '.'.join([MAPPER_LOG_PREFIX, 'log'])
@@ -83,7 +85,7 @@ def set_product_error(server, order_id, product_id, processing_location):
     return True
 
 
-def get_sleep_duration(start_time, dont_sleep):
+def get_sleep_duration(proc_cfg, start_time, dont_sleep):
     """Logs details and returns number of seconds to sleep
     """
 
@@ -94,13 +96,15 @@ def get_sleep_duration(start_time, dont_sleep):
     seconds_elapsed = (end_time - start_time).seconds
     logger.info('Processing Time Elapsed {0} Seconds'.format(seconds_elapsed))
 
+    min_seconds = int(proc_cfg.get('processing',
+                                   'espa_min_request_duration_in_seconds'))
+
     seconds_to_sleep = 1
     if dont_sleep:
         # We don't need to sleep
         seconds_to_sleep = 1
-    elif seconds_elapsed < settings.MIN_REQUEST_DURATION_IN_SECONDS:
-        seconds_to_sleep = (settings.MIN_REQUEST_DURATION_IN_SECONDS -
-                            seconds_elapsed)
+    elif seconds_elapsed < min_seconds:
+        seconds_to_sleep = (min_seconds - seconds_elapsed)
 
     logger.info('Sleeping An Additional {0} Seconds'.format(seconds_to_sleep))
 
@@ -144,7 +148,7 @@ def archive_log_files(order_id, product_id):
         logger.exception('Exception encountered and follows')
 
 
-def process(developer_sleep_mode=False):
+def process(proc_cfg, developer_sleep_mode=False):
     """Read all lines from STDIN and process them
 
     Each line is converted to a JSON dictionary of the parameters for
@@ -266,7 +270,7 @@ def process(developer_sleep_mode=False):
                     pp.remove_product_directory()
 
             # Sleep the number of seconds for minimum request duration
-            sleep(get_sleep_duration(start_time, dont_sleep))
+            sleep(get_sleep_duration(proc_cfg, start_time, dont_sleep))
 
             archive_log_files(order_id, product_id)
 
@@ -287,7 +291,7 @@ def process(developer_sleep_mode=False):
             logger.exception('Exception encountered stacktrace follows')
 
             # Sleep the number of seconds for minimum request duration
-            sleep(get_sleep_duration(start_time, dont_sleep))
+            sleep(get_sleep_duration(proc_cfg, start_time, dont_sleep))
 
             archive_log_files(order_id, product_id)
 
@@ -303,6 +307,9 @@ def process(developer_sleep_mode=False):
         finally:
             # Reset back to the base logger
             logger = EspaLogging.get_logger('base')
+
+
+PROC_CFG_FILENAME = 'processing.conf'
 
 
 def main():
@@ -321,6 +328,8 @@ def main():
     # Parse the command line arguments
     args = parser.parse_args()
 
+    proc_cfg = retrieve_cfg(PROC_CFG_FILENAME)
+
     EspaLogging.configure_base_logger(filename=MAPPER_LOG_FILENAME)
     # Initially set to the base logger
     logger = EspaLogging.get_logger('base')
@@ -329,7 +338,7 @@ def main():
         # Joe-Developer doesn't want to wait so if set skip sleeping
         developer_sleep_mode = args.developer
 
-        process(developer_sleep_mode)
+        process(proc_cfg, developer_sleep_mode)
     except Exception:
         logger.exception('Processing failed stacktrace follows')
 
