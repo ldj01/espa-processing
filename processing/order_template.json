@@ -49,5 +49,5 @@
     "orderid": "ORDER_ID",
     "product_type": "PRODUCT_TYPE",
     "scene": "SCENE_ID",
-    "xmlrpcurl": "skip_xmlrpc"
+    "espa_api": "skip_api"
 }
