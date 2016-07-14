@@ -1,11 +1,15 @@
 #! /usr/bin/env python
 
 
+import os
 import sys
 import logging
 import json
-import subprocess
 from argparse import ArgumentParser
+
+
+import utilities as util
+import config_utils as config
 
 
 TEMPLATE_FILENAME = '/usr/local/share/espa/order_template.json'
@@ -638,6 +642,17 @@ def update_template(args, template):
     return order
 
 
+def export_environment_variables(cfg):
+    """Export the configuration to environment variables
+    """
+
+    for key, value in cfg.items('processing'):
+        os.environ[key.upper()] = value
+
+
+PROC_CFG_FILENAME = 'processing.conf'
+
+
 def main():
     """Configures and submits an order to the processing code
     """
@@ -651,6 +666,9 @@ def main():
     logger.info('*** Begin ESPA Processing ***')
 
     try:
+        proc_cfg = config.retrieve_cfg(PROC_CFG_FILENAME)
+        export_environment_variables(proc_cfg)
+
         template = load_template(filename=TEMPLATE_FILENAME)
 
         order = update_template(args=args, template=template)
@@ -659,15 +677,20 @@ def main():
         order_contents = json.dumps(order, indent=0, sort_keys=True)
         order_contents = order_contents.replace('\n', '')
 
-        print order_contents
-        print args
+        cmdline = ['echo \'{}\''.format(order_contents), '|',
+                   'ondemand_mapper.py']
 
-        process = subprocess.Popen(['./ondemand_mapper.py'],
-                                    shell=True, stdin=subprocess.PIPE)
-        process.communicate(order_contents)
-        process.communicate('')
+        if args.dev_mode:
+            cmdline.append('--developer')
 
-        process.wait()
+        cmdline = ' '.join(cmdline)
+        output = ''
+        try:
+            logger.info('EXECUTING: {}'.format(cmdline))
+            output = util.execute_cmd(cmdline)
+        finally:
+            if len(output) > 0:
+                logger.info(output)
 
     except Exception:
         logger.exception('Errors during processing')
