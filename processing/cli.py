@@ -349,7 +349,7 @@ def configure_logging():
                                 ' %(filename)s:%(lineno)d:%(funcName)s'
                                 ' -- %(message)s'),
                         datefmt='%Y-%m-%d %H:%M:%S',
-                        filename='cli.log',
+                        filename='work-dir/cli.log',
                         level=logging.DEBUG)
 
 
@@ -702,4 +702,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    sys.exit(1)
