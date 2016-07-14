@@ -21,6 +21,7 @@ import utilities
 
 
 DAAC_HOSTNAME = 'e4ftl01.cr.usgs.gov'
+other = 'http://e5eil01.cr.usgs.gov:22000'
 
 
 def build_argument_parser():
