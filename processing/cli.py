@@ -8,8 +8,11 @@ import json
 from argparse import ArgumentParser
 
 
+import settings
 import utilities as util
 import config_utils as config
+from logging_tools import EspaLogging
+import processor
 
 
 TEMPLATE_FILENAME = '/usr/local/share/espa/order_template.json'
@@ -29,52 +32,77 @@ def parse_command_line():
                         version='ESPA-Processing 2.12.0')
 
     # ------------------------------------------------------------------------
-    required = parser.add_argument_group('required')
+    specific = parser.add_argument_group('order specifics')
 
-    required.add_argument('--order-id',
+    specific.add_argument('--order-id',
                           action='store',
                           dest='order_id',
                           required=True,
                           metavar='TEXT',
                           help='Order ID')
 
-    required.add_argument('--input-product-id',
+    specific.add_argument('--input-product-id',
                           action='store',
                           dest='product_id',
                           required=True,
                           metavar='TEXT',
                           help='Input Product ID')
 
-    required.add_argument('--product-type',
+    specific.add_argument('--product-type',
                           action='store',
                           dest='product_type',
                           required=True,
                           choices=['landsat', 'modis', 'plot'],
                           help='Type of product we are producing')
 
-    required.add_argument('--download-url',
+    specific.add_argument('--input-url',
                           action='store',
-                          dest='download_url',
+                          dest='input_url',
                           required=True,
                           metavar='TEXT',
                           help=('Complete URL path to the input product.'
                                 '  Supported ("file://...", "http://...")'))
 
-    required.add_argument('--espa-api',
+    specific.add_argument('--espa-api',
                           action='store',
                           dest='espa_api',
-                          required=True,
+                          required=False,
                           metavar='TEXT',
                           default='skip_api',
                           help='URL for the ESPA API')
 
-    required.add_argument('--output-format',
+    specific.add_argument('--output-format',
                           action='store',
                           dest='output_format',
-                          required=True,
+                          required=False,
                           choices=['envi', 'envi-bip', 'gtiff', 'hdf-eos2'],
                           default='envi',
                           help='Output format for the product')
+
+    specific.add_argument('--work-dir',
+                          action='store',
+                          dest='work_dir',
+                          required=False,
+                          default=None,
+                          metavar='TEXT',
+                          help='Base processing directory')
+
+    specific.add_argument('--dist-method',
+                          action='store',
+                          dest='dist_method',
+                          required=False,
+                          choices=['local', 'remote'],
+                          default='local',
+                          metavar='TEXT',
+                          help='Distribution method')
+
+    specific.add_argument('--dist-dir',
+                          action='store',
+                          dest='dist_dir',
+                          required=False,
+                          default=None,
+                          metavar='TEXT',
+                          help='Distribution directory')
 
     # ------------------------------------------------------------------------
     products = parser.add_argument_group('products')
@@ -334,27 +362,37 @@ def parse_command_line():
                            default=False,
                            help='Specify keeping intermediate data files')
 
+    developer.add_argument('--debug',
+                           action='store_true',
+                           dest='debug',
+                           default=False,
+                           help='Specify debug logging')
+
 
     args = parser.parse_args()
 
     return args
 
 
-def configure_logging():
+def configure_logging(args, proc_cfg):
     """Configure base logging
     """
 
-    logging.basicConfig(format=('%(asctime)s.%(msecs)03d %(process)d'
-                                ' %(levelname)-8s'
-                                ' %(filename)s:%(lineno)d:%(funcName)s'
-                                ' -- %(message)s'),
-                        datefmt='%Y-%m-%d %H:%M:%S',
-                        filename='work-dir/cli.log',
-                        level=logging.DEBUG)
+    filename = ('{}/cli-{}-{}.log'
+                .format(proc_cfg.get('processing', 'espa_work_dir'),
+                        args.order_id, args.product_id))
+
+    EspaLogging.configure_base_logger(filename=filename)
 
 
 def load_template(filename):
     """Read and convert JSON template to a dictionary
+
+    Args:
+        filename <str>: Template filename
+
+    Returns:
+        <dict>: The template as a dictionary
     """
 
     with open(filename, 'r') as template_fd:
@@ -375,6 +413,9 @@ def check_for_extents(args):
     """Is extent reprojection requested
 
     If one is specified, they must all be specified.
+
+    Args:
+        args <args>: Command line arguments
 
     Returns:
         <bool>: True if requested, and False if not
@@ -408,6 +449,12 @@ def check_for_extents(args):
 
 def check_projection_sinu(args):
     """Verify all required sinu projection parameters were specified
+
+    Args:
+        args <args>: Command line arguments
+
+    Returns:
+        <bool>: True if requested, and False if not
     """
 
     if args.target_projection == 'sinu':
@@ -433,6 +480,12 @@ def check_projection_sinu(args):
 
 def check_projection_aea(args):
     """Verify all required aea projection parameters were specified
+
+    Args:
+        args <args>: Command line arguments
+
+    Returns:
+        <bool>: True if requested, and False if not
     """
 
     if args.target_projection == 'aea':
@@ -474,6 +527,12 @@ def check_projection_aea(args):
 
 def check_projection_utm(args):
     """Verify all required utm projection parameters were specified
+
+    Args:
+        args <args>: Command line arguments
+
+    Returns:
+        <bool>: True if requested, and False if not
     """
 
     if args.target_projection == 'utm':
@@ -495,6 +554,12 @@ def check_projection_utm(args):
 
 def check_projection_ps(args):
     """Verify all required ps projection parameters were specified
+
+    Args:
+        args <args>: Command line arguments
+
+    Returns:
+        <bool>: True if requested, and False if not
     """
 
     if args.target_projection == 'ps':
@@ -528,6 +593,13 @@ def check_projection_ps(args):
 
 def update_template(args, template):
     """Update template with provided command line arguments
+
+    Args:
+        args <args>: Command line arguments
+        template <dict>: Dictionary of template options
+
+    Returns:
+        <dict>: Updated order dictionary
     """
 
     order = template.copy()
@@ -535,8 +607,9 @@ def update_template(args, template):
     # Required ---------------------------------------------------------------
     order['orderid'] = args.order_id
     order['scene'] = args.product_id
+    order['product_id'] = args.product_id
     order['product_type'] = args.product_type
-    order['download_url'] = args.download_url
+    order['download_url'] = args.input_url
     order['espa_api'] = args.espa_api
 
     order['options']['output_format'] = args.output_format
@@ -644,10 +717,41 @@ def update_template(args, template):
 
 def export_environment_variables(cfg):
     """Export the configuration to environment variables
+
+    Supporting applications require them to be in the environmant
+
+    Args:
+        cfg <ConfigParser>: Configuration
     """
 
     for key, value in cfg.items('processing'):
         os.environ[key.upper()] = value
+
+
+def override_config(args, proc_cfg):
+    """Override configuration with command line values
+
+    Args:
+        args <args>: Command line arguments
+        proc_cfg <ConfigParser>: Configuration
+
+    Returns:
+        <ConfigParser>: Configuration updated(not a copy)
+    """
+
+    # Just pretending to be immutable, can't deepcopy ConfigParser
+    cfg = proc_cfg
+
+    if args.work_dir is not None:
+        cfg.set('processing', 'espa_work_dir', args.work_dir)
+
+    if args.dist_method is not None:
+        cfg.set('processing', 'espa_distribution_method', args.dist_method)
+
+    if args.dist_dir is not None:
+        cfg.set('processing', 'espa_distribution_dir', args.dist_dir)
+
+    return cfg
 
 
 PROC_CFG_FILENAME = 'processing.conf'
@@ -658,39 +762,42 @@ def main():
     """
 
     args = parse_command_line()
+    proc_cfg = config.retrieve_cfg(PROC_CFG_FILENAME)
 
-    configure_logging()
+    proc_cfg = override_config(args, proc_cfg)
 
-    logger = logging.getLogger(__name__)
+    configure_logging(args, proc_cfg)
+
+    # Initially set to the base logger
+    logger = EspaLogging.get_logger('base')
 
     logger.info('*** Begin ESPA Processing ***')
 
     try:
-        proc_cfg = config.retrieve_cfg(PROC_CFG_FILENAME)
         export_environment_variables(proc_cfg)
 
         template = load_template(filename=TEMPLATE_FILENAME)
 
         order = update_template(args=args, template=template)
 
-        # Turn it into a string for follow-on processing
-        order_contents = json.dumps(order, indent=0, sort_keys=True)
-        order_contents = order_contents.replace('\n', '')
+        # Change to the processing directory
+        current_directory = os.getcwd()
+        os.chdir(proc_cfg.get('processing', 'espa_work_dir'))
 
-        cmdline = ['echo \'{}\''.format(order_contents), '|',
-                   'ondemand_mapper.py']
-
-        if args.dev_mode:
-            cmdline.append('--developer')
-
-        cmdline = ' '.join(cmdline)
-        output = ''
         try:
-            logger.info('EXECUTING: {}'.format(cmdline))
-            output = util.execute_cmd(cmdline)
+            # Configure and get the logger for this order request
+            EspaLogging.configure(settings.PROCESSING_LOGGER,
+                                  order=args.order_id,
+                                  product=args.product_id,
+                                  debug=args.debug)
+
+            # All processors are implemented in the processor module
+            pp = processor.get_instance(proc_cfg, order)
+            (destination_product_file, destination_cksum_file) = pp.process()
+
         finally:
-            if len(output) > 0:
-                logger.info(output)
+            # Change back to the previous directory
+            os.chdir(current_directory)
 
     except Exception:
         logger.exception('Errors during processing')
