@@ -260,7 +260,7 @@ def process(proc_cfg, developer_sleep_mode=False):
             pp = None
             try:
                 # All processors are implemented in the processor module
-                pp = processor.get_instance(parms)
+                pp = processor.get_instance(proc_cfg, parms)
                 (destination_product_file, destination_cksum_file) = \
                     pp.process()
 
