@@ -80,7 +80,6 @@ class ProductProcessor(object):
 
         # Initialize these, which are set by other methods
         self._product_name = None
-        self._order_dir = None
         self._product_dir = None
         self._stage_dir = None
         self._work_dir = None
@@ -169,11 +168,11 @@ class ProductProcessor(object):
             # Get the absolute path
             base_work_dir = os.path.abspath(base_work_dir)
 
-        # Add the order_id to the base path
-        self._order_dir = os.path.join(base_work_dir, str(order_id))
+        # Create the product directory name
+        product_dirname = '-'.join([str(order_id), str(product_id)])
 
-        # Add the product_id to the order path
-        self._product_dir = os.path.join(self._order_dir, str(product_id))
+        # Add the product directory name to the path
+        self._product_dir = os.path.join(base_work_dir, product_dirname)
 
         # Just incase remove it, and we don't care about errors if it
         # doesn't exist (probably only needed for developer runs)
