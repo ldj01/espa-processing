@@ -212,7 +212,7 @@ def parse_command_line():
                         choices=['near', 'bilinear' 'cubic',
                                  'cubicspline', 'lanczos'],
                         default='near',
-                        help='keeping intermediate data files')
+                        help='Resampling method to use')
 
     custom.add_argument('--pixel-size',
                         action='store',
