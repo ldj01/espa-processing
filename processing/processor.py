@@ -29,7 +29,6 @@ from espa import Metadata
 import settings
 import utilities
 from logging_tools import EspaLogging
-from environment import Environment
 import espa_exception as ee
 import sensor
 import initialization
@@ -56,7 +55,7 @@ class ProductProcessor(object):
     It also implements the cleanup of the product directory.
     """
 
-    def __init__(self, parms):
+    def __init__(self, cfg, parms):
         """Initialization for the object.
         """
 
@@ -69,12 +68,12 @@ class ProductProcessor(object):
             raise Exception('Input parameters was of type [{}],'
                             ' where dict is required'.format(type(parms)))
 
-        # Create an environment object (which also validates it)
-        self._environment = Environment()
+        self._cfg = cfg
 
         # Log the distribution method that will be used
         self._logger.info('Using distribution method [{}]'.
-                          format(self._environment.get_distribution_method()))
+                          format(self._cfg.get('processing',
+                                               'espa_distribution_method')))
 
         # Validate the parameters
         self.validate_parameters()
@@ -152,14 +151,14 @@ class ProductProcessor(object):
            .../work
 
         Note:
-            order_id and product_id along with the ESPA_WORK_DIR environment
-            variable provide the path to the processing locations.
+            order_id and product_id along with the espa_work_dir processing
+            configuration provide the path to the processing locations.
         """
 
         product_id = self._parms['product_id']
         order_id = self._parms['orderid']
 
-        base_work_dir = self._environment.get_base_work_directory()
+        base_work_dir = self._cfg.get('processing', 'espa_work_dir')
 
         # Get the absolute path to the directory, and default to the current
         # one
@@ -294,11 +293,11 @@ class CustomizationProcessor(ProductProcessor):
     Allows for warping the products to the user requested projection.
     """
 
-    def __init__(self, parms):
+    def __init__(self, cfg, parms):
 
         self._build_products = False
 
-        super(CustomizationProcessor, self).__init__(parms)
+        super(CustomizationProcessor, self).__init__(cfg, parms)
 
     def validate_parameters(self):
         """Validates the parameters required for the processor
@@ -344,8 +343,8 @@ class CDRProcessor(CustomizationProcessor):
     """Provides the super class implementation for generating CDR products
     """
 
-    def __init__(self, parms):
-        super(CDRProcessor, self).__init__(parms)
+    def __init__(self, cfg, parms):
+        super(CDRProcessor, self).__init__(cfg, parms)
 
     def validate_parameters(self):
         """Validates the parameters required for all processors
@@ -550,8 +549,8 @@ class LandsatProcessor(CDRProcessor):
        processors
     """
 
-    def __init__(self, parms):
-        super(LandsatProcessor, self).__init__(parms)
+    def __init__(self, cfg, parms):
+        super(LandsatProcessor, self).__init__(cfg, parms)
 
         product_id = self._parms['product_id']
 
@@ -1118,8 +1117,8 @@ class LandsatTMProcessor(LandsatProcessor):
         the TM and ETM processors are identical.
     """
 
-    def __init__(self, parms):
-        super(LandsatTMProcessor, self).__init__(parms)
+    def __init__(self, cfg, parms):
+        super(LandsatTMProcessor, self).__init__(cfg, parms)
 
 
 class Landsat4TMProcessor(LandsatTMProcessor):
@@ -1130,8 +1129,8 @@ class Landsat4TMProcessor(LandsatTMProcessor):
         the TM and ETM processors are identical.
     """
 
-    def __init__(self, parms):
-        super(Landsat4TMProcessor, self).__init__(parms)
+    def __init__(self, cfg, parms):
+        super(Landsat4TMProcessor, self).__init__(cfg, parms)
 
 
 class LandsatETMProcessor(LandsatProcessor):
@@ -1142,16 +1141,16 @@ class LandsatETMProcessor(LandsatProcessor):
         the TM and ETM processors are identical.
     """
 
-    def __init__(self, parms):
-        super(LandsatETMProcessor, self).__init__(parms)
+    def __init__(self, cfg, parms):
+        super(LandsatETMProcessor, self).__init__(cfg, parms)
 
 
 class LandsatOLITIRSProcessor(LandsatProcessor):
     """Implements OLITIRS (LC8) specific processing
     """
 
-    def __init__(self, parms):
-        super(LandsatOLITIRSProcessor, self).__init__(parms)
+    def __init__(self, cfg, parms):
+        super(LandsatOLITIRSProcessor, self).__init__(cfg, parms)
 
     def validate_parameters(self):
         """Validates the parameters required for the processor
@@ -1244,8 +1243,8 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
     """Implements OLI only (LO8) specific processing
     """
 
-    def __init__(self, parms):
-        super(LandsatOLIProcessor, self).__init__(parms)
+    def __init__(self, cfg, parms):
+        super(LandsatOLIProcessor, self).__init__(cfg, parms)
 
     def validate_parameters(self):
         """Validates the parameters required for the processor
@@ -1304,8 +1303,8 @@ class ModisProcessor(CDRProcessor):
        processors
     """
 
-    def __init__(self, parms):
-        super(ModisProcessor, self).__init__(parms)
+    def __init__(self, cfg, parms):
+        super(ModisProcessor, self).__init__(cfg, parms)
 
         self._hdf_filename = None
 
@@ -1480,23 +1479,23 @@ class ModisAQUAProcessor(ModisProcessor):
     """Implements AQUA specific processing
     """
 
-    def __init__(self, parms):
-        super(ModisAQUAProcessor, self).__init__(parms)
+    def __init__(self, cfg, parms):
+        super(ModisAQUAProcessor, self).__init__(cfg, parms)
 
 
 class ModisTERRAProcessor(ModisProcessor):
     """Implements TERRA specific processing
     """
 
-    def __init__(self, parms):
-        super(ModisTERRAProcessor, self).__init__(parms)
+    def __init__(self, cfg, parms):
+        super(ModisTERRAProcessor, self).__init__(cfg, parms)
 
 
 class PlotProcessor(ProductProcessor):
     """Implements Plot processing
     """
 
-    def __init__(self, parms):
+    def __init__(self, cfg, parms):
 
         # Setup the default colors
         self._sensor_colors = dict()
@@ -1974,7 +1973,7 @@ class PlotProcessor(ProductProcessor):
                           (_nbr2_info, 'NBR2'),
                           (_ndmi_info, 'NDMI')]
 
-        super(PlotProcessor, self).__init__(parms)
+        super(PlotProcessor, self).__init__(cfg, parms)
 
     def validate_parameters(self):
         """Validates the parameters required for the processor
@@ -2531,7 +2530,7 @@ class PlotProcessor(ProductProcessor):
 
 
 # ===========================================================================
-def get_instance(parms):
+def get_instance(cfg, parms):
     """Provides a method to retrieve the proper processor for the specified
        product.
     """
@@ -2539,31 +2538,31 @@ def get_instance(parms):
     product_id = parms['product_id']
 
     if product_id == 'plot':
-        return PlotProcessor(parms)
+        return PlotProcessor(cfg, parms)
 
     if sensor.is_lt4(product_id):
-        return Landsat4TMProcessor(parms)
+        return Landsat4TMProcessor(cfg, parms)
     elif sensor.is_lt04(product_id):
-        return LandsatTMProcessor(parms)
+        return LandsatTMProcessor(cfg, parms)
     elif sensor.is_lt5(product_id):
-        return LandsatTMProcessor(parms)
+        return LandsatTMProcessor(cfg, parms)
     elif sensor.is_lt05(product_id):
-        return LandsatTMProcessor(parms)
+        return LandsatTMProcessor(cfg, parms)
     elif sensor.is_le7(product_id):
-        return LandsatETMProcessor(parms)
+        return LandsatETMProcessor(cfg, parms)
     elif sensor.is_le07(product_id):
-        return LandsatETMProcessor(parms)
+        return LandsatETMProcessor(cfg, parms)
     elif sensor.is_lo8(product_id):
-        return LandsatOLIProcessor(parms)
+        return LandsatOLIProcessor(cfg, parms)
     elif sensor.is_lt8(product_id):
         raise NotImplementedError('A processor for [{}] has not been'
                                   ' implemented'.format(product_id))
     elif sensor.is_lc8(product_id):
-        return LandsatOLITIRSProcessor(parms)
+        return LandsatOLITIRSProcessor(cfg, parms)
     elif sensor.is_terra(product_id):
-        return ModisTERRAProcessor(parms)
+        return ModisTERRAProcessor(cfg, parms)
     elif sensor.is_aqua(product_id):
-        return ModisAQUAProcessor(parms)
+        return ModisAQUAProcessor(cfg, parms)
     else:
         raise NotImplementedError('A processor for [{}] has not been'
                                   ' implemented'.format(product_id))
