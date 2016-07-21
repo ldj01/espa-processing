@@ -206,10 +206,10 @@ def parse_command_line():
     # ------------------------------------------------------------------------
     custom = parser.add_argument_group('customization')
 
-    custom.add_argument('--resample_method',
+    custom.add_argument('--resample-method',
                         action='store',
                         dest='resample_method',
-                        choices=['near', 'bilinear' 'cubic',
+                        choices=['near', 'bilinear', 'cubic',
                                  'cubicspline', 'lanczos'],
                         default='near',
                         help='Resampling method to use')
@@ -591,6 +591,93 @@ def check_projection_ps(args):
     return False
 
 
+def update_pixel_size(args, order):
+
+    new_order = order.copy()
+
+    if args.pixel_size is not None:
+        new_order['options']['pixel_size'] = args.pixel_size
+        new_order['options']['pixel_size_units'] = args.pixel_size_units
+        new_order['options']['resize'] = True
+
+    return new_order
+
+
+def update_image_extents(args, order):
+
+    new_order = order.copy()
+
+    if check_for_extents(args=args):
+        new_order['options']['minx'] = args.extent_minx
+        new_order['options']['maxx'] = args.extent_maxx
+        new_order['options']['miny'] = args.extent_miny
+        new_order['options']['maxy'] = args.extent_maxy
+        new_order['options']['image_extents_units'] = args.extent_units
+        new_order['options']['image_extents'] = True
+
+    return new_order
+
+
+def update_target_projection(args, order):
+
+    new_order = order.copy()
+
+    if args.target_projection is not None:
+        new_order['options']['target_projection'] = args.target_projection
+
+        if check_projection_sinu(args):
+            new_order['options']['central_meridian'] = float(args.central_meridian)
+            new_order['options']['false_easting'] = float(args.false_easting)
+            new_order['options']['false_northing'] = float(args.false_northing)
+
+            if args.datum is not None:
+                new_order['options']['datum'] = args.datum.upper()
+            else:
+                new_order['options']['datum'] = None
+
+        elif check_projection_aea(args):
+            new_order['options']['central_meridian'] = float(args.central_meridian)
+            new_order['options']['std_parallel_1'] = float(args.std_parallel_1)
+            new_order['options']['std_parallel_2'] = float(args.std_parallel_2)
+            new_order['options']['origin_lat'] = float(args.origin_latitude)
+            new_order['options']['false_easting'] = float(args.false_easting)
+            new_order['options']['false_northing'] = float(args.false_northing)
+            new_order['options']['datum'] = args.datum.upper()
+
+        elif check_projection_utm(args):
+            new_order['options']['utm_zone'] = int(args.utm_zone)
+            new_order['options']['utm_north_south'] = args.utm_north_south
+
+            if args.datum is not None:
+                new_order['options']['datum'] = args.datum.upper()
+            else:
+                new_order['options']['datum'] = None
+
+        elif check_projection_ps(args):
+            new_order['options']['latitude_true_scale'] = float(
+                args.latitude_true_scale)
+            new_order['options']['longitude_pole'] = float(args.longitude_pole)
+            new_order['options']['origin_lat'] = float(args.origin_latitude)
+            new_order['options']['false_easting'] = float(args.false_easting)
+            new_order['options']['false_northing'] = float(args.false_northing)
+
+            if args.datum is not None:
+                new_order['options']['datum'] = args.datum.upper()
+            else:
+                new_order['options']['datum'] = None
+
+        else:
+            # lonlat projection was specified
+            if args.datum is not None:
+                new_order['options']['datum'] = args.datum.upper()
+            else:
+                new_order['options']['datum'] = None
+
+        new_order['options']['reproject'] = True
+
+    return new_order
+
+
 def update_template(args, template):
     """Update template with provided command line arguments
 
@@ -637,76 +724,9 @@ def update_template(args, template):
     # Customization ----------------------------------------------------------
     order['options']['resample_method'] = args.resample_method
 
-    if args.pixel_size is not None:
-        order['options']['pixel_size'] = args.pixel_size
-        order['options']['pixel_size_units'] = args.pixel_size_units
-        order['options']['reproject'] = True
-
-    if check_for_extents(args=args):
-        order['options']['minx'] = args.extent_minx
-        order['options']['maxx'] = args.extent_maxx
-        order['options']['miny'] = args.extent_miny
-        order['options']['maxy'] = args.extent_maxy
-        order['options']['image_extents_units'] = args.extent_units
-        order['options']['image_extents'] = True
-        order['options']['reproject'] = True
-
-    if args.target_projection is not None:
-        order['options']['target_projection'] = args.target_projection
-
-        if check_projection_sinu(args):
-            order['options']['central_meridian'] = float(args.central_meridian)
-            order['options']['false_easting'] = float(args.false_easting)
-            order['options']['false_northing'] = float(args.false_northing)
-
-            if args.datum is not None:
-                order['options']['datum'] = args.datum.upper()
-            else:
-                order['options']['datum'] = None
-
-        elif check_projection_aea(args):
-            order['options']['central_meridian'] = float(args.central_meridian)
-            order['options']['std_parallel_1'] = float(args.std_parallel_1)
-            order['options']['std_parallel_2'] = float(args.std_parallel_2)
-            order['options']['origin_lat'] = float(args.origin_latitude)
-            order['options']['false_easting'] = float(args.false_easting)
-            order['options']['false_northing'] = float(args.false_northing)
-
-            if args.datum is not None:
-                order['options']['datum'] = args.datum.upper()
-            else:
-                order['options']['datum'] = None
-
-        elif check_projection_utm(args):
-            order['options']['utm_zone'] = int(args.utm_zone)
-            order['options']['utm_north_south'] = args.utm_north_south
-
-            if args.datum is not None:
-                order['options']['datum'] = args.datum.upper()
-            else:
-                order['options']['datum'] = None
-
-        elif check_projection_ps(args):
-            order['options']['latitude_true_scale'] = float(
-                args.latitude_true_scale)
-            order['options']['longitude_pole'] = float(args.longitude_pole)
-            order['options']['origin_lat'] = float(args.origin_latitude)
-            order['options']['false_easting'] = float(args.false_easting)
-            order['options']['false_northing'] = float(args.false_northing)
-
-            if args.datum is not None:
-                order['options']['datum'] = args.datum.upper()
-            else:
-                order['options']['datum'] = None
-
-        else:
-            # lonlat projection was specified
-            if args.datum is not None:
-                order['options']['datum'] = args.datum.upper()
-            else:
-                order['options']['datum'] = None
-
-        order['options']['reproject'] = True
+    order = update_pixel_size(args, order)
+    order = update_image_extents(args, order)
+    order = update_target_projection(args, order)
 
     # Developer --------------------------------------------------------------
     order['options']['keep_directory'] = args.dev_mode
