@@ -20,12 +20,12 @@ class TestSensor(unittest.TestCase):
         self.lc8_product_id = 'LC82181092013069PFS00'
         self.lt8_product_id = 'LT82181092013069PFS00'
         self.lo8_product_id = 'LO82181092013069PFS00'
-        self.lt04_product_id = 'LT04_L1T_038038_19950624_20160302_01_T1'
-        self.lt05_product_id = 'LT05_L1T_038038_19950624_20160302_01_T1'
-        self.le07_product_id = 'LE07_L1T_038038_19950624_20160302_01_T1'
-        self.lc08_product_id = 'LC08_L1T_038038_19950624_20160302_01_T1'
-        self.lt08_product_id = 'LT08_L1T_038038_19950624_20160302_01_T1'
-        self.lo08_product_id = 'LO08_L1T_038038_19950624_20160302_01_T1'
+        self.lt04_product_id = 'LT04_L1TP_038038_19950624_20160302_01_T1'
+        self.lt05_product_id = 'LT05_L1TP_038038_19950624_20160302_01_T1'
+        self.le07_product_id = 'LE07_L1TP_038038_19950624_20160302_01_T1'
+        self.lc08_product_id = 'LC08_L1TP_038038_19950624_20160302_01_T1'
+        self.lt08_product_id = 'LT08_L1TP_038038_19950624_20160302_01_T1'
+        self.lo08_product_id = 'LO08_L1TP_038038_19950624_20160302_01_T1'
 
     def tearDown(self):
         pass
