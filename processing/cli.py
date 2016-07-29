@@ -18,11 +18,24 @@ import processor
 TEMPLATE_FILENAME = '/usr/local/share/espa/order_template.json'
 
 
-def parse_command_line():
-    """Parser for the command line
+class CliException(Exception):
+    """Base exception for cli.py"""
+
+    def __init__(self, value):
+        self.format = '{}'
+        self.value = value
+
+        super(CliException).__init__(self.format.format(self.value))
+
+    def __str__(self):
+        return repr(self.format.format(self.value))
+
+
+def build_command_line_parser():
+    """Builds the command line parser
 
     Returns:
-        <args>: Command line arguments
+        <parser>: Command line parser
     """
 
     parser = ArgumentParser(description='ESPA Processing Command Line Interface')
@@ -368,10 +381,19 @@ def parse_command_line():
                            default=False,
                            help='Specify debug logging')
 
+    return parser
 
-    args = parser.parse_args()
 
-    return args
+def parse_command_line():
+    """Parses the command line
+
+    Returns:
+        <args>: Command line arguments
+    """
+
+    parser = build_command_line_parser()
+
+    return parser.parse_args()
 
 
 def configure_logging(args, proc_cfg):
@@ -409,6 +431,13 @@ def load_template(filename):
     return template
 
 
+class MissingExtentError(CliException):
+    """Exception for missing extents"""
+    def __init__(self, value):
+        self.format = 'Must specify {} when specifying extents'
+        self.value = value
+
+
 def check_for_extents(args):
     """Is extent reprojection requested
 
@@ -427,24 +456,31 @@ def check_for_extents(args):
         # We have one of them, so make sure we have all of them
 
         if args.extent_minx is None:
-            raise RuntimeError('Must specify'
-                               ' --extent-minx when specifying extents')
+            raise MissingExtentError('Must specify --extent-minx'
+                                     ' when specifying extents')
 
         if args.extent_maxx is None:
-            raise RuntimeError('Must specify'
-                               ' --extent-maxx when specifying extents')
+            raise MissingExtentError('Must specify --extent-maxx'
+                                     ' when specifying extents')
 
         if args.extent_miny is None:
-            raise RuntimeError('Must specify'
-                               ' --extent-miny when specifying extents')
+            raise MissingExtentError('Must specify --extent-miny'
+                                     ' when specifying extents')
 
         if args.extent_maxy is None:
-            raise RuntimeError('Must specify'
-                               ' --extent-maxy when specifying extents')
+            raise MissingExtentError('Must specify --extent-maxy'
+                                     ' when specifying extents')
 
         return True
 
     return False
+
+
+class MissingSinuError(CliException):
+    """Exception for missing SINU arguments"""
+    def __init__(self, value):
+        self.format = 'Must specify {} for sinu projection'
+        self.value = value
 
 
 def check_projection_sinu(args):
@@ -462,20 +498,22 @@ def check_projection_sinu(args):
         # We are sinu, so make sure we have all required sinu parameters
 
         if args.central_meridian is None:
-            raise RuntimeError('Must specify'
-                               ' --central-meridian for sinu projection')
+            raise MissingSinuError('--central-meridian')
 
         if args.false_easting is None:
-            raise RuntimeError('Must specify'
-                               ' --false-easting for sinu projection')
+            raise MissingSinuError('--false-easting')
 
         if args.false_northing is None:
-            raise RuntimeError('Must specify'
-                               ' --false-northing for sinu projection')
+            raise MissingSinuError('--false-northing')
 
         return True
 
     return False
+
+
+class MissingAeaError(Exception):
+    """Exception for missing AEA arguments"""
+    pass
 
 
 def check_projection_aea(args):
@@ -493,32 +531,32 @@ def check_projection_aea(args):
         # We are aea, so make sure we have all required aea parameters
 
         if args.central_meridian is None:
-            raise RuntimeError('Must specify'
-                               ' --central-meridian for aea projection')
+            raise MissingAeaError('Must specify --central-meridian'
+                                  'for aea projection')
 
         if args.std_parallel_1 is None:
-            raise RuntimeError('Must specify'
-                               ' --std-parallel-1 for aea projection')
+            raise MissingAeaError('Must specify --std-parallel-1'
+                                  'for aea projection')
 
         if args.std_parallel_2 is None:
-            raise RuntimeError('Must specify'
-                               ' --std-parallel-2 for aea projection')
+            raise MissingAeaError('Must specify --std-parallel-2'
+                                  'for aea projection')
 
         if args.origin_latitude is None:
-            raise RuntimeError('Must specify'
-                               ' --origin-latitude for aea projection')
+            raise MissingAeaError('Must specify --origin-latitude'
+                                  'for aea projection')
 
         if args.false_easting is None:
-            raise RuntimeError('Must specify'
-                               ' --false-easting for aea projection')
+            raise MissingAeaError('Must specify --false-easting'
+                                  'for aea projection')
 
         if args.false_northing is None:
-            raise RuntimeError('Must specify'
-                               ' --false-northing for aea projection')
+            raise MissingAeaError('Must specify --false-northing'
+                                  'for aea projection')
 
         if args.datum is None:
-            raise RuntimeError('Must specify'
-                               ' --datum for aea projection')
+            raise MissingAeaError('Must specify --datum'
+                                  'for aea projection')
 
         return True
 
