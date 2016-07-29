@@ -1,16 +1,10 @@
-## ESPA Processing Version 2.11.2 Release Notes
-Release Date: Aug 2016
+## ESPA Processing Version 2.12.0 Release Notes
+Release Date: Oct 2016
 
-See git tag [espa-2.11.2-release]
+See git tag [espa-2.12.0-release]
 
 ### General Information
 This project contains the code for processing a single input dataset to the final output products.  It is the controlling code for producing a product.  It does not produce science products on it's own, it calls on applications from other ESPA projects to perform that work.  Having said that, it does contain some code to perform a few things, such as, statistics generation, statistics plotting, and warping (using GDAL).
-
-Authors: David V. Hill, SGT and Ron Dilley, Innovate!
-
-License: NASA Open Source Agreement 1.3
-
-USGS Designation: EROS Science Processing Architecture (ESPA)
 
 ## Release Notes
 Please see the Release Tags for notes related to past versions.
@@ -23,6 +17,7 @@ To generate products for a science application, it must be installed on the syst
 For the core capabilities required by each science application including this project.  See  [espa-product-formatter](https://github.com/USGS-EROS/espa-product-formatter).
 
 - CFmask - See [espa-cloud-masking](https://github.com/USGS-EROS/espa-cloud-masking)
+- Elevation - See [espa-elevation](https://github.com/USGS-EROS/espa-elevation)
 - Land Surface Temperature - See [espa-land-surface-temperature](https://github.com/USGS-EROS/espa-land-surface-temperature)
 - Top of Atmosphere and Surface Reflectance - See [espa-surface-reflectance](https://github.com/USGS-EROS/espa-surface-reflectance)
 - Spectral Indices - See [espa-spectral-indices](https://github.com/USGS-EROS/espa-spectral-indices)
