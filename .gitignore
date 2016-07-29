@@ -11,3 +11,7 @@
 # Temporary processing files
 espa-job-*.log
 espa-mapper.log
+
+# Nose2/Coverage files
+processing/.coverage
+processing/htmlcov
