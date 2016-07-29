@@ -27,6 +27,8 @@ class TestSensor(unittest.TestCase):
         self.lt08_product_id = 'LT08_L1TP_038038_19950624_20160302_01_T1'
         self.lo08_product_id = 'LO08_L1TP_038038_19950624_20160302_01_T1'
 
+        self.non_product_id = 'chuck'
+
     def tearDown(self):
         pass
 
@@ -330,6 +332,28 @@ class TestSensor(unittest.TestCase):
         self.assertFalse(method(self.lt8_product_id))
         self.assertFalse(method(self.lo8_product_id))
 
+    def test_is_landsat(self):
+        method = sensor.is_landsat
+
+        self.assertFalse(method(self.aqua_product_id))
+        self.assertFalse(method(self.terra_product_id))
+
+        self.assertTrue(method(self.lt04_product_id))
+        self.assertTrue(method(self.lt05_product_id))
+        self.assertTrue(method(self.le07_product_id))
+        self.assertTrue(method(self.lc08_product_id))
+        self.assertTrue(method(self.lt08_product_id))
+        self.assertTrue(method(self.lo08_product_id))
+
+        self.assertTrue(method(self.lt4_product_id))
+        self.assertTrue(method(self.lt5_product_id))
+        self.assertTrue(method(self.le7_product_id))
+        self.assertTrue(method(self.lc8_product_id))
+        self.assertTrue(method(self.lt8_product_id))
+        self.assertTrue(method(self.lo8_product_id))
+
+        self.assertFalse(method(self.non_product_id))
+
     def test_is_landsat4(self):
         method = sensor.is_landsat4
 
@@ -456,6 +480,10 @@ class TestSensor(unittest.TestCase):
         result_2 = sensor.info(self.terra_product_id)
         self.assertEqual(result_1, result_2)
 
+        result_1 = sensor.modis_sensor_info(self.aqua_product_id)
+        result_2 = sensor.info(self.aqua_product_id)
+        self.assertEqual(result_1, result_2)
+
     def test_landsat_historical_sensor_info(self):
         result_1 = sensor.landsat_historical_sensor_info(self.lt4_product_id)
         result_2 = sensor.info(self.lt4_product_id)
@@ -515,6 +543,11 @@ class TestSensor(unittest.TestCase):
         with self.assertRaises(sensor.ProductNotImplemented) as context:
             sensor.info(self.lt08_product_id)
             self.assertTrue('is not a supported Product ID format' in context)
+
+        # Test the Non product id
+        with self.assertRaises(sensor.ProductNotImplemented) as context:
+            sensor.info(self.non_product_id)
+            self.assertTrue('is not a supported product' in context)
 
 
 if __name__ == '__main__':

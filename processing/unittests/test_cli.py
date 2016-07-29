@@ -25,6 +25,12 @@ class TestCLI(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_load_template(self):
+        cli.load_template('order_template.json')
+        #with self.assertRaises(Exception) as context:
+        #    cli.load_template('cli.py')
+        #    #self.assertTrue('frog' in context)
+
     def test_extents_not_specified(self):
         options = [x for x in self.static_options]
         options.extend(['--product-type', 'landsat'])
