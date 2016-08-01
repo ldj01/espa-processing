@@ -544,7 +544,7 @@ class TestSensor(unittest.TestCase):
             sensor.info(self.lt08_product_id)
             self.assertTrue('is not a supported Product ID format' in context)
 
-        # Test the Non product id
+    def test_non_product_sensor_info(self):
         with self.assertRaises(sensor.ProductNotImplemented) as context:
             sensor.info(self.non_product_id)
             self.assertTrue('is not a supported product' in context)

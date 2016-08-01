@@ -497,10 +497,6 @@ def info(product_id):
     elif is_modis(product_id):
         mapping = MODIS_REGEXP_MAPPING
 
-    else:
-        raise ProductNotImplemented('[{0}] is not a supported product'
-                                    .format(product_id))
-
     test_id = product_id.lower()
 
     # Search through the dictionary and return the object for the match
