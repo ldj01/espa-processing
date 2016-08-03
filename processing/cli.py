@@ -4,6 +4,8 @@
 import os
 import sys
 import logging
+import shutil
+import socket
 import json
 from argparse import ArgumentParser
 
@@ -22,13 +24,20 @@ class CliException(Exception):
     """Base exception for cli.py"""
 
     def __init__(self, value):
-        self.format = '{}'
+        self.fmt = '{}'
         self.value = value
 
-        super(CliException).__init__(self.format.format(self.value))
+        super(CliException).__init__(self.fmt.format(self.value))
 
     def __str__(self):
-        return repr(self.format.format(self.value))
+        return repr(self.fmt.format(self.value))
+
+
+class CliError(CliException):
+    """Exception for missing AEA arguments"""
+    def __init__(self, value):
+        self.fmt = '{}'
+        self.value = value
 
 
 def build_command_line_parser():
@@ -138,12 +147,6 @@ def build_command_line_parser():
                           default=False,
                           help='Include Land Surface Temperature')
 
-    products.add_argument('--include-source-metadata',
-                          action='store_true',
-                          dest='include_source_metadata',
-                          default=False,
-                          help='Include Source Metadata')
-
     products.add_argument('--include-surface-reflectance',
                           action='store_true',
                           dest='include_sr',
@@ -238,7 +241,7 @@ def build_command_line_parser():
                         action='store',
                         dest='pixel_size_units',
                         choices=['meters', 'dd'],
-                        default='meters',
+                        default=None,
                         help='Units for the pixel size')
 
     custom.add_argument('--extent-units',
@@ -396,15 +399,18 @@ def parse_command_line():
     return parser.parse_args()
 
 
-def configure_logging(args, proc_cfg):
-    """Configure base logging
-    """
+def cli_log_filename(args, proc_cfg):
 
-    filename = ('{}/cli-{}-{}.log'
-                .format(proc_cfg.get('processing', 'espa_work_dir'),
-                        args.order_id, args.product_id))
+    return ('{}/cli-{}-{}.log'
+            .format(proc_cfg.get('processing', 'espa_work_dir'),
+                    args.order_id, args.product_id))
 
-    EspaLogging.configure_base_logger(filename=filename)
+
+class BadTemplateError(CliException):
+    """Exception for bad template files"""
+    def __init__(self, value):
+        self.fmt = 'Error loading order template file [{}]'
+        self.value = value
 
 
 def load_template(filename):
@@ -421,12 +427,9 @@ def load_template(filename):
         contents = template_fd.read()
 
         if not contents:
-            raise Exception('Emtpy order template file [{}]'.format(filename))
+            raise BadTemplateError(filename)
 
     template = json.loads(contents)
-
-    if template is None:
-        raise Exception('Error loading order template')
 
     return template
 
@@ -434,7 +437,7 @@ def load_template(filename):
 class MissingExtentError(CliException):
     """Exception for missing extents"""
     def __init__(self, value):
-        self.format = 'Must specify {} when specifying extents'
+        self.fmt = 'Must specify {} when specifying extents'
         self.value = value
 
 
@@ -479,7 +482,7 @@ def check_for_extents(args):
 class MissingSinuError(CliException):
     """Exception for missing SINU arguments"""
     def __init__(self, value):
-        self.format = 'Must specify {} for sinu projection'
+        self.fmt = 'Must specify {} for sinu projection'
         self.value = value
 
 
@@ -511,9 +514,11 @@ def check_projection_sinu(args):
     return False
 
 
-class MissingAeaError(Exception):
+class MissingAeaError(CliException):
     """Exception for missing AEA arguments"""
-    pass
+    def __init__(self, value):
+        self.fmt = 'Must specify {} for aea projection'
+        self.value = value
 
 
 def check_projection_aea(args):
@@ -531,36 +536,36 @@ def check_projection_aea(args):
         # We are aea, so make sure we have all required aea parameters
 
         if args.central_meridian is None:
-            raise MissingAeaError('Must specify --central-meridian'
-                                  'for aea projection')
+            raise MissingAeaError('--central-meridian')
 
         if args.std_parallel_1 is None:
-            raise MissingAeaError('Must specify --std-parallel-1'
-                                  'for aea projection')
+            raise MissingAeaError('--std-parallel-1')
 
         if args.std_parallel_2 is None:
-            raise MissingAeaError('Must specify --std-parallel-2'
-                                  'for aea projection')
+            raise MissingAeaError('--std-parallel-2')
 
         if args.origin_latitude is None:
-            raise MissingAeaError('Must specify --origin-latitude'
-                                  'for aea projection')
+            raise MissingAeaError('--origin-latitude')
 
         if args.false_easting is None:
-            raise MissingAeaError('Must specify --false-easting'
-                                  'for aea projection')
+            raise MissingAeaError('--false-easting')
 
         if args.false_northing is None:
-            raise MissingAeaError('Must specify --false-northing'
-                                  'for aea projection')
+            raise MissingAeaError('--false-northing')
 
         if args.datum is None:
-            raise MissingAeaError('Must specify --datum'
-                                  'for aea projection')
+            raise MissingAeaError('--datum')
 
         return True
 
     return False
+
+
+class MissingUtmError(CliException):
+    """Exception for missing AEA arguments"""
+    def __init__(self, value):
+        self.fmt = 'Must specify {} for utm projection'
+        self.value = value
 
 
 def check_projection_utm(args):
@@ -578,16 +583,21 @@ def check_projection_utm(args):
         # We are utm, so make sure we have all required utm parameters
 
         if args.utm_zone is None:
-            raise RuntimeError('Must specify'
-                               ' --utm-zone for utm projection')
+            raise MissingUtmError('--utm-zone')
 
         if args.utm_north_south is None:
-            raise RuntimeError('Must specify'
-                               ' --utm-north-south for utm projection')
+            raise MissingUtmError('--utm-north-south')
 
         return True
 
     return False
+
+
+class MissingPsError(CliException):
+    """Exception for missing AEA arguments"""
+    def __init__(self, value):
+        self.fmt = 'Must specify {} for ps projection'
+        self.value = value
 
 
 def check_projection_ps(args):
@@ -605,24 +615,19 @@ def check_projection_ps(args):
         # We are ps, so make sure we have all required ps parameters
 
         if args.latitude_true_scale is None:
-            raise RuntimeError('Must specify'
-                               ' --latitude-true-scale for ps projection')
+            raise MissingPsError('--latitude-true-scale')
 
         if args.longitude_pole is None:
-            raise RuntimeError('Must specify'
-                               ' --longitude-pole for ps projection')
+            raise MissingPsError('--longitude-pole')
 
         if args.origin_latitude is None:
-            raise RuntimeError('Must specify'
-                               ' --origin-latitude for ps projection')
+            raise MissingPsError('--origin-latitude')
 
         if args.false_easting is None:
-            raise RuntimeError('Must specify'
-                               ' --false-easting for ps projection')
+            raise MissingPsError('--false-easting')
 
         if args.false_northing is None:
-            raise RuntimeError('Must specify'
-                               ' --false-northing for ps projection')
+            raise MissingPsError('--false-northing')
 
         return True
 
@@ -744,7 +749,6 @@ def update_template(args, template):
     order['options']['include_customized_source_data'] = (
         args.include_customized_source_data)
     order['options']['include_lst'] = args.include_land_surface_temperature
-    order['options']['include_source_metadata'] = args.include_source_metadata
     order['options']['include_sr'] = args.include_sr
     order['options']['include_sr_evi'] = args.include_sr_evi
     order['options']['include_sr_msavi'] = args.include_sr_msavi
@@ -812,11 +816,51 @@ def override_config(args, proc_cfg):
     return cfg
 
 
+def copy_log_file(log_name, destination_path, status):
+    """Copy the log file"""
+
+    abs_log_path = os.path.abspath(log_name)
+    if status:
+        base_log_name = 'success-{}'.format(os.path.basename(log_name))
+    else:
+        base_log_name = 'error-{}'.format(os.path.basename(log_name))
+
+    # Determine full destination
+    destination_file = os.path.join(destination_path, base_log_name)
+
+    # Copy it
+    shutil.copyfile(abs_log_path, destination_file)
+
+
+def archive_log_files(args, proc_cfg, status):
+    """Archive the log files for the current execution"""
+
+    base_log = cli_log_filename(args, proc_cfg)
+    proc_log = EspaLogging.get_filename(settings.PROCESSING_LOGGER)
+    dist_path = proc_cfg.get('processing', 'espa_distribution_dir')
+    destination_path = os.path.join(dist_path, 'logs', args.order_id)
+
+    # Create the archive path
+    util.create_directory(destination_path)
+
+    # Copy them
+    copy_log_file(base_log, destination_path, status)
+    copy_log_file(proc_log, destination_path, status)
+
+    # Remove the source versions
+    if os.path.exists(base_log):
+        os.unlink(base_log)
+
+    if os.path.exists(proc_log):
+        os.unlink(proc_log)
+
+
 PROC_CFG_FILENAME = 'processing.conf'
 
 
 def main():
-    """Configures and submits an order to the processing code
+    """Configures an order from the command line input and calls the
+       processing code using the order
     """
 
     args = parse_command_line()
@@ -824,14 +868,26 @@ def main():
 
     proc_cfg = override_config(args, proc_cfg)
 
-    configure_logging(args, proc_cfg)
+    # Configure the base logger for this request
+    EspaLogging.configure_base_logger(filename=cli_log_filename(args, proc_cfg))
+    # Configure the processing logger for this request
+    EspaLogging.configure(settings.PROCESSING_LOGGER,
+                          order=args.order_id,
+                          product=args.product_id,
+                          debug=args.debug)
 
-    # Initially set to the base logger
+    # CLI will use the base logger
     logger = EspaLogging.get_logger('base')
 
-    logger.info('*** Begin ESPA Processing ***')
+    logger.info('*** Begin ESPA Processing on host [{}] ***'.format(socket.gethostname()))
+
+    processing_status = True
 
     try:
+        if args.pixel_size is not None and args.pixel_size_units is None:
+            raise CliError('Must specify --pixel-size-units if specifying'
+                           ' --pixel-size')
+
         export_environment_variables(proc_cfg)
 
         template = load_template(filename=TEMPLATE_FILENAME)
@@ -843,12 +899,6 @@ def main():
         os.chdir(proc_cfg.get('processing', 'espa_work_dir'))
 
         try:
-            # Configure and get the logger for this order request
-            EspaLogging.configure(settings.PROCESSING_LOGGER,
-                                  order=args.order_id,
-                                  product=args.product_id,
-                                  debug=args.debug)
-
             # All processors are implemented in the processor module
             pp = processor.get_instance(proc_cfg, order)
             (destination_product_file, destination_cksum_file) = pp.process()
@@ -858,11 +908,13 @@ def main():
             os.chdir(current_directory)
 
     except Exception:
-        logger.exception('Errors during processing')
+        processing_status = False
+        logger.exception('*** Errors during processing ***')
         sys.exit(1)
 
     finally:
         logger.info('*** ESPA Processing Terminated ***')
+        archive_log_files(args, proc_cfg, processing_status)
 
 
 if __name__ == '__main__':
