@@ -30,7 +30,8 @@ def fix_file(filename):
     """
 
     # Backup the original file
-    shutil.copy(filename, ''.join([filename, '.old']))
+    backup_filename = ''.join([filename, '.old'])
+    shutil.copy(filename, backup_filename)
 
     # Read in the file into a list
     file_data = list()
@@ -53,6 +54,9 @@ def fix_file(filename):
     # Write the newly formatted data out to the correct filename
     with open(new_name, 'w+') as metadata_fd:
         metadata_fd.write(fixed_data)
+
+    # Remove backup filename
+    os.unlink(backup_filename)
 
     # Report the correct filename back to the caller
     return new_name

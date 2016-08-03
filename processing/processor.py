@@ -553,8 +553,6 @@ class LandsatProcessor(CDRProcessor):
 
         product_id = self._parms['product_id']
 
-        self._metadata_filename = None
-
     def validate_parameters(self):
         """Validates the parameters required for the processor
         """
@@ -573,7 +571,6 @@ class LandsatProcessor(CDRProcessor):
                              'include_dswe',
                              'include_lst',
                              'include_source_data',
-                             'include_source_metadata',
                              'include_sr',
                              'include_sr_evi',
                              'include_sr_msavi',
@@ -631,20 +628,21 @@ class LandsatProcessor(CDRProcessor):
         staging.untar_data(staged_file, self._work_dir)
         os.unlink(staged_file)
 
-        # Figure out the metadata filename
-        self._metadata_filename = \
-            landsat_metadata.get_filename(self._work_dir, product_id)
-
     def convert_to_raw_binary(self):
         """Converts the Landsat(LPGS) input data to our internal raw binary
            format
         """
 
+        product_id = self._parms['product_id']
         options = self._parms['options']
+
+        # Figure out the metadata filename
+        metadata_filename = landsat_metadata.get_filename(self._work_dir,
+                                                          product_id)
 
         # Build a command line arguments list
         cmd = ['convert_lpgs_to_espa',
-               '--mtl', self._metadata_filename]
+               '--mtl', metadata_filename]
         if not options['include_source_data']:
             cmd.append('--del_src_files')
 
@@ -990,7 +988,6 @@ class LandsatProcessor(CDRProcessor):
             'lndsr.*.txt',
             'lndcal.*.txt',
             'LogReport*',
-            '*_MTL.txt.old',
             '*_elevation.*',
             '%s_land_water_mask.*' % product_id
         ]
@@ -1001,14 +998,6 @@ class LandsatProcessor(CDRProcessor):
             'L*.TIF',
             'README.GTF',
             '*gap_mask*'
-        ]
-
-        # Define L1 source metadata files that may need to be removed before
-        # product tarball generation
-        l1_source_metadata_files = [
-            '*_MTL*',
-            '*_VER*',
-            '*_GCP*'
         ]
 
         # Change to the working directory
@@ -1025,12 +1014,6 @@ class LandsatProcessor(CDRProcessor):
             # Add level 1 source files if not requested
             if not options['include_source_data']:
                 for item in l1_source_files:
-                    non_products.extend(glob.glob(item))
-
-            # Add metadata files if not requested
-            if (not options['include_source_metadata'] and
-                    not options['include_source_data']):
-                for item in l1_source_metadata_files:
                     non_products.extend(glob.glob(item))
 
             if len(non_products) > 0:
