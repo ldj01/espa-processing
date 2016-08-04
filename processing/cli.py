@@ -3,7 +3,6 @@
 
 import os
 import sys
-import logging
 import shutil
 import socket
 import json
@@ -35,7 +34,9 @@ class CliException(Exception):
 
 class CliError(CliException):
     """Exception for missing AEA arguments"""
+
     def __init__(self, value):
+        super(CliError).__init__(self.fmt.format(self.value))
         self.fmt = '{}'
         self.value = value
 
@@ -399,16 +400,21 @@ def parse_command_line():
     return parser.parse_args()
 
 
-def cli_log_filename(args, proc_cfg):
+def cli_log_filename(args):
+    """Specifies the log filename to use for the cli
 
-    return ('{}/cli-{}-{}.log'
-            .format(proc_cfg.get('processing', 'espa_work_dir'),
-                    args.order_id, args.product_id))
+    Args:
+        args <args>: Command line arguments
+    """
+
+    return 'cli-{}-{}.log'.format(args.order_id, args.product_id)
 
 
 class BadTemplateError(CliException):
     """Exception for bad template files"""
+
     def __init__(self, value):
+        super(BadTemplateError).__init__(self.fmt.format(self.value))
         self.fmt = 'Error loading order template file [{}]'
         self.value = value
 
@@ -436,7 +442,9 @@ def load_template(filename):
 
 class MissingExtentError(CliException):
     """Exception for missing extents"""
+
     def __init__(self, value):
+        super(MissingExtentError).__init__(self.fmt.format(self.value))
         self.fmt = 'Must specify {} when specifying extents'
         self.value = value
 
@@ -481,7 +489,9 @@ def check_for_extents(args):
 
 class MissingSinuError(CliException):
     """Exception for missing SINU arguments"""
+
     def __init__(self, value):
+        super(MissingSinuError).__init__(self.fmt.format(self.value))
         self.fmt = 'Must specify {} for sinu projection'
         self.value = value
 
@@ -516,7 +526,9 @@ def check_projection_sinu(args):
 
 class MissingAeaError(CliException):
     """Exception for missing AEA arguments"""
+
     def __init__(self, value):
+        super(MissingAeaError).__init__(self.fmt.format(self.value))
         self.fmt = 'Must specify {} for aea projection'
         self.value = value
 
@@ -563,7 +575,9 @@ def check_projection_aea(args):
 
 class MissingUtmError(CliException):
     """Exception for missing AEA arguments"""
+
     def __init__(self, value):
+        super(MissingUtmError).__init__(self.fmt.format(self.value))
         self.fmt = 'Must specify {} for utm projection'
         self.value = value
 
@@ -595,7 +609,9 @@ def check_projection_utm(args):
 
 class MissingPsError(CliException):
     """Exception for missing AEA arguments"""
+
     def __init__(self, value):
+        super(MissingPsError).__init__(self.fmt.format(self.value))
         self.fmt = 'Must specify {} for ps projection'
         self.value = value
 
@@ -635,6 +651,15 @@ def check_projection_ps(args):
 
 
 def update_pixel_size(args, order):
+    """Update the pixel related options in the order dictionary
+
+    Args:
+        args <args>: Command line arguments
+        order <dict>: Currently populated order dictionary
+
+    Returns:
+        <dict>: Updated order options
+    """
 
     new_order = order.copy()
 
@@ -647,6 +672,15 @@ def update_pixel_size(args, order):
 
 
 def update_image_extents(args, order):
+    """Update the extent related options in the order dictionary
+
+    Args:
+        args <args>: Command line arguments
+        order <dict>: Currently populated order dictionary
+
+    Returns:
+        <dict>: Updated order options
+    """
 
     new_order = order.copy()
 
@@ -662,11 +696,21 @@ def update_image_extents(args, order):
 
 
 def update_target_projection(args, order):
+    """Update the projection related options in the order dictionary
+
+    Args:
+        args <args>: Command line arguments
+        order <dict>: Currently populated order dictionary
+
+    Returns:
+        <dict>: Updated order options
+    """
 
     new_order = order.copy()
 
     if args.target_projection is not None:
         new_order['options']['target_projection'] = args.target_projection
+        new_order['options']['datum'] = None
 
         if check_projection_sinu(args):
             new_order['options']['central_meridian'] = float(args.central_meridian)
@@ -675,8 +719,6 @@ def update_target_projection(args, order):
 
             if args.datum is not None:
                 new_order['options']['datum'] = args.datum.upper()
-            else:
-                new_order['options']['datum'] = None
 
         elif check_projection_aea(args):
             new_order['options']['central_meridian'] = float(args.central_meridian)
@@ -693,8 +735,6 @@ def update_target_projection(args, order):
 
             if args.datum is not None:
                 new_order['options']['datum'] = args.datum.upper()
-            else:
-                new_order['options']['datum'] = None
 
         elif check_projection_ps(args):
             new_order['options']['latitude_true_scale'] = float(
@@ -706,15 +746,11 @@ def update_target_projection(args, order):
 
             if args.datum is not None:
                 new_order['options']['datum'] = args.datum.upper()
-            else:
-                new_order['options']['datum'] = None
 
         else:
             # lonlat projection was specified
             if args.datum is not None:
                 new_order['options']['datum'] = args.datum.upper()
-            else:
-                new_order['options']['datum'] = None
 
         new_order['options']['reproject'] = True
 
@@ -847,7 +883,7 @@ def archive_log_files(args, proc_cfg, proc_status):
         proc_status <bool>: True = Success, False = Error
     """
 
-    base_log = cli_log_filename(args, proc_cfg)
+    base_log = cli_log_filename(args)
     proc_log = EspaLogging.get_filename(settings.PROCESSING_LOGGER)
     dist_path = proc_cfg.get('processing', 'espa_log_archive')
     destination_path = os.path.join(dist_path, args.order_id)
@@ -881,7 +917,7 @@ def main():
     proc_cfg = override_config(args, proc_cfg)
 
     # Configure the base logger for this request
-    EspaLogging.configure_base_logger(filename=cli_log_filename(args, proc_cfg))
+    EspaLogging.configure_base_logger(filename=cli_log_filename(args))
     # Configure the processing logger for this request
     EspaLogging.configure(settings.PROCESSING_LOGGER,
                           order=args.order_id,
@@ -891,7 +927,8 @@ def main():
     # CLI will use the base logger
     logger = EspaLogging.get_logger('base')
 
-    logger.info('*** Begin ESPA Processing on host [{}] ***'.format(socket.gethostname()))
+    logger.info('*** Begin ESPA Processing on host [{}] ***'
+                .format(socket.gethostname()))
 
     # Set to error condition
     proc_status = False
