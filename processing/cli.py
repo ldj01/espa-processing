@@ -816,11 +816,17 @@ def override_config(args, proc_cfg):
     return cfg
 
 
-def copy_log_file(log_name, destination_path, status):
-    """Copy the log file"""
+def copy_log_file(log_name, destination_path, proc_status):
+    """Copy the log file
+
+    Args:
+        log_name <str>: Relative path to the log file
+        destination_path <str>: Location to copy the log file
+        proc_status <bool>: True = Success, False = Error
+    """
 
     abs_log_path = os.path.abspath(log_name)
-    if status:
+    if proc_status:
         base_log_name = 'success-{}'.format(os.path.basename(log_name))
     else:
         base_log_name = 'error-{}'.format(os.path.basename(log_name))
@@ -832,20 +838,26 @@ def copy_log_file(log_name, destination_path, status):
     shutil.copyfile(abs_log_path, destination_file)
 
 
-def archive_log_files(args, proc_cfg, status):
-    """Archive the log files for the current execution"""
+def archive_log_files(args, proc_cfg, proc_status):
+    """Archive the log files for the current execution
+
+    Args:
+        args <args>: Command line arguments
+        proc_cfg <ConfigParser>: Configuration
+        proc_status <bool>: True = Success, False = Error
+    """
 
     base_log = cli_log_filename(args, proc_cfg)
     proc_log = EspaLogging.get_filename(settings.PROCESSING_LOGGER)
-    dist_path = proc_cfg.get('processing', 'espa_distribution_dir')
-    destination_path = os.path.join(dist_path, 'logs', args.order_id)
+    dist_path = proc_cfg.get('processing', 'espa_log_archive')
+    destination_path = os.path.join(dist_path, args.order_id)
 
     # Create the archive path
     util.create_directory(destination_path)
 
     # Copy them
-    copy_log_file(base_log, destination_path, status)
-    copy_log_file(proc_log, destination_path, status)
+    copy_log_file(base_log, destination_path, proc_status)
+    copy_log_file(proc_log, destination_path, proc_status)
 
     # Remove the source versions
     if os.path.exists(base_log):
@@ -881,9 +893,11 @@ def main():
 
     logger.info('*** Begin ESPA Processing on host [{}] ***'.format(socket.gethostname()))
 
-    processing_status = True
+    # Set to error condition
+    proc_status = False
 
     try:
+        # Extra command line validation
         if args.pixel_size is not None and args.pixel_size_units is None:
             raise CliError('Must specify --pixel-size-units if specifying'
                            ' --pixel-size')
@@ -903,18 +917,20 @@ def main():
             pp = processor.get_instance(proc_cfg, order)
             (destination_product_file, destination_cksum_file) = pp.process()
 
+            # Set to success condition
+            proc_status = True
+
         finally:
             # Change back to the previous directory
             os.chdir(current_directory)
 
     except Exception:
-        processing_status = False
         logger.exception('*** Errors during processing ***')
         sys.exit(1)
 
     finally:
         logger.info('*** ESPA Processing Terminated ***')
-        archive_log_files(args, proc_cfg, processing_status)
+        archive_log_files(args, proc_cfg, proc_status)
 
 
 if __name__ == '__main__':
