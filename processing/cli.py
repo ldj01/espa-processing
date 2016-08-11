@@ -11,7 +11,7 @@ TEMPLATE_FILE = '/usr/local/share/espa/order_template.json'
 
 
 @click.command()
-@click.version_option(version='2.11.2')
+@click.version_option(version='2.11.3')
 @click.option('--order-id', required=True, help='Order ID')
 @click.option('--product-id', required=True, help='Product ID')
 @click.option('--input-source', required=True,
