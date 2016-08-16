@@ -9,7 +9,7 @@ This project contains the code for processing a single input dataset to the fina
 ## Release Notes
 Please see the Release Tags for notes related to past versions.
 
-  - Processing support for ALBERS collection input
+  - Modified processing to turn output product file immutability on or off to support file systems which do not support extended attributes
 
 ## Supported Science Products
 To generate products for a science application, it must be installed on the system and the applications provided must be available on the PATH.  See the respective science projects for installation instructions and auxiliary data requirements.

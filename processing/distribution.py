@@ -20,7 +20,8 @@ from espa_exception import ESPAException
 import transfer
 
 
-def package_product(source_directory, destination_directory, product_name):
+def package_product(immutability, source_directory, destination_directory,
+                    product_name):
     '''
     Description:
       Package the contents of the source directory into a gzipped tarball
@@ -52,15 +53,16 @@ def package_product(source_directory, destination_directory, product_name):
     cksum_filename = '.'.join([product_name, settings.ESPA_CHECKSUM_EXTENSION])
 
     # Change the attributes on the files so that we can remove them
-    cmd = ' '.join(['sudo', 'chattr', '-if', filename, cksum_filename])
-    output = ''
-    try:
-        output = utilities.execute_cmd(cmd)
-    except Exception:
-        pass
-    finally:
-        if len(output) > 0:
-            logger.info(output)
+    if immutability:
+        cmd = ' '.join(['sudo', 'chattr', '-if', filename, cksum_filename])
+        output = ''
+        try:
+            output = utilities.execute_cmd(cmd)
+        except Exception:
+            pass
+        finally:
+            if len(output) > 0:
+                logger.info(output)
 
     # Remove the file first just in-case this is a second run
     cmd = ' '.join(['rm', '-f', filename])
@@ -138,7 +140,7 @@ def package_product(source_directory, destination_directory, product_name):
     return (product_full_path, cksum_full_path, cksum_value)
 
 
-def transfer_product(destination_host, destination_directory,
+def transfer_product(immutability, destination_host, destination_directory,
                      destination_username, destination_pw,
                      product_filename, cksum_filename):
     '''
@@ -184,18 +186,19 @@ def transfer_product(destination_host, destination_directory,
     remote_filename = '-'.join(remote_filename_parts)  # Join with '-'
 
     # Change the attributes on the files so that we can remove them
-    cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
-                    destination_host, 'sudo', 'chattr', '-if',
-                    remote_filename])
-    output = ''
-    try:
-        logger.debug(' '.join(["chattr remote file cmd:", cmd]))
-        output = utilities.execute_cmd(cmd)
-    except Exception:
-        pass
-    finally:
-        if len(output) > 0:
-            logger.info(output)
+    if immutability:
+        cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
+                        destination_host, 'sudo', 'chattr', '-if',
+                        remote_filename])
+        output = ''
+        try:
+            logger.debug(' '.join(["chattr remote file cmd:", cmd]))
+            output = utilities.execute_cmd(cmd)
+        except Exception:
+            pass
+        finally:
+            if len(output) > 0:
+                logger.info(output)
 
     # Remove the files on the remote system
     cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
@@ -221,15 +224,17 @@ def transfer_product(destination_host, destination_directory,
                            destination_pw=destination_pw)
 
     # Change the attributes on the files so that we can't remove them
-    cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
-                    destination_host, 'sudo', 'chattr', '+i', remote_filename])
-    output = ''
-    try:
-        logger.debug(' '.join(["chattr remote file cmd:", cmd]))
-        output = utilities.execute_cmd(cmd)
-    finally:
-        if len(output) > 0:
-            logger.info(output)
+    if immutability:
+        cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
+                        destination_host, 'sudo', 'chattr', '+i',
+                        remote_filename])
+        output = ''
+        try:
+            logger.debug(' '.join(["chattr remote file cmd:", cmd]))
+            output = utilities.execute_cmd(cmd)
+        finally:
+            if len(output) > 0:
+                logger.info(output)
 
     # Get the remote checksum value
     cksum_value = ''
@@ -247,7 +252,7 @@ def transfer_product(destination_host, destination_directory,
     return (cksum_value, destination_product_file, destination_cksum_file)
 
 
-def distribute_statistics_remote(product_id, source_path,
+def distribute_statistics_remote(immutability, product_id, source_path,
                                  destination_host, destination_path,
                                  destination_username, destination_pw):
     '''
@@ -305,18 +310,19 @@ def distribute_statistics_remote(product_id, source_path,
                     logger.info(output)
 
             # Change the attributes on the files so that we can remove them
-            cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
-                            destination_host, 'sudo', 'chattr', '-if',
-                            remote_stats_wildcard])
-            output = ''
-            try:
-                logger.debug(' '.join(["chattr remote stats cmd:", cmd]))
-                output = utilities.execute_cmd(cmd)
-            except Exception:
-                pass
-            finally:
-                if len(output) > 0:
-                    logger.info(output)
+            if immutability:
+                cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
+                                destination_host, 'sudo', 'chattr', '-if',
+                                remote_stats_wildcard])
+                output = ''
+                try:
+                    logger.debug(' '.join(["chattr remote stats cmd:", cmd]))
+                    output = utilities.execute_cmd(cmd)
+                except Exception:
+                    pass
+                finally:
+                    if len(output) > 0:
+                        logger.info(output)
 
             # Remove any pre-existing statistics
             cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
@@ -374,16 +380,17 @@ def distribute_statistics_remote(product_id, source_path,
                                                            remote_file))
 
             # Change the attributes on the files so that we can't remove them
-            cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
-                            destination_host, 'sudo', 'chattr', '+i',
-                            remote_stats_wildcard])
-            output = ''
-            try:
-                logger.debug(' '.join(["chattr remote stats cmd:", cmd]))
-                output = utilities.execute_cmd(cmd)
-            finally:
-                if len(output) > 0:
-                    logger.info(output)
+            if immutability:
+                cmd = ' '.join(['ssh', '-q', '-o', 'StrictHostKeyChecking=no',
+                                destination_host, 'sudo', 'chattr', '+i',
+                                remote_stats_wildcard])
+                output = ''
+                try:
+                    logger.debug(' '.join(["chattr remote stats cmd:", cmd]))
+                    output = utilities.execute_cmd(cmd)
+                finally:
+                    if len(output) > 0:
+                        logger.info(output)
 
         except Exception:
             logger.exception("An exception occurred processing %s"
@@ -402,7 +409,8 @@ def distribute_statistics_remote(product_id, source_path,
         break
 
 
-def distribute_statistics_local(product_id, source_path, destination_path):
+def distribute_statistics_local(immutability, product_id, source_path,
+                                destination_path):
     '''
     Description:
         Copies the statistics to the specified directory on the local system
@@ -438,15 +446,16 @@ def distribute_statistics_local(product_id, source_path, destination_path):
         utilities.create_directory(stats_path)
 
         # Change the attributes on the files so that we can remove them
-        cmd = ' '.join(['sudo', 'chattr', '-if', dest_stats_wildcard])
-        output = ''
-        try:
-            output = utilities.execute_cmd(cmd)
-        except Exception:
-            pass
-        finally:
-            if len(output) > 0:
-                logger.info(output)
+        if immutability:
+            cmd = ' '.join(['sudo', 'chattr', '-if', dest_stats_wildcard])
+            output = ''
+            try:
+                output = utilities.execute_cmd(cmd)
+            except Exception:
+                pass
+            finally:
+                if len(output) > 0:
+                    logger.info(output)
 
         # Remove any pre-existing statistics for this product ID
         cmd = ' '.join(['rm', '-f', dest_stats_wildcard])
@@ -466,13 +475,14 @@ def distribute_statistics_local(product_id, source_path, destination_path):
             shutil.copyfile(file_path, dest_file_path)
 
         # Change the attributes on the files so that we can't remove them
-        cmd = ' '.join(['sudo', 'chattr', '+i', dest_stats_wildcard])
-        output = ''
-        try:
-            output = utilities.execute_cmd(cmd)
-        finally:
-            if len(output) > 0:
-                logger.info(output)
+        if immutability:
+            cmd = ' '.join(['sudo', 'chattr', '+i', dest_stats_wildcard])
+            output = ''
+            try:
+                output = utilities.execute_cmd(cmd)
+            finally:
+                if len(output) > 0:
+                    logger.info(output)
 
     except Exception:
         logger.exception('An exception occurred processing {0}'.
@@ -484,8 +494,8 @@ def distribute_statistics_local(product_id, source_path, destination_path):
         os.chdir(current_directory)
 
 
-def distribute_product_remote(product_name, source_path, packaging_path,
-                              cache_path, parms):
+def distribute_product_remote(immutability, product_name, source_path,
+                              packaging_path, cache_path, parms):
 
     logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
 
@@ -514,7 +524,8 @@ def distribute_product_remote(product_name, source_path, packaging_path,
             while True:
                 try:
                     (product_full_path, cksum_full_path,
-                     local_cksum_value) = package_product(source_path,
+                     local_cksum_value) = package_product(immutability,
+                                                          source_path,
                                                           packaging_path,
                                                           product_name)
                 except Exception:
@@ -534,7 +545,8 @@ def distribute_product_remote(product_name, source_path, packaging_path,
             while True:
                 try:
                     (remote_cksum_value, product_file, cksum_file) = \
-                        transfer_product(destination_host, cache_path,
+                        transfer_product(immutability, destination_host,
+                                         cache_path,
                                          opts['destination_username'],
                                          opts['destination_pw'],
                                          product_full_path, cksum_full_path)
@@ -575,7 +587,8 @@ def distribute_product_remote(product_name, source_path, packaging_path,
     return (product_file, cksum_file)
 
 
-def distribute_product_local(product_name, source_path, packaging_path):
+def distribute_product_local(immutability, product_name, source_path,
+                             packaging_path):
 
     logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
 
@@ -597,17 +610,19 @@ def distribute_product_local(product_name, source_path, packaging_path):
             while True:
                 try:
                     (product_file, cksum_file,
-                     local_cksum_value) = package_product(source_path,
+                     local_cksum_value) = package_product(immutability,
+                                                          source_path,
                                                           packaging_path,
                                                           product_name)
 
                     # Change the attributes on the files so that we can't
                     # remove them
-                    cmd = ' '.join(['sudo', 'chattr', '+i', product_file,
-                                    cksum_file])
-                    output = utilities.execute_cmd(cmd)
-                    if len(output) > 0:
-                        logger.info(output)
+                    if immutability:
+                        cmd = ' '.join(['sudo', 'chattr', '+i', product_file,
+                                        cksum_file])
+                        output = utilities.execute_cmd(cmd)
+                        if len(output) > 0:
+                            logger.info(output)
 
                 except Exception:
                     logger.exception("An exception occurred processing %s"
@@ -642,7 +657,7 @@ def distribute_product_local(product_name, source_path, packaging_path):
 # API Implementation
 
 
-def distribute_statistics(source_path, packaging_path, parms):
+def distribute_statistics(immutability, source_path, packaging_path, parms):
     '''
     Description:
         Determines if the distribution method is set to local or remote and
@@ -680,7 +695,8 @@ def distribute_statistics(source_path, packaging_path, parms):
         # Adjust the packaging_path to use the cache
         package_path = os.path.join(packaging_path, cache_path)
 
-        distribute_statistics_local(product_id, source_path, package_path)
+        distribute_statistics_local(immutability, product_id, source_path,
+                                    package_path)
 
     else:  # remote
         env = Environment()
@@ -696,14 +712,15 @@ def distribute_statistics(source_path, packaging_path, parms):
         dest_user = options['destination_username']
         dest_pw = options['destination_pw']
 
-        distribute_statistics_remote(product_id, source_path,
+        distribute_statistics_remote(immutability, product_id, source_path,
                                      destination_host, cache_path,
                                      dest_user, dest_pw)
 
     return (product_file, cksum_file)
 
 
-def distribute_product(product_name, source_path, packaging_path, parms):
+def distribute_product(immutability, product_name, source_path,
+                       packaging_path, parms):
     '''
     Description:
         Determines if the distribution method is set to local or remote and
@@ -714,7 +731,9 @@ def distribute_product(product_name, source_path, packaging_path, parms):
                      or the remote destination.
       cksum_value - The check sum value of the product.
 
-    Parameters:
+    Args:
+        immutability - Wether or not to set the immutability flag on the
+                       product files
         product_name - The name of the product.
         source_path - The full path to of directory containing the data to
                       package and distribute.
@@ -742,7 +761,8 @@ def distribute_product(product_name, source_path, packaging_path, parms):
         package_path = os.path.join(packaging_path, cache_path)
 
         (product_file, cksum_file) = \
-            distribute_product_local(product_name,
+            distribute_product_local(immutability,
+                                     product_name,
                                      source_path,
                                      package_path)
 
@@ -752,7 +772,8 @@ def distribute_product(product_name, source_path, packaging_path, parms):
                                   order_id)
 
         (product_file, cksum_file) = \
-            distribute_product_remote(product_name,
+            distribute_product_remote(immutability,
+                                      product_name,
                                       source_path,
                                       packaging_path,
                                       cache_path,
