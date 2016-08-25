@@ -14,6 +14,8 @@ SCRIPTS = \
     ondemand_mapper.py
 
 SCRIPT_IMPORTS = \
+    api_interface.py \
+    config_utils.py \
     distribution.py \
     environment.py \
     espa_exception.py \
