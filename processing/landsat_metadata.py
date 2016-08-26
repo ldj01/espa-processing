@@ -31,7 +31,7 @@ def fix_file(filename):
 
     # Backup the original file
     backup_filename = ''.join([filename, '.old'])
-    shutil.copy(filename, ''.join([filename, '.old']))
+    shutil.copy(filename, backup_filename)
 
     # Read in the file into a list
     file_data = list()
