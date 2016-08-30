@@ -391,6 +391,23 @@ class CDRProcessor(CustomizationProcessor):
                                   ' class'.format(self.cleanup_work_dir
                                                   .__name__))
 
+    def remove_band_from_xml(self, band):
+        """Remove the band from disk and from the XML
+        """
+
+        img_filename = str(band.file_name)
+        hdr_filename = img_filename.replace('.img', '.hdr')
+
+        # Remove the files
+        if os.path.exists(img_filename):
+            os.unlink(img_filename)
+        if os.path.exists(hdr_filename):
+            os.unlink(hdr_filename)
+
+        # Remove the element
+        parent = band.getparent()
+        parent.remove(band)
+
     def remove_products_from_xml(self):
         """Remove the specified products from the XML file
 
@@ -405,9 +422,8 @@ class CDRProcessor(CustomizationProcessor):
         options = self._parms['options']
 
         # Map order options to the products in the XML files
-        order2xml_mapping = {
-            'include_customized_source_data': ['L1T', 'L1G',
-                                               'L1TP', 'L1GT', 'L1GS'],
+        order2product = {
+            'source_data': ['L1T', 'L1G', 'L1TP', 'L1GT', 'L1GS'],
             'include_sr': 'sr_refl',
             'include_sr_toa': 'toa_refl',
             'include_sr_thermal': 'toa_bt',
@@ -423,24 +439,24 @@ class CDRProcessor(CustomizationProcessor):
         products_to_remove = []
         if not options['include_customized_source_data']:
             products_to_remove.extend(
-                order2xml_mapping['include_customized_source_data'])
+                order2product['source_data'])
         if not options['include_sr']:
             products_to_remove.append(
-                order2xml_mapping['include_sr'])
+                order2product['include_sr'])
         if not options['include_sr_toa']:
             products_to_remove.append(
-                order2xml_mapping['include_sr_toa'])
+                order2product['include_sr_toa'])
         if not options['include_sr_thermal']:
             products_to_remove.append(
-                order2xml_mapping['include_sr_thermal'])
+                order2product['include_sr_thermal'])
         # These both need to be false before we delete the cloud mask files
         # Because our defined SR product includes the cloud mask bands
         if not options['include_cfmask'] and not options['include_sr']:
             products_to_remove.append(
-                order2xml_mapping['include_cfmask'])
+                order2product['include_cfmask'])
         if not options['keep_intermediate_data']:
             products_to_remove.append(
-                order2xml_mapping['keep_intermediate_data'])
+                order2product['keep_intermediate_data'])
 
         # Always remove the elevation data
         products_to_remove.append('elevation')
@@ -453,18 +469,12 @@ class CDRProcessor(CustomizationProcessor):
             # Search for and remove the items
             for band in espa_metadata.xml_object.bands.band:
                 if band.attrib['product'] in products_to_remove:
-                    img_filename = str(band.file_name)
-                    hdr_filename = img_filename.replace('.img', '.hdr')
-
-                    # Remove the files
-                    if os.path.exists(img_filename):
-                        os.unlink(img_filename)
-                    if os.path.exists(hdr_filename):
-                        os.unlink(hdr_filename)
-
-                    # Remove the element
-                    parent = band.getparent()
-                    parent.remove(band)
+                    # We need to always distribute the L1QA band
+                    if band.attrib['product'] in order2product['source_data']:
+                        if band.attrib['category'] != 'qa':
+                            self.remove_band_from_xml(band)
+                    else:
+                            self.remove_band_from_xml(band)
 
             # Validate the XML
             espa_metadata.validate()
@@ -663,6 +673,26 @@ class LandsatProcessor(CDRProcessor):
         # Turn the list into a string
         cmd = ' '.join(cmd)
         self._logger.info(' '.join(['CONVERT LPGS TO ESPA COMMAND:', cmd]))
+
+        output = ''
+        try:
+            output = utilities.execute_cmd(cmd)
+        finally:
+            if len(output) > 0:
+                self._logger.info(output)
+
+    def clip_band_misalignment(self):
+        """Clips the bands to matching fill extents
+        """
+
+        # Build a command line arguments list
+        cmd = ['clip_band_misalignment',
+               '--xml', self._xml_filename]
+
+        # Turn the list into a string
+        cmd = ' '.join(cmd)
+        self._logger.info(' '.join(['CLIP BAND MISALIGNMENT ESPA COMMAND:',
+                                    cmd]))
 
         output = ''
         try:
@@ -970,6 +1000,8 @@ class LandsatProcessor(CDRProcessor):
         try:
             self.convert_to_raw_binary()
 
+            self.clip_band_misalignment()
+
             self.generate_elevation_product()
 
             self.generate_land_water_mask()
@@ -1015,14 +1047,6 @@ class LandsatProcessor(CDRProcessor):
             '*gap_mask*'
         ]
 
-        # Define L1 source metadata files that may need to be removed before
-        # product tarball generation
-        l1_source_metadata_files = [
-            '*_MTL*',
-            '*_VER*',
-            '*_GCP*'
-        ]
-
         # Change to the working directory
         current_directory = os.getcwd()
         os.chdir(self._work_dir)
@@ -1037,12 +1061,6 @@ class LandsatProcessor(CDRProcessor):
             # Add level 1 source files if not requested
             if not options['include_source_data']:
                 for item in l1_source_files:
-                    non_products.extend(glob.glob(item))
-
-            # Add metadata files if not requested
-            if (not options['include_source_metadata'] and
-                    not options['include_source_data']):
-                for item in l1_source_metadata_files:
                     non_products.extend(glob.glob(item))
 
             if len(non_products) > 0:
@@ -1249,6 +1267,13 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
         return cmd
 
+    def clip_band_misalignment(self):
+        """Clips the bands to matching fill extents
+
+        Not needed for L8 processing.
+        """
+        pass
+
 
 class LandsatOLIProcessor(LandsatOLITIRSProcessor):
     """Implements OLI only (LO8) specific processing
@@ -1300,11 +1325,18 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
         pass
 
     def generate_spectral_indices(self):
-        """ Spectral Indices processing requires surface reflectance products
-            as input
+        """Spectral Indices processing requires surface reflectance products
+           as input
 
         So since, SR products can not be produced with OLI only data, OLI only
         processing can not produce spectral indices.
+        """
+        pass
+
+    def clip_band_misalignment(self):
+        """Clips the bands to matching fill extents
+
+        Not needed for L8 processing.
         """
         pass
 
