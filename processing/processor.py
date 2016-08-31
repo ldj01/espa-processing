@@ -575,6 +575,9 @@ class LandsatProcessor(CDRProcessor):
 
         product_id = self._parms['product_id']
 
+        self.is_collection_data = sensor.is_landsat_collection(product_id)
+        self.is_pre_collection_data = sensor.is_landsat_pre_collection(product_id)
+
         self._metadata_filename = None
 
     def validate_parameters(self):
@@ -805,11 +808,13 @@ class LandsatProcessor(CDRProcessor):
             # generating it
             cmd.extend(['--process_sr', 'False'])
 
+        # Pre collection business logic "Include CFMASK with SR"
+        if self.is_pre_collection_data and options['include_sr']:
+            execute_do_ledaps = True
+
         # Check to see if Thermal or TOA is required
-        # include_sr is added here for sanity to match L8 and business logic
         if (options['include_sr_toa'] or
                 options['include_sr_thermal'] or
-                options['include_sr'] or
                 options['include_dswe'] or
                 options['include_lst'] or
                 options['include_cfmask']):
@@ -848,9 +853,10 @@ class LandsatProcessor(CDRProcessor):
 
         options = self._parms['options']
         cmd = None
-        if (options['include_cfmask'] or
-                options['include_dswe'] or
-                options['include_sr']):
+        # Includes pre collection business logic "Include CFMASK with SR"
+        if (options['include_cfmask'] or options['include_dswe'] or
+                (self.is_pre_collection_data and options['include_sr'])):
+
             cmd = ' '.join(['cloud_masking.py', '--verbose',
                             '--xml', self._xml_filename])
 
@@ -1000,7 +1006,10 @@ class LandsatProcessor(CDRProcessor):
         try:
             self.convert_to_raw_binary()
 
-            self.clip_band_misalignment()
+            # Pre collection formatted data does not include the quality band
+            # so we can't process using clipping
+            if self.is_collection_data:
+                self.clip_band_misalignment()
 
             self.generate_elevation_product()
 
@@ -1248,13 +1257,13 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
             cmd.extend(['--process_sr', 'False'])
 
         # Check to see if Thermal or TOA is required
-        # include_sr is added here for business logic
+        # Includes pre collection business logic "Include CFMASK with SR"
         if (options['include_sr_toa'] or
                 options['include_sr_thermal'] or
-                options['include_sr'] or
                 options['include_dswe'] or
                 options['include_lst'] or
-                options['include_cfmask']):
+                options['include_cfmask'] or
+                (self.is_pre_collection_data and options['include_sr'])):
 
             cmd.append('--write_toa')
             execute_do_l8_sr = True

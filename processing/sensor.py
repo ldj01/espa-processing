@@ -138,11 +138,11 @@ def landsat_collection_sensor_info(product_id):
                       sensor_name, default_pixel_size)
 
 
-def landsat_historical_sensor_info(product_id):
-    """Determine information from historical Product ID
+def landsat_pre_collection_sensor_info(product_id):
+    """Determine information from pre collection Product ID
 
     Args:
-        product_id (str): The historical Product ID
+        product_id (str): The pre collection Product ID
     """
 
     sensor_code = product_id[:3]
@@ -256,19 +256,19 @@ LANDSAT_COLLECTION_REGEXP_MAPPING = {
 """
 LANDSAT_HISTORICAL_REGEXP_MAPPING = {
     'lt4': (r'^lt4\d{3}\d{3}\d{4}\d{3}[a-z]{3}[a-z0-9]{2}$',
-            landsat_historical_sensor_info),
+            landsat_pre_collection_sensor_info),
 
     'lt5': (r'^lt5\d{3}\d{3}\d{4}\d{3}[a-z]{3}[a-z0-9]{2}$',
-            landsat_historical_sensor_info),
+            landsat_pre_collection_sensor_info),
 
     'le7': (r'^le7\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
-            landsat_historical_sensor_info),
+            landsat_pre_collection_sensor_info),
 
     'lc8': (r'^lc8\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
-            landsat_historical_sensor_info),
+            landsat_pre_collection_sensor_info),
 
     'lo8': (r'^lo8\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
-            landsat_historical_sensor_info)
+            landsat_pre_collection_sensor_info)
 }
 
 
@@ -394,7 +394,7 @@ def is_landsat8(a):
                 is_lc08(a), is_lo08(a), is_lt08(a)])
 
 
-def is_landsat_historical(a):
+def is_landsat_pre_collection(a):
     return any([is_lc8(a), is_le7(a), is_lt5(a),
                 is_lt4(a), is_lo8(a), is_lt8(a)])
 
@@ -406,7 +406,7 @@ def is_landsat_collection(a):
 
 def is_landsat(a):
     return any([is_landsat_collection(a),
-                is_landsat_historical(a)])
+                is_landsat_pre_collection(a)])
 
 
 def is_terra(a):
@@ -458,7 +458,7 @@ class sensor_memoize(object):
         # Only usethe Product ID
         if is_landsat_collection(temp_id):
             product_id = temp_id[:LANDSAT_COLLECTION_ID_LENGTH]
-        elif is_landsat_historical(temp_id):
+        elif is_landsat_pre_collection(temp_id):
             product_id = temp_id[:LANDSAT_HISTORICAL_ID_LENGTH]
         elif is_modis(temp_id):
             product_id = temp_id[:MODIS_COLLECTION_ID_LENGTH]
@@ -491,7 +491,7 @@ def info(product_id):
     if is_landsat_collection(product_id):
         mapping = LANDSAT_COLLECTION_REGEXP_MAPPING
 
-    elif is_landsat_historical(product_id):
+    elif is_landsat_pre_collection(product_id):
         mapping = LANDSAT_HISTORICAL_REGEXP_MAPPING
 
     elif is_modis(product_id):
