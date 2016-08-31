@@ -435,8 +435,8 @@ class TestSensor(unittest.TestCase):
         self.assertTrue(method(self.lo8_product_id))
 
 
-    def test_is_landsat_historical(self):
-        method = sensor.is_landsat_historical
+    def test_is_landsat_pre_collection(self):
+        method = sensor.is_landsat_pre_collection
 
         self.assertFalse(method(self.aqua_product_id))
         self.assertFalse(method(self.terra_product_id))
@@ -484,30 +484,30 @@ class TestSensor(unittest.TestCase):
         result_2 = sensor.info(self.aqua_product_id)
         self.assertEqual(result_1, result_2)
 
-    def test_landsat_historical_sensor_info(self):
-        result_1 = sensor.landsat_historical_sensor_info(self.lt4_product_id)
+    def test_landsat_pre_collection_sensor_info(self):
+        result_1 = sensor.landsat_pre_collection_sensor_info(self.lt4_product_id)
         result_2 = sensor.info(self.lt4_product_id)
         self.assertEqual(result_1, result_2)
 
-        result_1 = sensor.landsat_historical_sensor_info(self.lt5_product_id)
+        result_1 = sensor.landsat_pre_collection_sensor_info(self.lt5_product_id)
         result_2 = sensor.info(self.lt5_product_id)
         self.assertEqual(result_1, result_2)
 
-        result_1 = sensor.landsat_historical_sensor_info(self.le7_product_id)
+        result_1 = sensor.landsat_pre_collection_sensor_info(self.le7_product_id)
         result_2 = sensor.info(self.le7_product_id)
         self.assertEqual(result_1, result_2)
 
-        result_1 = sensor.landsat_historical_sensor_info(self.lc8_product_id)
+        result_1 = sensor.landsat_pre_collection_sensor_info(self.lc8_product_id)
         result_2 = sensor.info(self.lc8_product_id)
         self.assertEqual(result_1, result_2)
 
-        result_1 = sensor.landsat_historical_sensor_info(self.lo8_product_id)
+        result_1 = sensor.landsat_pre_collection_sensor_info(self.lo8_product_id)
         result_2 = sensor.info(self.lo8_product_id)
         self.assertEqual(result_1, result_2)
 
         # LT8 is not supported today, so check for the known failure points
         with self.assertRaises(KeyError) as context:
-            sensor.landsat_historical_sensor_info(self .lt8_product_id)
+            sensor.landsat_pre_collection_sensor_info(self .lt8_product_id)
             self.assertTrue('LT8' in context)
 
         with self.assertRaises(sensor.ProductNotImplemented) as context:
