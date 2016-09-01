@@ -14,7 +14,7 @@ import sensor
 
 
 # Settings for what is supported
-VALID_OUTPUT_FORMATS = ['envi', 'envi-bip', 'gtiff', 'hdf-eos2']
+VALID_OUTPUT_FORMATS = ['envi', 'gtiff', 'hdf-eos2', 'netcdf']
 VALID_RESAMPLE_METHODS = ['near', 'bilinear', 'cubic', 'cubicspline',
                           'lanczos']
 VALID_PIXEL_SIZE_UNITS = ['meters', 'dd']

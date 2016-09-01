@@ -98,7 +98,7 @@ def build_command_line_parser():
                           action='store',
                           dest='output_format',
                           required=False,
-                          choices=['envi', 'envi-bip', 'gtiff', 'hdf-eos2'],
+                          choices=['envi', 'gtiff', 'hdf-eos2', 'netcdf'],
                           default='envi',
                           help='Output format for the product')
 
