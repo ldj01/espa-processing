@@ -2601,10 +2601,17 @@ def get_instance(cfg, parms):
         return LandsatETMProcessor(cfg, parms)
     elif sensor.is_lo8(product_id):
         return LandsatOLIProcessor(cfg, parms)
+    elif sensor.is_lo08(product_id):
+        return LandsatOLIProcessor(cfg, parms)
     elif sensor.is_lt8(product_id):
         raise NotImplementedError('A processor for [{}] has not been'
                                   ' implemented'.format(product_id))
+    elif sensor.is_lt08(product_id):
+        raise NotImplementedError('A processor for [{}] has not been'
+                                  ' implemented'.format(product_id))
     elif sensor.is_lc8(product_id):
+        return LandsatOLITIRSProcessor(cfg, parms)
+    elif sensor.is_lc08(product_id):
         return LandsatOLITIRSProcessor(cfg, parms)
     elif sensor.is_terra(product_id):
         return ModisTERRAProcessor(cfg, parms)
