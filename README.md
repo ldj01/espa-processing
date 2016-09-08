@@ -9,7 +9,18 @@ This project contains the code for processing a single input dataset to the fina
 ## Release Notes
 Please see the Release Tags for notes related to past versions.
 
-  - Modified processing to turn output product file immutability on or off to support file systems which do not support extended attributes
+- Updated cli.py for future use
+- Updated handling of the MTL file for Landsat data
+- Modified to always distribute MTL file
+- Updated logfile naming
+- Added netcdf to available output formats
+- Changed from retrieving configuration from the environment to utilization of a configuration file
+- Cleaned up base working directory naming and removed unnecessary intermediate directories
+- Cleaned up intermediate product removal
+- Added band clipping for collection processing only
+- Enhanced support for processing collection and non-collection within the code base
+- Added more unit testing
+- Warping enhancements for processing data which crosses the antimeridian
 
 ## Supported Science Products
 To generate products for a science application, it must be installed on the system and the applications provided must be available on the PATH.  See the respective science projects for installation instructions and auxiliary data requirements.
