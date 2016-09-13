@@ -859,6 +859,12 @@ def copy_log_file(log_name, destination_path, proc_status):
         log_name <str>: Relative path to the log file
         destination_path <str>: Location to copy the log file
         proc_status <bool>: True = Success, False = Error
+
+    Note: proc_status is passed in to allow for the modification of the
+          archive filename for the log.  It is meant to mean that processing
+          of the scene was successful(True) or not(False).  Allowing users to
+          more easily find scenes with failures when looking in the archive
+          log directory.
     """
 
     abs_log_path = os.path.abspath(log_name)
