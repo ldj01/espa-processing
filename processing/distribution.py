@@ -753,7 +753,7 @@ def distribute_product(immutability, product_name, source_path,
     if distribution_method == DISTRIBUTION_METHOD_LOCAL:
         # Use the local cache path
         cache_path = os.path.join(settings.ESPA_LOCAL_CACHE_DIRECTORY,
-                                  order_id)
+                                  parms['orderid'])
 
         # Override if we are doing bridge processing
         if parms['bridge_mode']:
