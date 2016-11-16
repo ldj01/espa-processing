@@ -1,5 +1,7 @@
 {
+    "bridge_mode": false,
     "download_url": "DOWNLOAD_URL",
+    "espa_api": "skip_api",
     "options": {
         "central_meridian": null,
         "datum": "wgs84",
@@ -48,6 +50,5 @@
     },
     "orderid": "ORDER_ID",
     "product_type": "PRODUCT_TYPE",
-    "scene": "SCENE_ID",
-    "espa_api": "skip_api"
+    "scene": "SCENE_ID"
 }

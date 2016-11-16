@@ -16,6 +16,8 @@ from logging_tools import EspaLogging
 import processor
 
 
+APP_NAME = 'ESPA-Processing'
+VERSION = '2.13.0'
 TEMPLATE_FILENAME = '/usr/local/share/espa/order_template.json'
 
 
@@ -48,11 +50,12 @@ def build_command_line_parser():
         <parser>: Command line parser
     """
 
-    parser = ArgumentParser(description='ESPA Processing Command Line Interface')
+    description = 'ESPA Processing Command Line Interface'
+    parser = ArgumentParser(description=description)
 
     parser.add_argument('--version',
                         action='version',
-                        version='ESPA-Processing 2.12.0')
+                        version=' '.join([APP_NAME, VERSION]))
 
     # ------------------------------------------------------------------------
     specific = parser.add_argument_group('order specifics')
@@ -126,6 +129,12 @@ def build_command_line_parser():
                           default=None,
                           metavar='TEXT',
                           help='Distribution directory')
+
+    specific.add_argument('--bridge-mode',
+                          action='store_true',
+                          dest='bridge_mode',
+                          default=False,
+                          help='Specify bridge processing mode')
 
     # ------------------------------------------------------------------------
     products = parser.add_argument_group('products')
@@ -777,6 +786,7 @@ def update_template(args, template):
     order['product_type'] = args.product_type
     order['download_url'] = args.input_url
     order['espa_api'] = args.espa_api
+    order['bridge_mode'] = args.bridge_mode
 
     order['options']['output_format'] = args.output_format
 

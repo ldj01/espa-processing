@@ -684,6 +684,11 @@ class LandsatProcessor(CDRProcessor):
         """Clips the bands to matching fill extents
         """
 
+        # Pre collection formatted data does not include the quality band
+        # so we can't process using clipping
+        if self.is_pre_collection_data:
+            return
+
         # Build a command line arguments list
         cmd = ['clip_band_misalignment',
                '--xml', self._xml_filename]
@@ -769,6 +774,75 @@ class LandsatProcessor(CDRProcessor):
                 if len(output) > 0:
                     self._logger.info(output)
 
+    def generate_class_based_qa(self):
+        """Generates the initial class based QA band from the Level-1 QA band
+        """
+
+        if self.is_pre_collection_data and not self._parms['bridge_mode']:
+            return
+
+        cmd = ['generate_class_based_qa',
+               '--xml', self._xml_filename]
+
+        # Turn the list into a string
+        cmd = ' '.join(cmd)
+
+        self._logger.info(' '.join(['CLASS BASED QA COMMAND:', cmd]))
+
+        output = ''
+        try:
+            output = utilities.execute_cmd(cmd)
+        finally:
+            if len(output) > 0:
+                self._logger.info(output)
+
+    def generate_dilated_cloud(self):
+        """Adds cloud dilation to the class based QA band based on original
+           cfmask cloud dilation
+        """
+
+        if self.is_pre_collection_data and not self._parms['bridge_mode']:
+            return
+
+        cmd = ['dilate_class_value',
+               '--xml', self._xml_filename,
+               '--class', '4',
+               '--distance', '3']
+
+        # Turn the list into a string
+        cmd = ' '.join(cmd)
+
+        self._logger.info(' '.join(['CLOUD DILATION COMMAND:', cmd]))
+
+        output = ''
+        try:
+            output = utilities.execute_cmd(cmd)
+        finally:
+            if len(output) > 0:
+                self._logger.info(output)
+
+    def generate_cfmask_water_detection(self):
+        """Adds CFmask based water detection to the class based QA band
+        """
+
+        if self.is_pre_collection_data and not self._parms['bridge_mode']:
+            return
+
+        cmd = ['cfmask_water_detection',
+               '--xml', self._xml_filename]
+
+        # Turn the list into a string
+        cmd = ' '.join(cmd)
+
+        self._logger.info(' '.join(['CFMASK WATER DETECTION COMMAND:', cmd]))
+
+        output = ''
+        try:
+            output = utilities.execute_cmd(cmd)
+        finally:
+            if len(output) > 0:
+                self._logger.info(output)
+
     def sr_command_line(self):
         """Returns the command line required to generate surface reflectance
 
@@ -817,6 +891,11 @@ class LandsatProcessor(CDRProcessor):
 
             execute_do_ledaps = True
 
+        # Always generate TOA and BT for collection processing
+        # It is required by the cfmask_based_water_detection
+        if self.is_collection_data:
+            execute_do_ledaps = True
+
         # Only return a string if we will need to run SR processing
         if not execute_do_ledaps:
             cmd = None
@@ -849,7 +928,7 @@ class LandsatProcessor(CDRProcessor):
 
         options = self._parms['options']
         cmd = None
-        # Includes pre collection business logic "Include CFMASK with SR"
+        # Includes pre-collection business logic "Include CFMASK with SR"
         if (options['include_cfmask'] or options['include_dswe'] or
                 (self.is_pre_collection_data and options['include_sr'])):
 
@@ -1002,16 +1081,19 @@ class LandsatProcessor(CDRProcessor):
         try:
             self.convert_to_raw_binary()
 
-            # Pre collection formatted data does not include the quality band
-            # so we can't process using clipping
-            if self.is_collection_data:
-                self.clip_band_misalignment()
+            self.clip_band_misalignment()
 
             self.generate_elevation_product()
 
             self.generate_land_water_mask()
 
+            self.generate_class_based_qa()
+
             self.generate_sr_products()
+
+            self.generate_dilated_cloud()
+
+            self.generate_cfmask_water_detection()
 
             self.generate_cloud_masking()
 
