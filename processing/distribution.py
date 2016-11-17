@@ -17,6 +17,7 @@ import utilities
 from logging_tools import EspaLogging
 from environment import Environment, DISTRIBUTION_METHOD_LOCAL
 from espa_exception import ESPAException
+import sensor
 import transfer
 
 
