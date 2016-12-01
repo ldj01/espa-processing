@@ -106,6 +106,10 @@ class ProductProcessor(object):
                                  ' to [scene]')
             self._parms['product_id'] = self._parms['scene']
 
+        # Make sure the bridge mode parameter is defined
+        if not parameters.test_for_parameter(self._parms, 'bridge_mode'):
+            self._parms['bridge_mode'] = False
+
         # Validate the options
         options = self._parms['options']
 
