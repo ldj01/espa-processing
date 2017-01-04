@@ -295,52 +295,52 @@ LANDSAT_HISTORICAL_REGEXP_MAPPING = {
        MOD09GQ.A2000072.h02v09.005.2008237032813
 """
 MODIS_REGEXP_MAPPING = {
-    'mod09a1': (r'^mod09a1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'mod09a1': (r'^mod09a1\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'mod09ga': (r'^mod09ga\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'mod09ga': (r'^mod09ga\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'mod09gq': (r'^mod09gq\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'mod09gq': (r'^mod09gq\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'mod09q1': (r'^mod09q1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'mod09q1': (r'^mod09q1\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'mod13a1': (r'^mod13a1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'mod13a1': (r'^mod13a1\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'mod13a2': (r'^mod13a2\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'mod13a2': (r'^mod13a2\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'mod13a3': (r'^mod13a3\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'mod13a3': (r'^mod13a3\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'mod13q1': (r'^mod13q1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'mod13q1': (r'^mod13q1\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'myd09a1': (r'^myd09a1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'myd09a1': (r'^myd09a1\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'myd09ga': (r'^myd09ga\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'myd09ga': (r'^myd09ga\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'myd09gq': (r'^myd09gq\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'myd09gq': (r'^myd09gq\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'myd09q1': (r'^myd09q1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'myd09q1': (r'^myd09q1\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'myd13a1': (r'^myd13a1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'myd13a1': (r'^myd13a1\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'myd13a2': (r'^myd13a2\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'myd13a2': (r'^myd13a2\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'myd13a3': (r'^myd13a3\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'myd13a3': (r'^myd13a3\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
-    'myd13q1': (r'^myd13q1\.a\d{7}\.h\d{2}v\d{2}\.005\.\d{13}$',
+    'myd13q1': (r'^myd13q1\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info)
 }
 
