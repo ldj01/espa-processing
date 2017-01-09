@@ -105,21 +105,18 @@ def landsat_collection_sensor_info(product_id):
         product_id (str): The collection Product ID
     """
 
-    parts = product_id.split('_')
+    (sensor_code, proc_level, path_row, date_acq, proc_date,
+     collection_id, tier) = product_id.split('_')
 
-    sensor_code = parts[0]
+    path = path_row[0:3].lstrip('0')
+    row = path_row[4:].lstrip('0')
 
-    path = parts[2][0:3].lstrip('0')
-    row = parts[2][4:].lstrip('0')
-
-    date_acquired = datetime.datetime.strptime(parts[3], '%Y%m%d').date()
-
-    year = date_acquired.year
-    doy = date_acquired.timetuple().tm_yday
+    date_acquired = datetime.datetime.strptime(date_acq, '%Y%m%d').date()
 
     # Determine the product prefix
-    product_prefix = ('{0}{1:>03}{2:>03}{3:>04}{4:>03}'
-                      .format(sensor_code, path, row, year, doy))
+    product_prefix = ('{0}{1:>03}{2:>03}{3:>08}{4:>02}{5:>02}'
+                      .format(sensor_code, path, row, date_acq,
+                              collection_id, tier))
 
     # Determine the default pixel sizes
     meters = DEFAULT_PIXEL_SIZE['meters'][sensor_code]
