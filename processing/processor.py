@@ -782,7 +782,7 @@ class LandsatProcessor(CDRProcessor):
         """Generates the initial pixel QA band from the Level-1 QA band
         """
 
-        if self.is_pre_collection_data or not self._parms['bridge_mode']:
+        if self.is_pre_collection_data:
             return
 
         cmd = ['generate_pixel_qa',
@@ -805,7 +805,7 @@ class LandsatProcessor(CDRProcessor):
            cfmask cloud dilation
         """
 
-        if self.is_pre_collection_data or not self._parms['bridge_mode']:
+        if self.is_pre_collection_data:
             return
 
         cmd = ['dilate_pixel_qa',
@@ -829,7 +829,7 @@ class LandsatProcessor(CDRProcessor):
         """Adds CFmask based water detection to the class based QA band
         """
 
-        if self.is_pre_collection_data or not self._parms['bridge_mode']:
+        if self.is_pre_collection_data:
             return
 
         cmd = ['cfmask_water_detection',
