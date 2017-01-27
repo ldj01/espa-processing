@@ -778,14 +778,14 @@ class LandsatProcessor(CDRProcessor):
                 if len(output) > 0:
                     self._logger.info(output)
 
-    def generate_class_based_qa(self):
-        """Generates the initial class based QA band from the Level-1 QA band
+    def generate_pixel_qa(self):
+        """Generates the initial pixel QA band from the Level-1 QA band
         """
 
         if self.is_pre_collection_data or not self._parms['bridge_mode']:
             return
 
-        cmd = ['generate_class_based_qa',
+        cmd = ['generate_pixel_qa',
                '--xml', self._xml_filename]
 
         # Turn the list into a string
@@ -801,16 +801,16 @@ class LandsatProcessor(CDRProcessor):
                 self._logger.info(output)
 
     def generate_dilated_cloud(self):
-        """Adds cloud dilation to the class based QA band based on original
+        """Adds cloud dilation to the pixel QA band based on original
            cfmask cloud dilation
         """
 
         if self.is_pre_collection_data or not self._parms['bridge_mode']:
             return
 
-        cmd = ['dilate_class_value',
+        cmd = ['dilate_pixel_qa',
                '--xml', self._xml_filename,
-               '--class', '4',
+               '--bit', '5',
                '--distance', '3']
 
         # Turn the list into a string
@@ -1091,7 +1091,7 @@ class LandsatProcessor(CDRProcessor):
 
             self.generate_land_water_mask()
 
-            self.generate_class_based_qa()
+            self.generate_pixel_qa()
 
             self.generate_sr_products()
 
