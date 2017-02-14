@@ -210,9 +210,12 @@ def modis_sensor_info(product_id):
     horizontal = parts[2][1:3]
     vertical = parts[2][4:6]
 
+    collection = int(parts[3])
+
     # Determine the product prefix
-    product_prefix = ('{0}h{1:>02}v{2:>02}{3:>04}{4:>03}'
-                      .format(short_name, horizontal, vertical, year, doy))
+    product_prefix = ('{0}h{1:>02}v{2:>02}{3:>04}{4:>03}{5:>03}'
+                      .format(short_name, horizontal, vertical, year, doy,
+                              collection))
 
     # Determine the default pixel sizes
     _product_code = short_name[3:]
