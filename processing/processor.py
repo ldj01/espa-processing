@@ -469,12 +469,7 @@ class CDRProcessor(CustomizationProcessor):
             # Search for and remove the items
             for band in espa_metadata.xml_object.bands.band:
                 if band.attrib['product'] in products_to_remove:
-                    # We need to always distribute the L1QA band
-                    if band.attrib['product'] in order2product['source_data']:
-                        if band.attrib['category'] != 'qa':
-                            self.remove_band_from_xml(band)
-                    else:
-                            self.remove_band_from_xml(band)
+                    self.remove_band_from_xml(band)
 
             # Validate the XML
             espa_metadata.validate()
