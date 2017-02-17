@@ -983,7 +983,9 @@ def main():
 
     finally:
         logger.info('*** ESPA Processing Terminated ***')
-        archive_log_files(args, proc_cfg, proc_status)
+
+        if not args.bridge_mode:
+            archive_log_files(args, proc_cfg, proc_status)
 
 
 if __name__ == '__main__':
