@@ -993,48 +993,33 @@ class LandsatProcessor(CDRProcessor):
                 if len(output) > 0:
                     self._logger.info(output)
 
-    def surface_water_extent_command_line(self):
-        """Returns the command line required to generate Dynamic Surface
-           Water Extent
-
-        Evaluates the options requested by the user to define the command line
-        string to use, or returns None indicating nothing todo.
+    def generate_surface_water_extent(self):
+        """Generates the Dynamic Surface Water Extent product
 
         Note:
-            Provides the L4, L5, L7, and L8(LC8) command line.
+            Only for collection based processing.
+            For LT04, LT05, LE07, and LC08.
         """
 
         options = self._parms['options']
 
-        cmd = None
-        if options['include_dswe']:
+        if (self.is_pre_collection_data or not options['include_dswe']):
+            return
 
-            cmd = ['surface_water_extent.py',
-                   '--xml', self._xml_filename,
-                   '--verbose']
+        cmd = ['surface_water_extent.py',
+               '--xml', self._xml_filename,
+               '--verbose']
 
-            cmd = ' '.join(cmd)
+        cmd = ' '.join(cmd)
 
-        return cmd
+        self._logger.info(' '.join(['SURFACE WATER EXTENT COMMAND:', cmd]))
 
-    def generate_surface_water_extent(self):
-        """Generates the Dynamic Surface Water Extent product
-        """
-
-        cmd = self.surface_water_extent_command_line()
-
-        # Only if required
-        if cmd is not None:
-
-            self._logger.info(' '.join(['SURFACE WATER EXTENT COMMAND:',
-                                        cmd]))
-
-            output = ''
-            try:
-                output = utilities.execute_cmd(cmd)
-            finally:
-                if len(output) > 0:
-                    self._logger.info(output)
+        output = ''
+        try:
+            output = utilities.execute_cmd(cmd)
+        finally:
+            if len(output) > 0:
+                self._logger.info(output)
 
     def generate_land_surface_temperature(self):
         """Generates the Land Surface Temperature product
