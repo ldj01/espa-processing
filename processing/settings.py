@@ -74,6 +74,10 @@ BAND_TYPE_STAT_RANGES = {
         'UPPER_BOUND': 65535,
         'LOWER_BOUND': 7500
     },
+    'LANDSAT_LST': {
+        'UPPER_BOUND': 3730,
+        'LOWER_BOUND': 1500
+    },
     'EMIS': {
         'UPPER_BOUND': 255,
         'LOWER_BOUND': 1
