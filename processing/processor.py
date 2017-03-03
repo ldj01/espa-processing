@@ -469,7 +469,14 @@ class CDRProcessor(CustomizationProcessor):
             # Search for and remove the items
             for band in espa_metadata.xml_object.bands.band:
                 if band.attrib['product'] in products_to_remove:
-                    self.remove_band_from_xml(band)
+                    # Business logic to always keep the radsat_qa band if bt,
+                    # or toa, or sr output was chosen
+                    if (band.attrib['name'] == 'radsat_qa' &&
+                            (options['include_sr'] or options['include_sr_toa'] or
+                             options['include_sr_thermal'])):
+                        continue
+                    else:
+                        self.remove_band_from_xml(band)
 
             # Validate the XML
             espa_metadata.validate()
