@@ -471,7 +471,7 @@ class CDRProcessor(CustomizationProcessor):
                 if band.attrib['product'] in products_to_remove:
                     # Business logic to always keep the radsat_qa band if bt,
                     # or toa, or sr output was chosen
-                    if (band.attrib['name'] == 'radsat_qa' &&
+                    if (band.attrib['name'] == 'radsat_qa' and
                             (options['include_sr'] or options['include_sr_toa'] or
                              options['include_sr_thermal'])):
                         continue
