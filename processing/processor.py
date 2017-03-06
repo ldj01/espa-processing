@@ -449,11 +449,14 @@ class CDRProcessor(CustomizationProcessor):
         if not options['include_sr_thermal']:
             products_to_remove.append(
                 order2product['include_sr_thermal'])
-        # These both need to be false before we delete the cloud mask files
-        # Because our defined SR product includes the cloud mask bands
-        if not options['include_cfmask'] and not options['include_sr']:
-            products_to_remove.append(
-                order2product['include_cfmask'])
+        if not options['include_cfmask']:
+            # Business logic to keep the CFmask bands for pre-collection
+            # Surface Reflectance products
+            if self.is_pre_collection_data and options['include_sr']:
+                pass
+            else:
+                products_to_remove.append(
+                    order2product['include_cfmask'])
         if not options['keep_intermediate_data']:
             products_to_remove.append(
                 order2product['keep_intermediate_data'])
