@@ -449,11 +449,14 @@ class CDRProcessor(CustomizationProcessor):
         if not options['include_sr_thermal']:
             products_to_remove.append(
                 order2product['include_sr_thermal'])
-        # These both need to be false before we delete the cloud mask files
-        # Because our defined SR product includes the cloud mask bands
-        if not options['include_cfmask'] and not options['include_sr']:
-            products_to_remove.append(
-                order2product['include_cfmask'])
+        if not options['include_cfmask']:
+            # Business logic to keep the CFmask bands for pre-collection
+            # Surface Reflectance products
+            if self.is_pre_collection_data and options['include_sr']:
+                pass
+            else:
+                products_to_remove.append(
+                    order2product['include_cfmask'])
         if not options['keep_intermediate_data']:
             products_to_remove.append(
                 order2product['keep_intermediate_data'])
@@ -469,7 +472,14 @@ class CDRProcessor(CustomizationProcessor):
             # Search for and remove the items
             for band in espa_metadata.xml_object.bands.band:
                 if band.attrib['product'] in products_to_remove:
-                    self.remove_band_from_xml(band)
+                    # Business logic to always keep the radsat_qa band if bt,
+                    # or toa, or sr output was chosen
+                    if (band.attrib['name'] == 'radsat_qa' and
+                            (options['include_sr'] or options['include_sr_toa'] or
+                             options['include_sr_thermal'])):
+                        continue
+                    else:
+                        self.remove_band_from_xml(band)
 
             # Validate the XML
             espa_metadata.validate()
