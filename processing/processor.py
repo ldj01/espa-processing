@@ -1349,7 +1349,7 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
                 options['include_dswe'] or
                 options['include_lst'] or
                 options['include_cfmask'] or
-                (self.is_pre_collection_data and options['include_sr'])):
+                options['include_sr']):
 
             cmd.append('--write_toa')
             execute_do_l8_sr = True
