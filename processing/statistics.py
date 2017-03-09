@@ -158,6 +158,7 @@ if __name__ == '__main__':
     files_to_search_for['INDEX'] = ['*_nbr.img', '*_nbr2.img', '*_ndmi.img',
                                     '*_ndvi.img', '*_evi.img', '*_savi.img',
                                     '*_msavi.img']
+    files_to_search_for['LANDSAT_LST'] = ['*_lst.img']
 
     # MODIS files
     files_to_search_for['SR'].extend(['*sur_refl_b*.img'])

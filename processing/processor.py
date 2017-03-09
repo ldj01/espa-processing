@@ -1185,6 +1185,7 @@ class LandsatProcessor(CDRProcessor):
                                         '*_ndmi.img', '*_ndvi.img',
                                         '*_evi.img', '*_savi.img',
                                         '*_msavi.img']
+        files_to_search_for['LANDSAT_LST'] = ['*_lst.img']
 
         # Generate the stats for each file
         statistics.generate_statistics(self._work_dir,
@@ -1667,6 +1668,7 @@ class PlotProcessor(ProductProcessor):
         br_toa = settings.BAND_TYPE_STAT_RANGES['TOA']
         br_index = settings.BAND_TYPE_STAT_RANGES['INDEX']
         br_lst = settings.BAND_TYPE_STAT_RANGES['LST']
+        br_landsat_lst = settings.BAND_TYPE_STAT_RANGES['LANDSAT_LST']
         br_emis = settings.BAND_TYPE_STAT_RANGES['EMIS']
         self._band_type_data_ranges = {
             'SR': {
@@ -1753,6 +1755,15 @@ class PlotProcessor(ProductProcessor):
             'LST': {
                 'DATA_MAX': float(br_lst['UPPER_BOUND']),
                 'DATA_MIN': float(br_lst['LOWER_BOUND']),
+                'SCALE_MAX': 1.0,
+                'SCALE_MIN': 0.0,
+                'DISPLAY_MAX': 1.0,
+                'DISPLAY_MIN': 0.0,
+                'MAX_N_LOCATORS': 12
+            },
+            'LANDSAT_LST': {
+                'DATA_MAX': float(br_landsat_lst['UPPER_BOUND']),
+                'DATA_MIN': float(br_landsat_lst['LOWER_BOUND']),
                 'SCALE_MAX': 1.0,
                 'SCALE_MIN': 0.0,
                 'DISPLAY_MAX': 1.0,
@@ -1956,6 +1967,16 @@ class PlotProcessor(ProductProcessor):
         # Only Landsat TOA (L8 B9)
         _toa_cirrus_info = [SearchInfo(L8_NAME, ['L[C,O]8*_toa_band9.stats'])]
 
+        # Only Landsat LST (L4-L8) files
+        _landsat_lst_info = [SearchInfo(L4_NAME, ['LT4*_lst.stats',
+                                                  'LT04*_lst.stats']),
+                             SearchInfo(L5_NAME, ['LT5*_lst.stats',
+                                                  'LT05*_lst.stats']),
+                             SearchInfo(L7_NAME, ['LE7*_lst.stats',
+                                                  'LE07*_lst.stats']),
+                             SearchInfo(L8_NAME, ['L[C,O]8*_lst.stats',
+                                                  'L[C,O]08*_lst.stats'])]
+
         # Only MODIS band 20 files
         _emis_20_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_20.stats']),
                          SearchInfo(AQUA_NAME, ['MYD*Emis_20.stats'])]
@@ -2086,6 +2107,7 @@ class PlotProcessor(ProductProcessor):
                           (_emis_29_info, 'Emis Band 29'),
                           (_emis_31_info, 'Emis Band 31'),
                           (_emis_32_info, 'Emis Band 32'),
+                          (_landsat_lst_info, 'LANDSAT_LST'),
                           (_lst_day_info, 'LST Day'),
                           (_lst_night_info, 'LST Night'),
                           (_ndvi_info, 'NDVI'),
@@ -2260,9 +2282,9 @@ class PlotProcessor(ProductProcessor):
 
         # Test for a valid plot_type parameter
         # For us 'Range' mean min, max, and mean
-        if plot_type not in ('Range', 'Value'):
+        if plot_type not in ('Range', 'Value', 'StdDev'):
             raise ValueError('Error plot_type={} must be one of'
-                             ' (Range, Value)'.format(plot_type))
+                             ' (Range, Value, StdDev)'.format(plot_type))
 
         # Create the subplot objects
         fig = mpl_plot.figure()
@@ -2340,6 +2362,7 @@ class PlotProcessor(ProductProcessor):
         sorted_sensors = sorted(sensor_dict.keys())
         proxy_artists = list()
         for sensor_name in sorted_sensors:
+
             dates = list()
             min_values = np.empty(0, dtype=np.float)
             max_values = np.empty(0, dtype=np.float)
@@ -2356,6 +2379,16 @@ class PlotProcessor(ProductProcessor):
                 mean_values = np.append(mean_values, mean)
                 stddev_values = np.append(stddev_values, stddev)
 
+            if plot_type == 'StdDev':
+                # The standard deviation scaling is with respect to the mean
+                upper_stddev_values = self.scale_data_to_range(data_max,
+                                 data_min, scale_max, scale_min,
+                                 mean_values + stddev_values)
+                lower_stddev_values = self.scale_data_to_range(data_max,
+                                 data_min, scale_max, scale_min,
+                                 mean_values - stddev_values)
+
+
             # These operate on and come out as numpy arrays
             min_values = self.scale_data_to_range(data_max, data_min,
                                                   scale_max, scale_min,
@@ -2366,13 +2399,16 @@ class PlotProcessor(ProductProcessor):
             mean_values = self.scale_data_to_range(data_max, data_min,
                                                    scale_max, scale_min,
                                                    mean_values)
-            stddev_values = self.scale_data_to_range(data_max, data_min,
-                                                     scale_max, scale_min,
-                                                     stddev_values)
 
             # Draw the min to max line for these dates
             if plot_type == 'Range':
                 min_plot.vlines(dates, min_values, max_values,
+                                colors=self._sensor_colors[sensor_name],
+                                linestyles='solid', linewidths=1)
+
+            # Draw the standard deviation lines for these dates
+            if plot_type == 'StdDev':
+                min_plot.vlines(dates, lower_stddev_values, upper_stddev_values,
                                 colors=self._sensor_colors[sensor_name],
                                 linestyles='solid', linewidths=1)
 
@@ -2547,11 +2583,9 @@ class PlotProcessor(ProductProcessor):
         plot_subjects = ['Maximum']
         self.generate_plot(plot_name, plot_subjects, band_type, stats)
 
-        plot_subjects = ['Mean']
-        self.generate_plot(plot_name, plot_subjects, band_type, stats)
-
-        plot_subjects = ['StdDev']
-        self.generate_plot(plot_name, plot_subjects, band_type, stats)
+        plot_subjects = ['Mean', 'StdDev']
+        self.generate_plot(plot_name, plot_subjects, band_type, stats,
+                           'StdDev')
 
     def process_band_type(self, (search_list, band_type)):
         """A generic processing routine which finds the files to process based
@@ -2573,8 +2607,15 @@ class PlotProcessor(ProductProcessor):
                 if len(single_sensor_files) > 0:
                     sensor_count += 1  # We found another sensor
                     single_sensor_name = sensor_name
+                    # We don't want to put "landsat_lst" in the .csv filenames
+                    # because they already have "landsat_#", but the band_type
+                    # can't be just "LST" because that name is taken by MODIS.
+                    if band_type == 'LANDSAT_LST':
+                        filename_band_type = 'LST'
+                    else:
+                        filename_band_type = band_type
                     self.combine_sensor_stats(' '.join([sensor_name,
-                                                        band_type]),
+                                                        filename_band_type]),
                                               single_sensor_files)
                     multi_sensor_files.extend(single_sensor_files)
 

@@ -60,6 +60,7 @@ DEFAULT_PIXEL_SIZE = {
         '09GA': 500,
         '09GQ': 250,
         '09Q1': 250,
+        '11A1': 1000,
         '13Q1': 250,
         '13A3': 1000,
         '13A2': 1000,
@@ -80,6 +81,7 @@ DEFAULT_PIXEL_SIZE = {
         '09GA': 0.00449155,
         '09GQ': 0.002245775,
         '09Q1': 0.002245775,
+        '11A1': 0.0089831,
         '13Q1': 0.002245775,
         '13A3': 0.0089831,
         '13A2': 0.0089831,
@@ -307,6 +309,9 @@ MODIS_REGEXP_MAPPING = {
     'mod09q1': (r'^mod09q1\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
+    'mod11a1': (r'^mod11a1\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
+                modis_sensor_info),
+
     'mod13a1': (r'^mod13a1\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
@@ -329,6 +334,9 @@ MODIS_REGEXP_MAPPING = {
                 modis_sensor_info),
 
     'myd09q1': (r'^myd09q1\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
+                modis_sensor_info),
+
+    'myd11a1': (r'^myd11a1\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
                 modis_sensor_info),
 
     'myd13a1': (r'^myd13a1\.a\d{7}\.h\d{2}v\d{2}\.00[56]\.\d{13}$',
