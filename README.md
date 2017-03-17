@@ -12,6 +12,9 @@ Please see the Release Tags for notes related to past versions.
 
 - Version change for system wide versioning
 - DSWE processing no longer needs the CFmask as input.  It gets input from the pixel_qa band.
+- Add support for Landsat Surface Temperature options (reprojection, 
+  subsetting, warping, output formats, plotting and statistics)
+- Add support for MODIS Surface Temperature 
 
 ## Supported Science Products
 To generate products for a science application, it must be installed on the system and the applications provided must be available on the PATH.  See the respective science projects for installation instructions and auxiliary data requirements.
