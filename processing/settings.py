@@ -28,7 +28,7 @@ ESPA_CHECKSUM_EXTENSION = 'md5'
 # Plotting defaults
 PLOT_BG_COLOR = '#f3f3f3'  # A light gray
 PLOT_MARKER = (1, 3, 0)    # Better circle than 'o'
-PLOT_MARKER_SIZE = 5.0     # A good size for the circle or diamond
+PLOT_MARKER_SIZE = 4.0     # A good size for the circle or diamond
 PLOT_MARKER_EDGE_WIDTH = 0.9  # The width of the black marker border
 
 # We are only supporting one radius when warping to sinusoidal
@@ -70,9 +70,18 @@ BAND_TYPE_STAT_RANGES = {
         'UPPER_BOUND': 10000,
         'LOWER_BOUND': -1000
     },
+    # This is for MODIS LST.  The data range is 7500 to 65535, but with scaling
+    # factor 0.02 that translates to 150K to 1310.7K.  Most of that temperature
+    # range will not be used much.  For comparison to the Landsat LST, and to
+    # allow the standard deviations and point trends to show up better in the
+    # plots, we will limit the plot upper bound to 18,650 (373.0K).
     'LST': {
-        'UPPER_BOUND': 65535,
+        'UPPER_BOUND': 18650,
         'LOWER_BOUND': 7500
+    },
+    'LANDSAT_LST': {
+        'UPPER_BOUND': 3730,
+        'LOWER_BOUND': 1500
     },
     'EMIS': {
         'UPPER_BOUND': 255,
