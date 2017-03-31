@@ -309,6 +309,19 @@ def process(proc_cfg, developer_sleep_mode=False):
             logger = EspaLogging.get_logger('base')
 
 
+def export_environment_variables(cfg):
+    """Export the configuration to environment variables
+
+    Supporting applications require them to be in the environmant
+
+    Args:
+        cfg <ConfigParser>: Configuration
+    """
+
+    for key, value in cfg.items('processing'):
+        os.environ[key.upper()] = value
+
+
 PROC_CFG_FILENAME = 'processing.conf'
 
 
@@ -329,6 +342,7 @@ def main():
     args = parser.parse_args()
 
     proc_cfg = retrieve_cfg(PROC_CFG_FILENAME)
+    export_environment_variables(proc_cfg)
 
     EspaLogging.configure_base_logger(filename=MAPPER_LOG_FILENAME)
     # Initially set to the base logger
