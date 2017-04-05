@@ -466,8 +466,7 @@ class CDRProcessor(CustomizationProcessor):
 
         if products_to_remove is not None:
             # Create and load the metadata object
-            espa_metadata = Metadata()
-            espa_metadata.parse(xml_filename=self._xml_filename)
+            espa_metadata = Metadata(xml_filename=self._xml_filename)
 
             # Search for and remove the items
             for band in espa_metadata.xml_object.bands.band:
