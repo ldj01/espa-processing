@@ -12,6 +12,7 @@ Please see the Release Tags for notes related to past versions.
 
 - Version change for system wide versioning
 - Support for new Metadata API class
+- Support combined Landsat and MODIS LST plots
 
 ## Supported Science Products
 To generate products for a science application, it must be installed on the system and the applications provided must be available on the PATH.  See the respective science projects for installation instructions and auxiliary data requirements.

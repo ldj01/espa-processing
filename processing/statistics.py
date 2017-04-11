@@ -46,6 +46,12 @@ def get_statistics(file_name, band_type):
     upper_bound = settings.BAND_TYPE_STAT_RANGES[band_type]['UPPER_BOUND']
     lower_bound = settings.BAND_TYPE_STAT_RANGES[band_type]['LOWER_BOUND']
 
+    # MODIS and Landsat LST are in scaled units.  Convert them to K.
+    if band_type == 'LST':
+        input_data = input_data * settings.MODIS_LST_SCALE
+    if band_type == 'LANDSAT_LST':
+        input_data = input_data * settings.LANDSAT_LST_SCALE
+
     # Clean the data
     input_data = input_data[((input_data >= lower_bound) &
                              (input_data <= upper_bound))]

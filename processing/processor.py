@@ -1967,16 +1967,6 @@ class PlotProcessor(ProductProcessor):
         # Only Landsat TOA (L8 B9)
         _toa_cirrus_info = [SearchInfo(L8_NAME, ['L[C,O]8*_toa_band9.stats'])]
 
-        # Only Landsat LST (L4-L8) files
-        _landsat_lst_info = [SearchInfo(L4_NAME, ['LT4*_lst.stats',
-                                                  'LT04*_lst.stats']),
-                             SearchInfo(L5_NAME, ['LT5*_lst.stats',
-                                                  'LT05*_lst.stats']),
-                             SearchInfo(L7_NAME, ['LE7*_lst.stats',
-                                                  'LE07*_lst.stats']),
-                             SearchInfo(L8_NAME, ['L[C,O]8*_lst.stats',
-                                                  'L[C,O]08*_lst.stats'])]
-
         # Only MODIS band 20 files
         _emis_20_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_20.stats']),
                          SearchInfo(AQUA_NAME, ['MYD*Emis_20.stats'])]
@@ -2001,9 +1991,17 @@ class PlotProcessor(ProductProcessor):
         _emis_32_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_32.stats']),
                          SearchInfo(AQUA_NAME, ['MYD*Emis_32.stats'])]
 
-        # Only MODIS Day files
+        # MODIS and Landsat LST Day files
         _lst_day_info = [SearchInfo(TERRA_NAME, ['MOD*LST_Day_*.stats']),
-                         SearchInfo(AQUA_NAME, ['MYD*LST_Day_*.stats'])]
+                         SearchInfo(AQUA_NAME, ['MYD*LST_Day_*.stats']),
+                         SearchInfo(L4_NAME, ['LT4*_lst.stats',
+                                              'LT04*_lst.stats']),
+                         SearchInfo(L5_NAME, ['LT5*_lst.stats',
+                                              'LT05*_lst.stats']),
+                         SearchInfo(L7_NAME, ['LE7*_lst.stats',
+                                              'LE07*_lst.stats']),
+                         SearchInfo(L8_NAME, ['L[C,O]8*_lst.stats',
+                                              'L[C,O]08*_lst.stats'])]
 
         # Only MODIS Night files
         _lst_night_info = [SearchInfo(TERRA_NAME, ['MOD*LST_Night_*.stats']),
@@ -2107,7 +2105,6 @@ class PlotProcessor(ProductProcessor):
                           (_emis_29_info, 'Emis Band 29'),
                           (_emis_31_info, 'Emis Band 31'),
                           (_emis_32_info, 'Emis Band 32'),
-                          (_landsat_lst_info, 'LANDSAT_LST'),
                           (_lst_day_info, 'LST Day'),
                           (_lst_night_info, 'LST Night'),
                           (_ndvi_info, 'NDVI'),
