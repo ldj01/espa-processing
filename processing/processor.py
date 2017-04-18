@@ -1178,8 +1178,9 @@ class LandsatProcessor(CDRProcessor):
         # Landsat files (Includes L4-L8)
         # The types must match the types in settings.py
         files_to_search_for['SR'] = ['*_sr_band[0-9].img']
-        files_to_search_for['TOA'] = ['*_toa_band[0-9].img',
-                                      '*_toa_band1[0-1].img']
+        files_to_search_for['TOA'] = ['*_toa_band[0-9].img']
+        files_to_search_for['BT'] = ['*_bt_band6.img',
+                                     '*_bt_band1[0-1].img']
         files_to_search_for['INDEX'] = ['*_nbr.img', '*_nbr2.img',
                                         '*_ndmi.img', '*_ndvi.img',
                                         '*_evi.img', '*_savi.img',
@@ -1886,18 +1887,18 @@ class PlotProcessor(ProductProcessor):
                                                 'LC08*_sr_band9.stats'])]
 
         # Only Landsat TOA band 6(L4-7) band 10(L8) band 11(L8)
-        _toa_thermal_info = [SearchInfo(L4_NAME, ['LT4*_toa_band6.stats',
-                                                  'LT04*_toa_band6.stats']),
-                             SearchInfo(L5_NAME, ['LT5*_toa_band6.stats',
-                                                  'LT05*_toa_band6.stats']),
-                             SearchInfo(L7_NAME, ['LE7*_toa_band6.stats',
-                                                  'LE07*_toa_band6.stats']),
-                             SearchInfo(L8_TIRS1_NAME,
-                                        ['LC8*_toa_band10.stats',
-                                         'LC08*_toa_band10.stats']),
-                             SearchInfo(L8_TIRS2_NAME,
-                                        ['LC8*_toa_band11.stats',
-                                         'LC08*_toa_band11.stats'])]
+        _bt_thermal_info = [SearchInfo(L4_NAME, ['LT4*_bt_band6.stats',
+                                                 'LT04*_bt_band6.stats']),
+                            SearchInfo(L5_NAME, ['LT5*_bt_band6.stats',
+                                                 'LT05*_bt_band6.stats']),
+                            SearchInfo(L7_NAME, ['LE7*_bt_band6.stats',
+                                                 'LE07*_bt_band6.stats']),
+                            SearchInfo(L8_TIRS1_NAME,
+                                       ['LC8*_bt_band10.stats',
+                                        'LC08*_bt_band10.stats']),
+                            SearchInfo(L8_TIRS2_NAME,
+                                       ['LC8*_bt_band11.stats',
+                                        'LC08*_bt_band11.stats'])]
 
         # Only Landsat TOA (L4-L7 B5) (L8 B6)
         _toa_swir1_info = [SearchInfo(L4_NAME, ['LT4*_toa_band5.stats',
@@ -2090,7 +2091,7 @@ class PlotProcessor(ProductProcessor):
                           (_sr_swir2_info, 'SR SWIR2'),
                           (_sr_cirrus_info, 'SR CIRRUS'),
                           (_sr_swir_modis_b5_info, 'SR SWIR B5'),
-                          (_toa_thermal_info, 'SR Thermal'),
+                          (_bt_thermal_info, 'BT Thermal'),
                           (_toa_coastal_info, 'TOA COASTAL AEROSOL'),
                           (_toa_blue_info, 'TOA Blue'),
                           (_toa_green_info, 'TOA Green'),
