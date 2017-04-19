@@ -47,17 +47,17 @@ install:
 	install -d $(share_path)
 	@for file in $(SCRIPTS); do \
             echo "  installing $$file"; \
-            install -m 755 $$file $(install_path); \
+            install -m 755 $$file $(install_path) || exit 1; \
             ln -sf $(link_install_source_path)/$$file $(link_install_path)/$$file; \
         done;
 	@for file in $(SCRIPT_IMPORTS); do \
             echo "  installing $$file"; \
-            install -m 644 $$file $(install_path); \
+            install -m 644 $$file $(install_path) || exit 1; \
             ln -sf $(link_install_source_path)/$$file $(link_install_path)/$$file; \
         done;
 	@for file in $(TEMPLATE); do \
             echo "  installing $$file"; \
-            install -m 644 $$file $(share_path); \
+            install -m 644 $$file $(share_path) || exit 1; \
             ln -sf $(link_share_source_path)/$$file $(link_share_path)/$$file; \
         done;
 
