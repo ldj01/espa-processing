@@ -66,9 +66,11 @@ BAND_TYPE_STAT_RANGES = {
         'UPPER_BOUND': 10000,
         'LOWER_BOUND': 0
     },
+    # BT values based on the value range in the files
+    # No need to scale them to K, because the plots will come out the same
     'BT': {
-        'UPPER_BOUND': 10000,
-        'LOWER_BOUND': 0
+        'UPPER_BOUND': 3500,
+        'LOWER_BOUND': 1500
     },
     'INDEX': {
         'UPPER_BOUND': 10000,
