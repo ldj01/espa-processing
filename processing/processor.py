@@ -1667,6 +1667,7 @@ class PlotProcessor(ProductProcessor):
         # --------------------------------------------------------------------
         br_sr = settings.BAND_TYPE_STAT_RANGES['SR']
         br_toa = settings.BAND_TYPE_STAT_RANGES['TOA']
+        br_bt = settings.BAND_TYPE_STAT_RANGES['BT']
         br_index = settings.BAND_TYPE_STAT_RANGES['INDEX']
         br_lst = settings.BAND_TYPE_STAT_RANGES['LST']
         br_landsat_lst = settings.BAND_TYPE_STAT_RANGES['LANDSAT_LST']
@@ -1684,6 +1685,15 @@ class PlotProcessor(ProductProcessor):
             'TOA': {
                 'DATA_MAX': float(br_toa['UPPER_BOUND']),
                 'DATA_MIN': float(br_toa['LOWER_BOUND']),
+                'SCALE_MAX': 1.0,
+                'SCALE_MIN': 0.0,
+                'DISPLAY_MAX': 1.0,
+                'DISPLAY_MIN': 0.0,
+                'MAX_N_LOCATORS': 12
+            },
+            'BT': {
+                'DATA_MAX': float(br_bt['UPPER_BOUND']),
+                'DATA_MIN': float(br_bt['LOWER_BOUND']),
                 'SCALE_MAX': 1.0,
                 'SCALE_MIN': 0.0,
                 'DISPLAY_MAX': 1.0,
