@@ -66,6 +66,12 @@ BAND_TYPE_STAT_RANGES = {
         'UPPER_BOUND': 10000,
         'LOWER_BOUND': 0
     },
+    # BT values based on the value range in the files
+    # No need to scale them to K, because the plots will come out the same
+    'BT': {
+        'UPPER_BOUND': 3500,
+        'LOWER_BOUND': 1500
+    },
     'INDEX': {
         'UPPER_BOUND': 10000,
         'LOWER_BOUND': -1000
@@ -74,20 +80,27 @@ BAND_TYPE_STAT_RANGES = {
     # factor 0.02 that translates to 150K to 1310.7K.  Most of that temperature
     # range will not be used much.  For comparison to the Landsat LST, and to
     # allow the standard deviations and point trends to show up better in the
-    # plots, we will limit the plot upper bound to 18,650 (373.0K).
+    # plots, we will limit the upper bound to 18,650 (373.0K).  This matches
+    # the Landsat LST range in K, so we only need separate band types so we
+    # can handle the different MODIS and Landsat LST data types correctly.
     'LST': {
-        'UPPER_BOUND': 18650,
-        'LOWER_BOUND': 7500
+        'UPPER_BOUND': 373,
+        'LOWER_BOUND': 150
     },
+    # This is for Landsat LST.  The data range is 1500 to 3730.  With scaling
+    # to K it becomes 150 to 373.
     'LANDSAT_LST': {
-        'UPPER_BOUND': 3730,
-        'LOWER_BOUND': 1500
+        'UPPER_BOUND': 373,
+        'LOWER_BOUND': 150
     },
     'EMIS': {
         'UPPER_BOUND': 255,
         'LOWER_BOUND': 1
     }
 }
+
+MODIS_LST_SCALE = 0.02
+LANDSAT_LST_SCALE = 0.1
 
 
 '''

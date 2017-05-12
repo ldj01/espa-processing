@@ -46,6 +46,12 @@ def get_statistics(file_name, band_type):
     upper_bound = settings.BAND_TYPE_STAT_RANGES[band_type]['UPPER_BOUND']
     lower_bound = settings.BAND_TYPE_STAT_RANGES[band_type]['LOWER_BOUND']
 
+    # MODIS and Landsat LST are in scaled units.  Convert them to K.
+    if band_type == 'LST':
+        input_data = input_data * settings.MODIS_LST_SCALE
+    if band_type == 'LANDSAT_LST':
+        input_data = input_data * settings.LANDSAT_LST_SCALE
+
     # Clean the data
     input_data = input_data[((input_data >= lower_bound) &
                              (input_data <= upper_bound))]
@@ -155,6 +161,8 @@ if __name__ == '__main__':
     # Landsat files
     files_to_search_for['SR'] = ['*_sr_band[0-9].img']
     files_to_search_for['TOA'] = ['*_toa_band[0-9].img']
+    files_to_search_for['BT'] = ['*_bt_band6.img',
+                                 '*_bt_band1[0-1].img']
     files_to_search_for['INDEX'] = ['*_nbr.img', '*_nbr2.img', '*_ndmi.img',
                                     '*_ndvi.img', '*_evi.img', '*_savi.img',
                                     '*_msavi.img']

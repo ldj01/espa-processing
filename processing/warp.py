@@ -852,8 +852,7 @@ def warp_espa_data(parms, scene, xml_filename=None):
                                     namespace=None,
                                     nsmap=None)
 
-        espa_metadata = Metadata()
-        espa_metadata.parse(xml_filename)
+        espa_metadata = Metadata(xml_filename)
         bands = espa_metadata.xml_object.bands
         satellite = espa_metadata.xml_object.global_metadata.satellite
         bounding_coordinates = \

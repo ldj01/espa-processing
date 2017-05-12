@@ -466,8 +466,7 @@ class CDRProcessor(CustomizationProcessor):
 
         if products_to_remove is not None:
             # Create and load the metadata object
-            espa_metadata = Metadata()
-            espa_metadata.parse(xml_filename=self._xml_filename)
+            espa_metadata = Metadata(xml_filename=self._xml_filename)
 
             # Search for and remove the items
             for band in espa_metadata.xml_object.bands.band:
@@ -1179,8 +1178,9 @@ class LandsatProcessor(CDRProcessor):
         # Landsat files (Includes L4-L8)
         # The types must match the types in settings.py
         files_to_search_for['SR'] = ['*_sr_band[0-9].img']
-        files_to_search_for['TOA'] = ['*_toa_band[0-9].img',
-                                      '*_toa_band1[0-1].img']
+        files_to_search_for['TOA'] = ['*_toa_band[0-9].img']
+        files_to_search_for['BT'] = ['*_bt_band6.img',
+                                     '*_bt_band1[0-1].img']
         files_to_search_for['INDEX'] = ['*_nbr.img', '*_nbr2.img',
                                         '*_ndmi.img', '*_ndvi.img',
                                         '*_evi.img', '*_savi.img',
@@ -1667,6 +1667,7 @@ class PlotProcessor(ProductProcessor):
         # --------------------------------------------------------------------
         br_sr = settings.BAND_TYPE_STAT_RANGES['SR']
         br_toa = settings.BAND_TYPE_STAT_RANGES['TOA']
+        br_bt = settings.BAND_TYPE_STAT_RANGES['BT']
         br_index = settings.BAND_TYPE_STAT_RANGES['INDEX']
         br_lst = settings.BAND_TYPE_STAT_RANGES['LST']
         br_landsat_lst = settings.BAND_TYPE_STAT_RANGES['LANDSAT_LST']
@@ -1684,6 +1685,15 @@ class PlotProcessor(ProductProcessor):
             'TOA': {
                 'DATA_MAX': float(br_toa['UPPER_BOUND']),
                 'DATA_MIN': float(br_toa['LOWER_BOUND']),
+                'SCALE_MAX': 1.0,
+                'SCALE_MIN': 0.0,
+                'DISPLAY_MAX': 1.0,
+                'DISPLAY_MIN': 0.0,
+                'MAX_N_LOCATORS': 12
+            },
+            'BT': {
+                'DATA_MAX': float(br_bt['UPPER_BOUND']),
+                'DATA_MIN': float(br_bt['LOWER_BOUND']),
                 'SCALE_MAX': 1.0,
                 'SCALE_MIN': 0.0,
                 'DISPLAY_MAX': 1.0,
@@ -1887,18 +1897,18 @@ class PlotProcessor(ProductProcessor):
                                                 'LC08*_sr_band9.stats'])]
 
         # Only Landsat TOA band 6(L4-7) band 10(L8) band 11(L8)
-        _toa_thermal_info = [SearchInfo(L4_NAME, ['LT4*_toa_band6.stats',
-                                                  'LT04*_toa_band6.stats']),
-                             SearchInfo(L5_NAME, ['LT5*_toa_band6.stats',
-                                                  'LT05*_toa_band6.stats']),
-                             SearchInfo(L7_NAME, ['LE7*_toa_band6.stats',
-                                                  'LE07*_toa_band6.stats']),
-                             SearchInfo(L8_TIRS1_NAME,
-                                        ['LC8*_toa_band10.stats',
-                                         'LC08*_toa_band10.stats']),
-                             SearchInfo(L8_TIRS2_NAME,
-                                        ['LC8*_toa_band11.stats',
-                                         'LC08*_toa_band11.stats'])]
+        _bt_thermal_info = [SearchInfo(L4_NAME, ['LT4*_bt_band6.stats',
+                                                 'LT04*_bt_band6.stats']),
+                            SearchInfo(L5_NAME, ['LT5*_bt_band6.stats',
+                                                 'LT05*_bt_band6.stats']),
+                            SearchInfo(L7_NAME, ['LE7*_bt_band6.stats',
+                                                 'LE07*_bt_band6.stats']),
+                            SearchInfo(L8_TIRS1_NAME,
+                                       ['LC8*_bt_band10.stats',
+                                        'LC08*_bt_band10.stats']),
+                            SearchInfo(L8_TIRS2_NAME,
+                                       ['LC8*_bt_band11.stats',
+                                        'LC08*_bt_band11.stats'])]
 
         # Only Landsat TOA (L4-L7 B5) (L8 B6)
         _toa_swir1_info = [SearchInfo(L4_NAME, ['LT4*_toa_band5.stats',
@@ -1968,16 +1978,6 @@ class PlotProcessor(ProductProcessor):
         # Only Landsat TOA (L8 B9)
         _toa_cirrus_info = [SearchInfo(L8_NAME, ['L[C,O]8*_toa_band9.stats'])]
 
-        # Only Landsat LST (L4-L8) files
-        _landsat_lst_info = [SearchInfo(L4_NAME, ['LT4*_lst.stats',
-                                                  'LT04*_lst.stats']),
-                             SearchInfo(L5_NAME, ['LT5*_lst.stats',
-                                                  'LT05*_lst.stats']),
-                             SearchInfo(L7_NAME, ['LE7*_lst.stats',
-                                                  'LE07*_lst.stats']),
-                             SearchInfo(L8_NAME, ['L[C,O]8*_lst.stats',
-                                                  'L[C,O]08*_lst.stats'])]
-
         # Only MODIS band 20 files
         _emis_20_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_20.stats']),
                          SearchInfo(AQUA_NAME, ['MYD*Emis_20.stats'])]
@@ -2002,9 +2002,17 @@ class PlotProcessor(ProductProcessor):
         _emis_32_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_32.stats']),
                          SearchInfo(AQUA_NAME, ['MYD*Emis_32.stats'])]
 
-        # Only MODIS Day files
+        # MODIS and Landsat LST Day files
         _lst_day_info = [SearchInfo(TERRA_NAME, ['MOD*LST_Day_*.stats']),
-                         SearchInfo(AQUA_NAME, ['MYD*LST_Day_*.stats'])]
+                         SearchInfo(AQUA_NAME, ['MYD*LST_Day_*.stats']),
+                         SearchInfo(L4_NAME, ['LT4*_lst.stats',
+                                              'LT04*_lst.stats']),
+                         SearchInfo(L5_NAME, ['LT5*_lst.stats',
+                                              'LT05*_lst.stats']),
+                         SearchInfo(L7_NAME, ['LE7*_lst.stats',
+                                              'LE07*_lst.stats']),
+                         SearchInfo(L8_NAME, ['L[C,O]8*_lst.stats',
+                                              'L[C,O]08*_lst.stats'])]
 
         # Only MODIS Night files
         _lst_night_info = [SearchInfo(TERRA_NAME, ['MOD*LST_Night_*.stats']),
@@ -2093,7 +2101,7 @@ class PlotProcessor(ProductProcessor):
                           (_sr_swir2_info, 'SR SWIR2'),
                           (_sr_cirrus_info, 'SR CIRRUS'),
                           (_sr_swir_modis_b5_info, 'SR SWIR B5'),
-                          (_toa_thermal_info, 'SR Thermal'),
+                          (_bt_thermal_info, 'BT Thermal'),
                           (_toa_coastal_info, 'TOA COASTAL AEROSOL'),
                           (_toa_blue_info, 'TOA Blue'),
                           (_toa_green_info, 'TOA Green'),
@@ -2108,7 +2116,6 @@ class PlotProcessor(ProductProcessor):
                           (_emis_29_info, 'Emis Band 29'),
                           (_emis_31_info, 'Emis Band 31'),
                           (_emis_32_info, 'Emis Band 32'),
-                          (_landsat_lst_info, 'LANDSAT_LST'),
                           (_lst_day_info, 'LST Day'),
                           (_lst_night_info, 'LST Night'),
                           (_ndvi_info, 'NDVI'),
