@@ -1349,13 +1349,6 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
         return cmd
 
-    def clip_band_misalignment(self):
-        """Clips the bands to matching fill extents
-
-        Not needed for L8 processing.
-        """
-        pass
-
 
 class LandsatOLIProcessor(LandsatOLITIRSProcessor):
     """Implements OLI only (LO8) specific processing
@@ -1412,13 +1405,6 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
 
         So since, SR products can not be produced with OLI only data, OLI only
         processing can not produce spectral indices.
-        """
-        pass
-
-    def clip_band_misalignment(self):
-        """Clips the bands to matching fill extents
-
-        Not needed for L8 processing.
         """
         pass
 
