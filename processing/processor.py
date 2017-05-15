@@ -756,32 +756,6 @@ class LandsatProcessor(CDRProcessor):
                 if len(output) > 0:
                     self._logger.info(output)
 
-    def land_water_mask_command_line(self):
-        """Returns the command line required to generate a land/water mask
-
-        Note:
-            Only for L8 OLITIRS processing
-        """
-        return None
-
-    def generate_land_water_mask(self):
-        """Generates a land water mask
-        """
-
-        cmd = self.land_water_mask_command_line()
-
-        # Only if required
-        if cmd is not None:
-
-            self._logger.info(' '.join(['LAND/WATER MASK COMMAND:', cmd]))
-
-            output = ''
-            try:
-                output = utilities.execute_cmd(cmd)
-            finally:
-                if len(output) > 0:
-                    self._logger.info(output)
-
     def generate_pixel_qa(self):
         """Generates the initial pixel QA band from the Level-1 QA band
         """
@@ -1078,8 +1052,6 @@ class LandsatProcessor(CDRProcessor):
 
             self.generate_elevation_product()
 
-            self.generate_land_water_mask()
-
             self.generate_pixel_qa()
 
             self.generate_sr_products()
@@ -1114,8 +1086,7 @@ class LandsatProcessor(CDRProcessor):
             'lndsr.*.txt',
             'lndcal.*.txt',
             'LogReport*',
-            '*_elevation.*',
-            '%s_land_water_mask.*' % product_id
+            '*_elevation.*'
         ]
 
         # Define L1 source files that may need to be removed before product
@@ -1273,30 +1244,6 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
         options = self._parms['options']
 
-    def land_water_mask_command_line(self):
-        """Returns the command line required to generate a land/water mask
-
-        Note:
-            Only for L8 OLITIRS processing
-        """
-
-        options = self._parms['options']
-
-        cmd = None
-        if (options['include_sr'] or
-                options['include_sr_nbr'] or
-                options['include_sr_nbr2'] or
-                options['include_sr_ndvi'] or
-                options['include_sr_ndmi'] or
-                options['include_sr_savi'] or
-                options['include_sr_msavi'] or
-                options['include_sr_evi'] or
-                options['include_dswe']):
-            cmd = ' '.join(['create_land_water_mask',
-                            '--xml', self._xml_filename])
-
-        return cmd
-
     def sr_command_line(self):
         """Returns the command line required to generate surface reflectance
 
@@ -1383,14 +1330,6 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
         if options['include_dswe'] is True:
             raise Exception('include_dswe is an unavailable product option'
                             ' for OLI-Only data')
-
-    def land_water_mask_command_line(self):
-        """Returns the command line required to generate a land/water mask
-
-        Note:
-            Only for L8 OLITIRS processing
-        """
-        return None
 
     def generate_cloud_masking(self):
         """Cloud Masking processing requires both OLI and TIRS bands
