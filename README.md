@@ -25,7 +25,7 @@ For the core capabilities required by each science application including this pr
 - Top of Atmosphere and Surface Reflectance - See [espa-surface-reflectance](https://github.com/USGS-EROS/espa-surface-reflectance)
 - Spectral Indices - See [espa-spectral-indices](https://github.com/USGS-EROS/espa-spectral-indices)
 - Surface Water Extent - See [espa-surface-water-extent](https://github.com/USGS-EROS/espa-surface-water-extent)
-- L9 QA Tools - See [espa-l2qa-tools](https://github.com/USGS-EROS/espa-l2qa-tools)
+- L2 QA Tools - See [espa-l2qa-tools](https://github.com/USGS-EROS/espa-l2qa-tools)
 
 ## Installation Notes
 TODO - Need to fill in this section.
