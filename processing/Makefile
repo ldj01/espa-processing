@@ -24,13 +24,13 @@ SCRIPT_IMPORTS = \
     logging_tools.py \
     parameters.py \
     processor.py \
+    product_formatting.py \
     sensor.py \
     settings.py \
     staging.py \
     statistics.py \
     transfer.py \
-    utilities.py \
-    warp.py
+    utilities.py
 
 TEMPLATE = \
     order_template.json
