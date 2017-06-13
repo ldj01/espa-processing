@@ -230,8 +230,9 @@ def process(proc_cfg, developer_sleep_mode=False):
                                                       processing_location,
                                                       'processing')
                         if not status:
-                            logger.warning('Failed processing API call'
-                                           ' to update_status to processing')
+                            msg = ('Failed processing API call'
+                                   ' to update_status to processing')
+                            raise api_interface.APIException(msg)
 
             if product_id != 'plot':
                 # Make sure we can process the sensor
@@ -282,8 +283,9 @@ def process(proc_cfg, developer_sleep_mode=False):
                                                     destination_cksum_file,
                                                     '')
                 if not status:
-                    logger.warning('Failed processing API call to'
-                                   ' mark_scene_complete')
+                    msg = ('Failed processing API call to'
+                           ' mark_scene_complete')
+                    raise api_interface.APIException(msg)
 
         except api_interface.APIException as excep:
             # This is expected when scenes have been cancelled after queueing
