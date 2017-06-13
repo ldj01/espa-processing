@@ -285,6 +285,10 @@ def process(proc_cfg, developer_sleep_mode=False):
                     logger.warning('Failed processing API call to'
                                    ' mark_scene_complete')
 
+        except api_interface.APIException as excep:
+            # This is expected when scenes have been cancelled after queueing
+            logger.warning('Halt. API raised error: {}'.format(excep.message))
+
         except Exception as excep:
 
             # First log the exception
