@@ -14,6 +14,7 @@ import glob
 import json
 import datetime
 import copy
+import subprocess
 from cStringIO import StringIO
 from collections import defaultdict, namedtuple
 from matplotlib import pyplot as mpl_plot
@@ -34,11 +35,11 @@ import sensor
 import initialization
 import parameters
 import landsat_metadata
-import warp
 import staging
 import statistics
 import transfer
 import distribution
+import product_formatting
 
 
 class ProductProcessor(object):
@@ -323,6 +324,64 @@ class CustomizationProcessor(ProductProcessor):
         # Update the xml filename to be correct
         self._xml_filename = '.'.join([product_id, 'xml'])
 
+    def build_reprojection_cmd_line(self, options):
+        """Converts the options to command line arguments for reprojection
+        """
+
+        cmd = ['espa_reprojection.py', '--xml', self._xml_filename]
+
+        # The target_projection is used as the sub-command to the executable
+        if not options['reproject']:
+            # none is used if no reprojection will be performed
+            cmd.append('none')
+        else:
+            cmd.append(options['target_projection'])
+
+        if options['target_projection'] == 'utm':
+            cmd.extend(['--zone', options['utm_zone']])
+            cmd.extend(['--north-south', options['utm_north_south']])
+        elif options['target_projection'] == 'aea':
+            cmd.extend(['--datum', options['datum']])
+            cmd.extend(['--central-meridian', options['central_meridian']])
+            cmd.extend(['--origin-latitude', options['origin_lat']])
+            cmd.extend(['--std-parallel-1', options['std_parallel_1']])
+            cmd.extend(['--std-parallel-2', options['std_parallel_2']])
+            cmd.extend(['--false-easting', options['false_easting']])
+            cmd.extend(['--false-northing', options['false_northing']])
+        elif options['target_projection'] == 'ps':
+            cmd.extend(['--latitude-true-scale', parms['latitude_true_scale']])
+            cmd.extend(['--longitude-pole', parms['longitude_pole']])
+            cmd.extend(['--origin-latitude', options['origin_lat']])
+            cmd.extend(['--false-easting', options['false_easting']])
+            cmd.extend(['--false-northing', options['false_northing']])
+        elif options['target_projection'] == 'sinu':
+            cmd.extend(['--central-meridian', options['central_meridian']])
+            cmd.extend(['--false-easting', options['false_easting']])
+            cmd.extend(['--false-northing', options['false_northing']])
+        # Nothing needed for lonlat or none
+
+        if options['resample_method']:
+            cmd.extend(['--resample-method', options['resample_method']])
+        else:
+            cmd.extend(['--resample-method', 'near'])
+
+        if options['resize']:
+            cmd.extend(['--pixel-size', str(options['pixel_size'])])
+            cmd.extend(['--pixel-size-units', options['pixel_size_units']])
+
+        if options['image_extents']:
+            cmd.extend(['--extent-minx', options['minx']])
+            cmd.extend(['--extent-maxx', options['maxx']])
+            cmd.extend(['--extent-miny', options['miny']])
+            cmd.extend(['--extent-maxy', options['maxy']])
+            cmd.extend(['--extent-units', options['image_extents_units']])
+
+        # Always envi for ESPA reprojection processing
+        # The provided output format is used later
+        cmd.extend(['--output-format', 'envi'])
+
+        return cmd
+
     def customize_products(self):
         """Performs the customization of the products
         """
@@ -341,9 +400,29 @@ class CustomizationProcessor(ProductProcessor):
                 options['projection'] is not None):
 
             # The warp method requires this parameter
-            options['work_directory'] = self._work_dir
+            #options['work_directory'] = self._work_dir
 
-            warp.warp_espa_data(options, product_id, self._xml_filename)
+            #warp.warp_espa_data(options, product_id, self._xml_filename)
+
+            # Change to the working directory
+            current_directory = os.getcwd()
+            os.chdir(self._work_dir)
+
+            try:
+                cmd = self.build_reprojection_cmd_line(options)
+                output = ''
+                try:
+                    output = subprocess.check_output(cmd)
+                except subprocess.CalledProcessError as e:
+                    self._logger.exception('An exception occurred during'
+                                           ' product customization')
+                    raise
+                if len(output) > 0:
+                    self._logger.info(output)
+
+            finally:
+                # Change back to the previous directory
+                os.chdir(current_directory)
 
 
 class CDRProcessor(CustomizationProcessor):
@@ -533,8 +612,8 @@ class CDRProcessor(CustomizationProcessor):
         # Convert to the user requested output format or leave it in ESPA ENVI
         # We do all of our processing using ESPA ENVI format so it can be
         # hard-coded here
-        warp.reformat(self._xml_filename, self._work_dir, 'envi',
-                      options['output_format'])
+        product_formatting.reformat(self._xml_filename, self._work_dir,
+                                    'envi', options['output_format'])
 
     def process_product(self):
         """Perform the processor specific processing to generate the
