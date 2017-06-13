@@ -16,6 +16,7 @@ import os
 import sys
 import logging
 import api_interface
+from argparse import ArgumentParser
 
 
 from config_utils import get_cfg_file_path, retrieve_cfg
@@ -26,7 +27,7 @@ CRON_CFG_FILENAME = 'cron.conf'
 PROC_CFG_FILENAME = 'processing.conf'
 
 
-def determine_order_disposition(proc_cfg):
+def determine_order_disposition(proc_cfg, username):
     """Accomplishes order dispossition tasks
 
       Interact with the web service to accomplish order dispossition tasks
@@ -61,7 +62,7 @@ def determine_order_disposition(proc_cfg):
         raise Exception('order disposition disabled... exiting')
 
     try:
-        if not server.handle_orders():
+        if not server.handle_orders(username):
             raise Exception('server.handle_orders() was not successful')
 
     except api_interface.APIException:
@@ -76,6 +77,18 @@ def determine_order_disposition(proc_cfg):
 
 def main():
     """Execute the order disposition determination routine"""
+
+    description = 'Scene state disposition/advancement'
+    parser = ArgumentParser(description=description)
+
+    # Add our only options to determine if we are a developer or not
+    parser.add_argument('--user',
+                        action='store', dest='username', default='ALL',
+                        help='specific username to advance [ALL]')
+
+    # Parse the command line arguments
+    args = parser.parse_args()
+    username = args.username if args.username != 'ALL' else None
 
     cron_cfg = retrieve_cfg(CRON_CFG_FILENAME)
     proc_cfg = retrieve_cfg(PROC_CFG_FILENAME)
@@ -95,7 +108,7 @@ def main():
     logger = logging.getLogger(LOGGER_NAME)
 
     try:
-        determine_order_disposition(proc_cfg)
+        determine_order_disposition(proc_cfg, username)
     except Exception:
         logger.exception('Processing failed')
         sys.exit(1)  # EXIT_FAILURE
