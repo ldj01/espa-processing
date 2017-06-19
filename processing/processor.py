@@ -993,7 +993,7 @@ class LandsatProcessor(CDRProcessor):
         options = self._parms['options']
         cmd = None
         # Includes pre-collection business logic "Include CFMASK with SR"
-        if (options['include_cfmask'] or options['include_pixel_qa'] or
+        if (options['include_cfmask'] or
                 (self.is_pre_collection_data and options['include_sr'])):
 
             cmd = ' '.join(['cloud_masking.py', '--verbose',
