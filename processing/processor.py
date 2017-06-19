@@ -677,6 +677,7 @@ class LandsatProcessor(CDRProcessor):
         # Force these parameters to false if not provided
         # They are the required includes for product generation
         required_includes = ['include_cfmask',
+                             'include_pixel_qa',
                              'include_customized_source_data',
                              'include_dswe',
                              'include_lst',
@@ -705,6 +706,7 @@ class LandsatProcessor(CDRProcessor):
                 not options['include_sr_toa'] and
                 not options['include_sr_thermal'] and
                 not options['include_cfmask'] and
+                not options['include_pixel_qa'] and
                 not options['include_sr_nbr'] and
                 not options['include_sr_nbr2'] and
                 not options['include_sr_ndvi'] and
@@ -948,7 +950,8 @@ class LandsatProcessor(CDRProcessor):
                 options['include_sr_thermal'] or
                 options['include_dswe'] or
                 options['include_lst'] or
-                options['include_cfmask']):
+                options['include_cfmask'] or
+                options['include_pixel_qa']):
 
             execute_do_ledaps = True
 
@@ -990,7 +993,7 @@ class LandsatProcessor(CDRProcessor):
         options = self._parms['options']
         cmd = None
         # Includes pre-collection business logic "Include CFMASK with SR"
-        if (options['include_cfmask'] or
+        if (options['include_cfmask'] or options['include_pixel_qa'] or
                 (self.is_pre_collection_data and options['include_sr'])):
 
             cmd = ' '.join(['cloud_masking.py', '--verbose',
@@ -1361,6 +1364,7 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
                 options['include_dswe'] or
                 options['include_lst'] or
                 options['include_cfmask'] or
+                options['include_pixel_qa'] or
                 options['include_sr'] or
                 self.is_collection_data):
 
@@ -1405,6 +1409,11 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
         if options['include_cfmask'] is True:
             raise Exception('include_cfmask is an unavailable product option'
                             ' for OLI-Only data')
+
+        if options['include_pixel_qa'] is True:
+            raise Exception('include_pixel_qa is an unavailable product option'
+                            ' for OLI-Only data')
+
 
         if options['include_dswe'] is True:
             raise Exception('include_dswe is an unavailable product option'
