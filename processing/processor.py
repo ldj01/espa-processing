@@ -399,11 +399,6 @@ class CustomizationProcessor(ProductProcessor):
                 options['image_extents'] or
                 options['projection'] is not None):
 
-            # The warp method requires this parameter
-            #options['work_directory'] = self._work_dir
-
-            #warp.warp_espa_data(options, product_id, self._xml_filename)
-
             # Change to the working directory
             current_directory = os.getcwd()
             os.chdir(self._work_dir)
