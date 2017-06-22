@@ -11,8 +11,9 @@ This project contains the code for processing a single input dataset to the fina
 Please see the Release Tags for notes related to past versions.
 
 - Version change for system wide versioning
-- 
-- 
+- Added include_pixel_qa to allow only generation of the Pixel QA product
+- Migrated warping code to espa-reprojection project and modified to call the new reprojection executable
+- Fixed a bug in the generation of the product package name for collection processing
 
 ## Supported Science Products
 To generate products for a science application, it must be installed on the system and the applications provided must be available on the PATH.  See the respective science projects for installation instructions and auxiliary data requirements.
