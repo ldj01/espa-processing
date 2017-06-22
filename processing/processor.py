@@ -502,6 +502,7 @@ class CDRProcessor(CustomizationProcessor):
             'include_sr_toa': 'toa_refl',
             'include_sr_thermal': 'toa_bt',
             'include_cfmask': 'cfmask',
+            'angle_bands': 'angle_bands',
             'keep_intermediate_data': 'intermediate_data'
         }
 
@@ -534,6 +535,25 @@ class CDRProcessor(CustomizationProcessor):
         if not options['keep_intermediate_data']:
             products_to_remove.append(
                 order2product['keep_intermediate_data'])
+
+        if (self.is_collection_data and
+               ((not options['include_sr'] and
+                 not options['include_sr_toa'] and
+                 not options['include_sr_thermal'] and
+                 not options['include_sr_nbr'] and
+                 not options['include_sr_nbr2'] and
+                 not options['include_sr_ndvi'] and
+                 not options['include_sr_ndmi'] and
+                 not options['include_sr_savi'] and
+                 not options['include_sr_msavi'] and
+                 not options['include_sr_evi'] and
+                 not options['include_dswe'] and
+                 not options['include_lst']) and
+                (options['include_pixel_qa'] or
+                 options['include_customized_source_data'])):
+
+            products_to_remove.append(
+                order2product['angle_bands'])
 
         # Always remove the elevation data
         products_to_remove.append('elevation')
