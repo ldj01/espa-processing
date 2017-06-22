@@ -550,7 +550,7 @@ class CDRProcessor(CustomizationProcessor):
                  not options['include_dswe'] and
                  not options['include_lst']) and
                 (options['include_pixel_qa'] or
-                 options['include_customized_source_data'])):
+                 options['include_customized_source_data']))):
 
             products_to_remove.append(
                 order2product['angle_bands'])
