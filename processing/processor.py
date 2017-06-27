@@ -338,26 +338,26 @@ class CustomizationProcessor(ProductProcessor):
             cmd.append(options['target_projection'])
 
         if options['target_projection'] == 'utm':
-            cmd.extend(['--zone', options['utm_zone']])
+            cmd.extend(['--zone', str(options['utm_zone'])])
             cmd.extend(['--north-south', options['utm_north_south']])
         elif options['target_projection'] == 'aea':
             cmd.extend(['--datum', options['datum']])
-            cmd.extend(['--central-meridian', options['central_meridian']])
-            cmd.extend(['--origin-latitude', options['origin_lat']])
-            cmd.extend(['--std-parallel-1', options['std_parallel_1']])
-            cmd.extend(['--std-parallel-2', options['std_parallel_2']])
-            cmd.extend(['--false-easting', options['false_easting']])
-            cmd.extend(['--false-northing', options['false_northing']])
+            cmd.extend(['--central-meridian', str(options['central_meridian'])])
+            cmd.extend(['--origin-latitude', str(options['origin_lat'])])
+            cmd.extend(['--std-parallel-1', str(options['std_parallel_1'])])
+            cmd.extend(['--std-parallel-2', str(options['std_parallel_2'])])
+            cmd.extend(['--false-easting', str(options['false_easting'])])
+            cmd.extend(['--false-northing', str(options['false_northing'])])
         elif options['target_projection'] == 'ps':
-            cmd.extend(['--latitude-true-scale', parms['latitude_true_scale']])
-            cmd.extend(['--longitude-pole', parms['longitude_pole']])
-            cmd.extend(['--origin-latitude', options['origin_lat']])
-            cmd.extend(['--false-easting', options['false_easting']])
-            cmd.extend(['--false-northing', options['false_northing']])
+            cmd.extend(['--latitude-true-scale', str(parms['latitude_true_scale'])])
+            cmd.extend(['--longitude-pole', str(parms['longitude_pole'])])
+            cmd.extend(['--origin-latitude', str(options['origin_lat'])])
+            cmd.extend(['--false-easting', str(options['false_easting'])])
+            cmd.extend(['--false-northing', str(options['false_northing'])])
         elif options['target_projection'] == 'sinu':
-            cmd.extend(['--central-meridian', options['central_meridian']])
-            cmd.extend(['--false-easting', options['false_easting']])
-            cmd.extend(['--false-northing', options['false_northing']])
+            cmd.extend(['--central-meridian', str(options['central_meridian'])])
+            cmd.extend(['--false-easting', str(options['false_easting'])])
+            cmd.extend(['--false-northing', str(options['false_northing'])])
         # Nothing needed for lonlat or none
 
         if options['resample_method']:
@@ -370,10 +370,10 @@ class CustomizationProcessor(ProductProcessor):
             cmd.extend(['--pixel-size-units', options['pixel_size_units']])
 
         if options['image_extents']:
-            cmd.extend(['--extent-minx', options['minx']])
-            cmd.extend(['--extent-maxx', options['maxx']])
-            cmd.extend(['--extent-miny', options['miny']])
-            cmd.extend(['--extent-maxy', options['maxy']])
+            cmd.extend(['--extent-minx', str(options['minx'])])
+            cmd.extend(['--extent-maxx', str(options['maxx'])])
+            cmd.extend(['--extent-miny', str(options['miny'])])
+            cmd.extend(['--extent-maxy', str(options['maxy'])])
             cmd.extend(['--extent-units', options['image_extents_units']])
 
         # Always envi for ESPA reprojection processing
