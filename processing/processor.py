@@ -412,8 +412,9 @@ class CustomizationProcessor(ProductProcessor):
                     self._logger.exception('An exception occurred during'
                                            ' product customization')
                     raise
-                if len(output) > 0:
-                    self._logger.info(output)
+                finally:
+                    if len(output) > 0:
+                        self._logger.info(output)
 
             finally:
                 # Change back to the previous directory
