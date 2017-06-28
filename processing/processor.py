@@ -408,13 +408,13 @@ class CustomizationProcessor(ProductProcessor):
                 output = ''
                 try:
                     output = subprocess.check_output(cmd)
-                except subprocess.CalledProcessError as e:
+                except subprocess.CalledProcessError as error:
+                    self._logger.info(error.output)
                     self._logger.exception('An exception occurred during'
                                            ' product customization')
                     raise
-                finally:
-                    if len(output) > 0:
-                        self._logger.info(output)
+                if len(output) > 0:
+                    self._logger.info(output)
 
             finally:
                 # Change back to the previous directory
