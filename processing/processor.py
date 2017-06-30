@@ -365,7 +365,7 @@ class CustomizationProcessor(ProductProcessor):
         else:
             cmd.extend(['--resample-method', 'near'])
 
-        if options['resize'] or parms['reproject'] or parms['image_extents']:
+        if options['resize'] or options['reproject'] or options['image_extents']:
             cmd.extend(['--pixel-size', options['pixel_size']])
             cmd.extend(['--pixel-size-units', options['pixel_size_units']])
 
