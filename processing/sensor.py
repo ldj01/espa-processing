@@ -110,8 +110,8 @@ def landsat_collection_sensor_info(product_id):
     (sensor_code, proc_level, path_row, date_acq, proc_date,
      collection_id, tier) = product_id.split('_')
 
-    path = path_row[0:3].lstrip('0')
-    row = path_row[4:].lstrip('0')
+    path = path_row[0:3]
+    row = path_row[3:]
 
     date_acquired = datetime.datetime.strptime(date_acq, '%Y%m%d').date()
 
@@ -154,8 +154,8 @@ def landsat_pre_collection_sensor_info(product_id):
 
     sensor_code = product_id[:3]
 
-    path = product_id[3:6].lstrip('0')
-    row = product_id[6:9].lstrip('0')
+    path = product_id[3:6]
+    row = product_id[6:9]
 
     date_YYYYDDD = product_id[9:16]
     date_acquired = datetime.datetime.strptime(date_YYYYDDD, '%Y%j').date()

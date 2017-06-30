@@ -14,6 +14,7 @@ import glob
 import json
 import datetime
 import copy
+import subprocess
 from cStringIO import StringIO
 from collections import defaultdict, namedtuple
 from matplotlib import pyplot as mpl_plot
@@ -34,11 +35,11 @@ import sensor
 import initialization
 import parameters
 import landsat_metadata
-import warp
 import staging
 import statistics
 import transfer
 import distribution
+import product_formatting
 
 
 class ProductProcessor(object):
@@ -323,6 +324,64 @@ class CustomizationProcessor(ProductProcessor):
         # Update the xml filename to be correct
         self._xml_filename = '.'.join([product_id, 'xml'])
 
+    def build_reprojection_cmd_line(self, options):
+        """Converts the options to command line arguments for reprojection
+        """
+
+        cmd = ['espa_reprojection.py', '--xml', self._xml_filename]
+
+        # The target_projection is used as the sub-command to the executable
+        if not options['reproject']:
+            # none is used if no reprojection will be performed
+            cmd.append('none')
+        else:
+            cmd.append(options['target_projection'])
+
+        if options['target_projection'] == 'utm':
+            cmd.extend(['--zone', str(options['utm_zone'])])
+            cmd.extend(['--north-south', options['utm_north_south']])
+        elif options['target_projection'] == 'aea':
+            cmd.extend(['--datum', options['datum']])
+            cmd.extend(['--central-meridian', str(options['central_meridian'])])
+            cmd.extend(['--origin-latitude', str(options['origin_lat'])])
+            cmd.extend(['--std-parallel-1', str(options['std_parallel_1'])])
+            cmd.extend(['--std-parallel-2', str(options['std_parallel_2'])])
+            cmd.extend(['--false-easting', str(options['false_easting'])])
+            cmd.extend(['--false-northing', str(options['false_northing'])])
+        elif options['target_projection'] == 'ps':
+            cmd.extend(['--latitude-true-scale', str(options['latitude_true_scale'])])
+            cmd.extend(['--longitude-pole', str(options['longitude_pole'])])
+            cmd.extend(['--origin-latitude', str(options['origin_lat'])])
+            cmd.extend(['--false-easting', str(options['false_easting'])])
+            cmd.extend(['--false-northing', str(options['false_northing'])])
+        elif options['target_projection'] == 'sinu':
+            cmd.extend(['--central-meridian', str(options['central_meridian'])])
+            cmd.extend(['--false-easting', str(options['false_easting'])])
+            cmd.extend(['--false-northing', str(options['false_northing'])])
+        # Nothing needed for lonlat or none
+
+        if options['resample_method']:
+            cmd.extend(['--resample-method', options['resample_method']])
+        else:
+            cmd.extend(['--resample-method', 'near'])
+
+        if options['resize']:
+            cmd.extend(['--pixel-size', str(options['pixel_size'])])
+            cmd.extend(['--pixel-size-units', options['pixel_size_units']])
+
+        if options['image_extents']:
+            cmd.extend(['--extent-minx', str(options['minx'])])
+            cmd.extend(['--extent-maxx', str(options['maxx'])])
+            cmd.extend(['--extent-miny', str(options['miny'])])
+            cmd.extend(['--extent-maxy', str(options['maxy'])])
+            cmd.extend(['--extent-units', options['image_extents_units']])
+
+        # Always envi for ESPA reprojection processing
+        # The provided output format is used later
+        cmd.extend(['--output-format', 'envi'])
+
+        return cmd
+
     def customize_products(self):
         """Performs the customization of the products
         """
@@ -340,10 +399,26 @@ class CustomizationProcessor(ProductProcessor):
                 options['image_extents'] or
                 options['projection'] is not None):
 
-            # The warp method requires this parameter
-            options['work_directory'] = self._work_dir
+            # Change to the working directory
+            current_directory = os.getcwd()
+            os.chdir(self._work_dir)
 
-            warp.warp_espa_data(options, product_id, self._xml_filename)
+            try:
+                cmd = self.build_reprojection_cmd_line(options)
+                output = ''
+                try:
+                    output = subprocess.check_output(cmd)
+                except subprocess.CalledProcessError as error:
+                    self._logger.info(error.output)
+                    self._logger.exception('An exception occurred during'
+                                           ' product customization')
+                    raise
+                if len(output) > 0:
+                    self._logger.info(output)
+
+            finally:
+                # Change back to the previous directory
+                os.chdir(current_directory)
 
 
 class CDRProcessor(CustomizationProcessor):
@@ -428,6 +503,7 @@ class CDRProcessor(CustomizationProcessor):
             'include_sr_toa': 'toa_refl',
             'include_sr_thermal': 'toa_bt',
             'include_cfmask': 'cfmask',
+            'angle_bands': 'angle_bands',
             'keep_intermediate_data': 'intermediate_data'
         }
 
@@ -460,6 +536,25 @@ class CDRProcessor(CustomizationProcessor):
         if not options['keep_intermediate_data']:
             products_to_remove.append(
                 order2product['keep_intermediate_data'])
+
+        if (self.is_collection_data and
+               ((not options['include_sr'] and
+                 not options['include_sr_toa'] and
+                 not options['include_sr_thermal'] and
+                 not options['include_sr_nbr'] and
+                 not options['include_sr_nbr2'] and
+                 not options['include_sr_ndvi'] and
+                 not options['include_sr_ndmi'] and
+                 not options['include_sr_savi'] and
+                 not options['include_sr_msavi'] and
+                 not options['include_sr_evi'] and
+                 not options['include_dswe'] and
+                 not options['include_lst']) and
+                (options['include_pixel_qa'] or
+                 options['include_customized_source_data']))):
+
+            products_to_remove.append(
+                order2product['angle_bands'])
 
         # Always remove the elevation data
         products_to_remove.append('elevation')
@@ -533,8 +628,8 @@ class CDRProcessor(CustomizationProcessor):
         # Convert to the user requested output format or leave it in ESPA ENVI
         # We do all of our processing using ESPA ENVI format so it can be
         # hard-coded here
-        warp.reformat(self._xml_filename, self._work_dir, 'envi',
-                      options['output_format'])
+        product_formatting.reformat(self._xml_filename, self._work_dir,
+                                    'envi', options['output_format'])
 
     def process_product(self):
         """Perform the processor specific processing to generate the
@@ -598,6 +693,7 @@ class LandsatProcessor(CDRProcessor):
         # Force these parameters to false if not provided
         # They are the required includes for product generation
         required_includes = ['include_cfmask',
+                             'include_pixel_qa',
                              'include_customized_source_data',
                              'include_dswe',
                              'include_lst',
@@ -626,6 +722,7 @@ class LandsatProcessor(CDRProcessor):
                 not options['include_sr_toa'] and
                 not options['include_sr_thermal'] and
                 not options['include_cfmask'] and
+                not options['include_pixel_qa'] and
                 not options['include_sr_nbr'] and
                 not options['include_sr_nbr2'] and
                 not options['include_sr_ndvi'] and
@@ -869,7 +966,8 @@ class LandsatProcessor(CDRProcessor):
                 options['include_sr_thermal'] or
                 options['include_dswe'] or
                 options['include_lst'] or
-                options['include_cfmask']):
+                options['include_cfmask'] or
+                options['include_pixel_qa']):
 
             execute_do_ledaps = True
 
@@ -1282,6 +1380,7 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
                 options['include_dswe'] or
                 options['include_lst'] or
                 options['include_cfmask'] or
+                options['include_pixel_qa'] or
                 options['include_sr'] or
                 self.is_collection_data):
 
@@ -1326,6 +1425,11 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
         if options['include_cfmask'] is True:
             raise Exception('include_cfmask is an unavailable product option'
                             ' for OLI-Only data')
+
+        if options['include_pixel_qa'] is True:
+            raise Exception('include_pixel_qa is an unavailable product option'
+                            ' for OLI-Only data')
+
 
         if options['include_dswe'] is True:
             raise Exception('include_dswe is an unavailable product option'

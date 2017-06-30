@@ -178,15 +178,18 @@ class APIServer(object):
 
         return resp
 
-    def handle_orders(self):
+    def handle_orders(self, username=None):
         """
         Sends the handle_orders command to the API
 
         Returns: True if successful
         """
         url = '/handle-orders'
+        data_dict = {}
+        if username:
+            data_dict = {'username': username}
 
-        resp, status = self.request('get', url, status=200)
+        resp, status = self.request('get', url, json=data_dict, status=200)
 
         return status == 200
 

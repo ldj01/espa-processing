@@ -145,6 +145,12 @@ def build_command_line_parser():
                           default=False,
                           help='Include CFMask Products')
 
+    products.add_argument('--include-pixel-qa',
+                          action='store_true',
+                          dest='include_pixel_qa',
+                          default=False,
+                          help='Include PixelQA Products')
+
     products.add_argument('--include-customized-source-data',
                           action='store_true',
                           dest='include_customized_source_data',
@@ -792,6 +798,7 @@ def update_template(args, template):
 
     # Products ---------------------------------------------------------------
     order['options']['include_cfmask'] = args.include_cfmask
+    order['options']['include_pixel_qa'] = args.include_pixel_qa
     order['options']['include_customized_source_data'] = (
         args.include_customized_source_data)
     order['options']['include_lst'] = args.include_land_surface_temperature
