@@ -350,7 +350,7 @@ class CustomizationProcessor(ProductProcessor):
             cmd.extend(['--false-northing', options['false_northing']])
         elif options['target_projection'] == 'ps':
             cmd.extend(['--latitude-true-scale', options['latitude_true_scale']])
-            cmd.extend(['--longitude-pole', options['longitude_pole']))
+            cmd.extend(['--longitude-pole', options['longitude_pole']])
             cmd.extend(['--origin-latitude', options['origin_lat']])
             cmd.extend(['--false-easting', options['false_easting']])
             cmd.extend(['--false-northing', options['false_northing']])
