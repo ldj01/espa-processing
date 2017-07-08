@@ -47,6 +47,7 @@ def execute_cmd(cmd):
     """
 
     output = ''
+    print('########### {}'.format(cmd))
     (status, output) = commands.getstatusoutput(cmd)
 
     message = ''
@@ -151,7 +152,9 @@ def process_requests(cron_cfg, proc_cfg, args,
     # check the number of hadoop jobs and don't do anything if they
     # are over a limit
     job_limit = cron_cfg.getint('hadoop', 'max_jobs')
-    cmd = "hadoop job -list|awk '{print $1}'|grep -c job 2>/dev/null"
+    #cmd = "hadoop job -list|awk '{print $1}'|grep -c job 2>/dev/null"
+    cmd = "yarn application -appStates RUNNING -list|grep -c application 2>/dev/null"
+    cmd = "echo '0'"
     try:
         job_count = execute_cmd(cmd)
     except Exception as e:
@@ -203,6 +206,7 @@ def process_requests(cron_cfg, proc_cfg, args,
 
     # Determine the appropriate hadoop queue to use
     hadoop_job_queue = get_queue_name(cron_cfg, queue_priority)
+    hadoop_job_queue = 'default' 
 
     if not ondemand_enabled.lower() == 'true':
         raise Exception('on demand disabled... exiting')
@@ -264,14 +268,17 @@ def process_requests(cron_cfg, proc_cfg, args,
             hadoop_store_command = [hadoop_executable, 'dfs',
                                     '-copyFromLocal', job_filepath,
                                     hdfs_target]
+            hadoop_store_command = [hadoop_executable, 'fs', '-put', job_filepath, hdfs_target]
 
             jars_path = os.path.join(home_dir, 'bin/hadoop/contrib/streaming',
                                      'hadoop-streaming*.jar')
+            jars_path = os.path.join(home_dir, 'bin/hadoop/share/hadoop/tools/lib/hadoop-streaming-*.jar')
 
             code_dir = os.path.join(home_dir, 'espa-site/processing')
 
             # Specify the mapper application
             mapper_path = os.path.join(code_dir, 'ondemand_mapper.py')
+            mapper_path = 'processing/ondemand_mapper.py'
 
             # Define command line to execute the hadoop job
             # Be careful it is possible to have conflicts between module names
@@ -285,26 +292,8 @@ def process_requests(cron_cfg, proc_cfg, args,
                  '-D', 'mapred.reduce.tasks=0',
                  '-D', 'mapred.job.queue.name={0}'.format(hadoop_job_queue),
                  '-D', 'mapred.job.name="{0}"'.format(job_name),
-                 '-inputformat', ('org.apache.hadoop.mapred.'
-                                  'lib.NLineInputFormat'),
-                 '-file', mapper_path,
-                 '-file', os.path.join(code_dir, 'api_interface.py'),
-                 '-file', os.path.join(code_dir, 'config_utils.py'),
-                 '-file', os.path.join(code_dir, 'distribution.py'),
-                 '-file', os.path.join(code_dir, 'environment.py'),
-                 '-file', os.path.join(code_dir, 'espa_exception.py'),
-                 '-file', os.path.join(code_dir, 'initialization.py'),
-                 '-file', os.path.join(code_dir, 'landsat_metadata.py'),
-                 '-file', os.path.join(code_dir, 'logging_tools.py'),
-                 '-file', os.path.join(code_dir, 'parameters.py'),
-                 '-file', os.path.join(code_dir, 'processor.py'),
-                 '-file', os.path.join(code_dir, 'sensor.py'),
-                 '-file', os.path.join(code_dir, 'settings.py'),
-                 '-file', os.path.join(code_dir, 'staging.py'),
-                 '-file', os.path.join(code_dir, 'statistics.py'),
-                 '-file', os.path.join(code_dir, 'transfer.py'),
-                 '-file', os.path.join(code_dir, 'utilities.py'),
-                 '-file', os.path.join(code_dir, 'product_formatting.py'),
+                 '-inputformat', ('org.apache.hadoop.mapred.lib.NLineInputFormat'),
+                 '-file', code_dir,
                  '-mapper', mapper_path,
                  '-cmdenv', 'HOME=$HOME',
                  '-cmdenv', proc_cmdenv(option='espa_work_dir'),
@@ -329,10 +318,10 @@ def process_requests(cron_cfg, proc_cfg, args,
                  '-output', hdfs_target + '-out']
 
             # Define the executables to clean up hdfs
-            hadoop_delete_request_command1 = [hadoop_executable, 'dfs',
-                                              '-rmr', hdfs_target]
-            hadoop_delete_request_command2 = [hadoop_executable, 'dfs',
-                                              '-rmr', hdfs_target + '-out']
+            hadoop_delete_request_command1 = [hadoop_executable, 'fs',
+                                              '-rm', '-r', hdfs_target]
+            hadoop_delete_request_command2 = [hadoop_executable, 'fs',
+                                              '-rm', '-r', hdfs_target + '-out']
 
             logger.info('Storing request file to hdfs...')
             output = ''
@@ -350,7 +339,8 @@ def process_requests(cron_cfg, proc_cfg, args,
 
                 logger.info('Deleting local request file copy [{0}]'
                             .format(job_filepath))
-                os.unlink(job_filepath)
+                print("DELTE THIS: {}".format(job_filepath))
+                #os.unlink(job_filepath)
 
             try:
                 # Update the scene list as queued so they don't get pulled
