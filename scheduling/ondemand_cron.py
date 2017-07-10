@@ -206,7 +206,6 @@ def process_requests(cron_cfg, proc_cfg, args,
 
     # Determine the appropriate hadoop queue to use
     hadoop_job_queue = get_queue_name(cron_cfg, queue_priority)
-    hadoop_job_queue = 'default' 
 
     if not ondemand_enabled.lower() == 'true':
         raise Exception('on demand disabled... exiting')
