@@ -223,11 +223,8 @@ def process_requests(cron_cfg, proc_cfg, args,
         if requests:
             # Figure out the name of the order file
             stamp = datetime.now()
-            job_name = ('%s_%s_%s_%s_%s_%s-%s-espa_job'
-                        % (str(stamp.month), str(stamp.day),
-                           str(stamp.year), str(stamp.hour),
-                           str(stamp.minute), str(stamp.second),
-                           str(queue_priority)))
+            job_name = ('{0:%Y-%m-%d-%H-%M-%S}-{1}-espa_job'
+                        .format(stamp, queue_priority))
 
             logger.info(' '.join(['Found requests to process,',
                                   'generating job name:', job_name]))
