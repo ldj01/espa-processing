@@ -47,7 +47,6 @@ def execute_cmd(cmd):
     """
 
     output = ''
-    print('########### {}'.format(cmd))
     (status, output) = commands.getstatusoutput(cmd)
 
     message = ''
@@ -268,7 +267,6 @@ def process_requests(cron_cfg, proc_cfg, args,
             code_dir = os.path.join(home_dir, 'espa-site/processing')
 
             # Specify the mapper application
-            mapper_path = os.path.join(code_dir, 'ondemand_mapper.py')
             mapper_path = 'processing/ondemand_mapper.py'
 
             # Define command line to execute the hadoop job
