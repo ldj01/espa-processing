@@ -288,8 +288,7 @@ def process_requests(cron_cfg, proc_cfg, args,
                  '-D', 'mapred.reduce.tasks=0',
                  '-D', 'mapred.job.queue.name={0}'.format(hadoop_job_queue),
                  '-D', 'mapred.job.name="{0}"'.format(job_name),
-                 '-inputformat', ('org.apache.hadoop.mapred.lib.NLineInputFormat'),
-                 '-file', code_dir,
+                 '-files', code_dir,
                  '-mapper', mapper_path,
                  '-cmdenv', 'HOME=$HOME',
                  '-cmdenv', proc_cmdenv(option='espa_work_dir'),
@@ -311,6 +310,7 @@ def process_requests(cron_cfg, proc_cfg, args,
                  '-cmdenv', proc_cmdenv(option='modtran_data_dir'),
                  '-cmdenv', proc_cmdenv(option='aster_ged_server_name'),
                  '-input', hdfs_target,
+                 '-inputformat', 'org.apache.hadoop.mapred.lib.NLineInputFormat',
                  '-output', hdfs_target + '-out']
 
             # Define the executables to clean up hdfs
