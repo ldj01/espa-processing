@@ -261,14 +261,11 @@ def process_requests(cron_cfg, proc_cfg, args,
             hdfs_target = os.path.join('requests', job_filename)
 
             # Define command line to store the job file in hdfs
-            hadoop_store_command = [hadoop_executable, 'dfs',
-                                    '-copyFromLocal', job_filepath,
-                                    hdfs_target]
             hadoop_store_command = [hadoop_executable, 'fs', '-put', job_filepath, hdfs_target]
 
-            jars_path = os.path.join(home_dir, 'bin/hadoop/contrib/streaming',
-                                     'hadoop-streaming*.jar')
-            jars_path = os.path.join(home_dir, 'bin/hadoop/share/hadoop/tools/lib/hadoop-streaming-*.jar')
+            jars_path = os.path.join(home_dir,
+                                     'bin/hadoop/share/hadoop/tools/lib/',
+                                     'hadoop-streaming-*.jar')
 
             code_dir = os.path.join(home_dir, 'espa-site/processing')
 
@@ -335,8 +332,7 @@ def process_requests(cron_cfg, proc_cfg, args,
 
                 logger.info('Deleting local request file copy [{0}]'
                             .format(job_filepath))
-                print("DELTE THIS: {}".format(job_filepath))
-                #os.unlink(job_filepath)
+                os.unlink(job_filepath)
 
             try:
                 # Update the scene list as queued so they don't get pulled
