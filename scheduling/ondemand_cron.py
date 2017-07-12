@@ -159,9 +159,13 @@ def process_requests(cron_cfg, proc_cfg, args,
     # check the number of hadoop jobs and don't do anything if they
     # are over a limit
     job_limit = cron_cfg.getint('hadoop', 'max_jobs')
-    cmd = "yarn application -appStates RUNNING -list 2>/dev/null |grep -c '^application_'"
+    yarn_running_apps_command = [yarn_executable, "application",
+                                 "-appStates", "RUNNING", "-list"]
     try:
-        job_count = execute_cmd(cmd)
+        cmd = ' '.join(yarn_running_apps_command)
+        app_states = execute_cmd(cmd)
+        job_count = [l for l in app_states.split('\n')
+                     if 'Total number of applications' in l][0].split(':')[-1]
     except Exception as e:
         errmsg = 'Stdout/Stderr is: 0'
         if errmsg in e.message:
