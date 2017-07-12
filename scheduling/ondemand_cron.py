@@ -263,15 +263,10 @@ def process_requests(cron_cfg, proc_cfg, args,
             hdfs_target = os.path.join('requests', job_filename)
 
             # Define command line to store the job file in hdfs
-            hadoop_store_command = [hadoop_executable, 'fs', '-put', job_filepath, hdfs_target]
-
-            jars_path = os.path.join(home_dir,
-                                     'bin/hadoop/share/hadoop/tools/lib/',
-                                     'hadoop-streaming-*.jar')
-
-            code_dir = os.path.join(home_dir, 'espa-site/processing')
+            hadoop_store_command = [hdfs_executable, 'dfs', '-put', job_filepath, hdfs_target]
 
             # Specify the mapper application
+            code_dir = os.path.join(home_dir, 'espa-site/processing')
             mapper_path = 'processing/ondemand_mapper.py'
 
             # Define command line to execute the hadoop job
@@ -280,7 +275,7 @@ def process_requests(cron_cfg, proc_cfg, args,
             # When Hadoop kicks off a job task, it doesn't set $HOME
             # However matplotlib requires it to be set
             hadoop_run_command = \
-                [hadoop_executable, 'jar', jars_path,
+                [yarn_executable, 'jar', jars_path,
                  '-D', ('mapred.task.timeout={0}'
                         .format(cron_cfg.getint('hadoop', 'timeout'))),
                  '-D', 'mapred.reduce.tasks=0',
@@ -312,9 +307,9 @@ def process_requests(cron_cfg, proc_cfg, args,
                  '-output', hdfs_target + '-out']
 
             # Define the executables to clean up hdfs
-            hadoop_delete_request_command1 = [hadoop_executable, 'fs',
+            hadoop_delete_request_command1 = [hdfs_executable, 'dfs',
                                               '-rm', '-r', hdfs_target]
-            hadoop_delete_request_command2 = [hadoop_executable, 'fs',
+            hadoop_delete_request_command2 = [hdfs_executable, 'dfs',
                                               '-rm', '-r', hdfs_target + '-out']
 
             logger.info('Storing request file to hdfs...')
