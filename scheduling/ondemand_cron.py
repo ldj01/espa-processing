@@ -148,6 +148,14 @@ def process_requests(cron_cfg, proc_cfg, args,
     # Get the logger for this task
     logger = logging.getLogger(LOGGER_NAME)
 
+    # Define path to hadoop commandline executables
+    home_dir = os.environ.get('HOME')
+    yarn_executable = os.path.join(home_dir, 'bin/hadoop/bin/yarn')
+    hdfs_executable = os.path.join(home_dir, 'bin/hadoop/bin/hdfs')
+    jars_path = os.path.join(home_dir,
+                             'bin/hadoop/share/hadoop/tools/lib/',
+                             'hadoop-streaming-*.jar')
+
     # check the number of hadoop jobs and don't do anything if they
     # are over a limit
     job_limit = cron_cfg.getint('hadoop', 'max_jobs')
@@ -178,9 +186,6 @@ def process_requests(cron_cfg, proc_cfg, args,
         server = api_interface.api_connect(rpcurl)
     else:
         raise Exception('Missing or invalid environment variable ESPA_API')
-
-    home_dir = os.environ.get('HOME')
-    hadoop_executable = os.path.join(home_dir, 'bin/hadoop/bin/hadoop')
 
     # Verify API server
     if server is None:
