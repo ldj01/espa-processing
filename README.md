@@ -12,6 +12,7 @@ Please see the Release Tags for notes related to past versions.
 
 - Version change for system wide versioning
 - Commandline changes for Hadoop 2.8.0
+- Allow pixel-QA stand-alone for OLI-Only scenes
 
 ## Supported Science Products
 To generate products for a science application, it must be installed on the system and the applications provided must be available on the PATH.  See the respective science projects for installation instructions and auxiliary data requirements.
