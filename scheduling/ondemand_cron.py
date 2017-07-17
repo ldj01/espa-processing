@@ -164,8 +164,10 @@ def process_requests(cron_cfg, proc_cfg, args,
     try:
         cmd = ' '.join(yarn_running_apps_command)
         app_states = execute_cmd(cmd)
-        job_count = [l for l in app_states.split('\n')
-                     if 'Total number of applications' in l][0].split(':')[-1]
+        # Get "total applications: N" output line from YARN
+        running_line = [l for l in app_states.split('\n')
+                        if 'Total number of applications' in l].pop()
+        job_count = running_line.split(':')[-1]
     except Exception as e:
         errmsg = 'Stdout/Stderr is: 0'
         if errmsg in e.message:
