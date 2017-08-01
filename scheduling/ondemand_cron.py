@@ -148,12 +148,26 @@ def process_requests(cron_cfg, proc_cfg, args,
     # Get the logger for this task
     logger = logging.getLogger(LOGGER_NAME)
 
+    # Define path to hadoop commandline executables
+    home_dir = os.environ.get('HOME')
+    yarn_executable = os.path.join(home_dir, 'bin/hadoop/bin/yarn')
+    hdfs_executable = os.path.join(home_dir, 'bin/hadoop/bin/hdfs')
+    jars_path = os.path.join(home_dir,
+                             'bin/hadoop/share/hadoop/tools/lib/',
+                             'hadoop-streaming-*.jar')
+
     # check the number of hadoop jobs and don't do anything if they
     # are over a limit
     job_limit = cron_cfg.getint('hadoop', 'max_jobs')
-    cmd = "hadoop job -list|awk '{print $1}'|grep -c job 2>/dev/null"
+    yarn_running_apps_command = [yarn_executable, "application",
+                                 "-appStates", "RUNNING", "-list"]
     try:
-        job_count = execute_cmd(cmd)
+        cmd = ' '.join(yarn_running_apps_command)
+        app_states = execute_cmd(cmd)
+        # Get "total applications: N" output line from YARN
+        running_line = [l for l in app_states.split('\n')
+                        if 'Total number of applications' in l].pop()
+        job_count = running_line.split(':')[-1]
     except Exception as e:
         errmsg = 'Stdout/Stderr is: 0'
         if errmsg in e.message:
@@ -178,9 +192,6 @@ def process_requests(cron_cfg, proc_cfg, args,
         server = api_interface.api_connect(rpcurl)
     else:
         raise Exception('Missing or invalid environment variable ESPA_API')
-
-    home_dir = os.environ.get('HOME')
-    hadoop_executable = os.path.join(home_dir, 'bin/hadoop/bin/hadoop')
 
     # Verify API server
     if server is None:
@@ -220,11 +231,8 @@ def process_requests(cron_cfg, proc_cfg, args,
         if requests:
             # Figure out the name of the order file
             stamp = datetime.now()
-            job_name = ('%s_%s_%s_%s_%s_%s-%s-espa_job'
-                        % (str(stamp.month), str(stamp.day),
-                           str(stamp.year), str(stamp.hour),
-                           str(stamp.minute), str(stamp.second),
-                           str(queue_priority)))
+            job_name = ('{0:%Y-%m-%d-%H-%M-%S}-{1}-espa_job'
+                        .format(stamp, queue_priority))
 
             logger.info(' '.join(['Found requests to process,',
                                   'generating job name:', job_name]))
@@ -261,17 +269,11 @@ def process_requests(cron_cfg, proc_cfg, args,
             hdfs_target = os.path.join('requests', job_filename)
 
             # Define command line to store the job file in hdfs
-            hadoop_store_command = [hadoop_executable, 'dfs',
-                                    '-copyFromLocal', job_filepath,
-                                    hdfs_target]
-
-            jars_path = os.path.join(home_dir, 'bin/hadoop/contrib/streaming',
-                                     'hadoop-streaming*.jar')
-
-            code_dir = os.path.join(home_dir, 'espa-site/processing')
+            hadoop_store_command = [hdfs_executable, 'dfs', '-put', job_filepath, hdfs_target]
 
             # Specify the mapper application
-            mapper_path = os.path.join(code_dir, 'ondemand_mapper.py')
+            code_dir = os.path.join(home_dir, 'espa-site/processing')
+            mapper_path = 'processing/ondemand_mapper.py'
 
             # Define command line to execute the hadoop job
             # Be careful it is possible to have conflicts between module names
@@ -279,60 +281,24 @@ def process_requests(cron_cfg, proc_cfg, args,
             # When Hadoop kicks off a job task, it doesn't set $HOME
             # However matplotlib requires it to be set
             hadoop_run_command = \
-                [hadoop_executable, 'jar', jars_path,
+                [yarn_executable, 'jar', jars_path,
                  '-D', ('mapred.task.timeout={0}'
                         .format(cron_cfg.getint('hadoop', 'timeout'))),
                  '-D', 'mapred.reduce.tasks=0',
                  '-D', 'mapred.job.queue.name={0}'.format(hadoop_job_queue),
                  '-D', 'mapred.job.name="{0}"'.format(job_name),
-                 '-inputformat', ('org.apache.hadoop.mapred.'
-                                  'lib.NLineInputFormat'),
-                 '-file', mapper_path,
-                 '-file', os.path.join(code_dir, 'api_interface.py'),
-                 '-file', os.path.join(code_dir, 'config_utils.py'),
-                 '-file', os.path.join(code_dir, 'distribution.py'),
-                 '-file', os.path.join(code_dir, 'environment.py'),
-                 '-file', os.path.join(code_dir, 'espa_exception.py'),
-                 '-file', os.path.join(code_dir, 'initialization.py'),
-                 '-file', os.path.join(code_dir, 'landsat_metadata.py'),
-                 '-file', os.path.join(code_dir, 'logging_tools.py'),
-                 '-file', os.path.join(code_dir, 'parameters.py'),
-                 '-file', os.path.join(code_dir, 'processor.py'),
-                 '-file', os.path.join(code_dir, 'sensor.py'),
-                 '-file', os.path.join(code_dir, 'settings.py'),
-                 '-file', os.path.join(code_dir, 'staging.py'),
-                 '-file', os.path.join(code_dir, 'statistics.py'),
-                 '-file', os.path.join(code_dir, 'transfer.py'),
-                 '-file', os.path.join(code_dir, 'utilities.py'),
-                 '-file', os.path.join(code_dir, 'product_formatting.py'),
+                 '-files', code_dir,
                  '-mapper', mapper_path,
-                 '-cmdenv', 'HOME=$HOME',
-                 '-cmdenv', proc_cmdenv(option='espa_work_dir'),
-                 '-cmdenv', proc_cmdenv(option='espa_distribution_method'),
-                 '-cmdenv', proc_cmdenv(option='espa_distribution_dir'),
-                 '-cmdenv', proc_cmdenv(option='espa_schema'),
-                 '-cmdenv', proc_cmdenv(option='espa_land_mass_polygon'),
-                 '-cmdenv', proc_cmdenv(option='espa_api'),
-                 '-cmdenv', proc_cmdenv(option='espa_cache_host_list'),
-                 '-cmdenv', proc_cmdenv(option='espa_elevation_dir'),
-                 '-cmdenv', proc_cmdenv(option='ias_data_dir'),
-                 '-cmdenv', proc_cmdenv(option='pythonpath'),
-                 '-cmdenv', proc_cmdenv(option='ledaps_aux_dir'),
-                 '-cmdenv', proc_cmdenv(option='l8_aux_dir'),
-                 '-cmdenv', proc_cmdenv(option='esun'),
-                 '-cmdenv', proc_cmdenv(option='lst_aux_dir'),
-                 '-cmdenv', proc_cmdenv(option='lst_data_dir'),
-                 '-cmdenv', proc_cmdenv(option='modtran_path'),
-                 '-cmdenv', proc_cmdenv(option='modtran_data_dir'),
-                 '-cmdenv', proc_cmdenv(option='aster_ged_server_name'),
                  '-input', hdfs_target,
+                 '-inputformat', 'org.apache.hadoop.mapred.lib.NLineInputFormat',
+                 '-cmdenv', 'HOME={0}'.format(home_dir),
                  '-output', hdfs_target + '-out']
 
             # Define the executables to clean up hdfs
-            hadoop_delete_request_command1 = [hadoop_executable, 'dfs',
-                                              '-rmr', hdfs_target]
-            hadoop_delete_request_command2 = [hadoop_executable, 'dfs',
-                                              '-rmr', hdfs_target + '-out']
+            hadoop_delete_request_command1 = [hdfs_executable, 'dfs',
+                                              '-rm', '-r', hdfs_target]
+            hadoop_delete_request_command2 = [hdfs_executable, 'dfs',
+                                              '-rm', '-r', hdfs_target + '-out']
 
             logger.info('Storing request file to hdfs...')
             output = ''

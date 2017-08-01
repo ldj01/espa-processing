@@ -1426,11 +1426,6 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
             raise Exception('include_cfmask is an unavailable product option'
                             ' for OLI-Only data')
 
-        if options['include_pixel_qa'] is True:
-            raise Exception('include_pixel_qa is an unavailable product option'
-                            ' for OLI-Only data')
-
-
         if options['include_dswe'] is True:
             raise Exception('include_dswe is an unavailable product option'
                             ' for OLI-Only data')
