@@ -1,8 +1,8 @@
-## ESPA Processing Version 2.21.0 Release Notes
+## ESPA Processing Version 2.22.0 Release Notes
 
-Release Date: July 2017
+Release Date: August 2017
 
-See git tag [v2.21.0]
+See git tag [v2.22.0]
 
 ### General Information
 This project contains the code for processing a single input dataset to the final output products.  It is the controlling code for producing a product.  It does not produce science products on it's own, it calls on applications from other ESPA projects to perform that work.  Having said that, it does contain some code to perform a few things, such as, statistics generation, statistics plotting, and warping (using GDAL).
@@ -11,8 +11,6 @@ This project contains the code for processing a single input dataset to the fina
 Please see the Release Tags for notes related to past versions.
 
 - Version change for system wide versioning
-- Commandline changes for Hadoop 2.8.0
-- Allow pixel-QA stand-alone for OLI-Only scenes
 
 ## Supported Science Products
 To generate products for a science application, it must be installed on the system and the applications provided must be available on the PATH.  See the respective science projects for installation instructions and auxiliary data requirements.
