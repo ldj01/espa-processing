@@ -451,16 +451,9 @@ def main():
     # Determine the appropriate priority value to use for the queue and request
     queue_priority = args.priority.lower()
     request_priority = queue_priority
-    if 'plot' in args.product_types:
-        if queue_priority == 'all':
-            # If all was specified default to high queue
-            queue_priority = 'high'
-        # The request priority is always None for plotting to get all of them
+    if request_priority == 'all':
+        # We need to use a value of None to get all of them
         request_priority = None
-    else:
-        if request_priority == 'all':
-            # We need to use a value of None to get all of them
-            request_priority = None
 
     # Setup and submit products to hadoop for processing
     try:
