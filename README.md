@@ -1,6 +1,6 @@
 ## ESPA Processing Version 2.23.0 Release Notes
 
-Release Date: August 2017
+Release Date: September 2017
 
 See git tag [v2.23.0]
 
