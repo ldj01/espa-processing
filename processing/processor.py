@@ -91,21 +91,21 @@ class ProductProcessor(object):
         """
 
         # Test for presence of required top-level parameters
-        keys = ['orderid', 'scene', 'product_type', 'options']
+        keys = ['orderid', 'uuid', 'product_type', 'options']
         for key in keys:
             if not parameters.test_for_parameter(self._parms, key):
                 raise RuntimeError('Missing required input parameter [{}]'
                                    .format(key))
 
         # Set the download URL to None if not provided
-        if not parameters.test_for_parameter(self._parms, 'download_url'):
-            self._parms['download_url'] = None
+        if not parameters.test_for_parameter(self._parms, 'input_urls'):
+            self._parms['input_urls'] = None
 
         # TODO - Remove this once we have converted
         if not parameters.test_for_parameter(self._parms, 'product_id'):
             self._logger.warning('[product_id] parameter missing defaulting'
-                                 ' to [scene]')
-            self._parms['product_id'] = self._parms['scene']
+                                 ' to [uuid]')
+            self._parms['product_id'] = self._parms['uuid']
 
         # Make sure the bridge mode parameter is defined
         if not parameters.test_for_parameter(self._parms, 'bridge_mode'):
@@ -1640,6 +1640,247 @@ class ModisTERRAProcessor(ModisProcessor):
         super(ModisTERRAProcessor, self).__init__(cfg, parms)
 
 
+class AbiProcessor(CDRProcessor):
+    """Implements the common processing between all of the ABI
+       processors
+    """
+    def __init__(self, cfg, parms):
+        super(AbiProcessor, self).__init__(cfg, parms)
+        self._nc_filename = {'red': None, 'nir': None}
+
+    def validate_parameters(self):
+        """ Validate required parameters
+
+        :return: None
+        """
+        super(AbiProcessor, self).validate_parameters()
+
+        self._logger.info('Validating [AbiProcessor] parameters')
+        options = self._parms['options']
+
+        required_includes = ['include_customized_source_data',
+                             'include_source_data',
+                             'include_statistics']
+
+        for parameter in required_includes:
+            if not parameters.test_for_parameter(options, parameter):
+                self._logger.warning('[{}] parameter missing defaulting to'
+                                     ' False'.format(parameter))
+                options[parameter] = False
+
+        # Determine if we need to build products
+        if not options['include_customized_source_data']:
+
+            self._logger.info('***NO CUSTOMIZED PRODUCTS CHOSEN***')
+            self._build_products = False
+        else:
+            self._build_products = True
+
+    def stage_input_data(self):
+        """Stages the input data required for the processor
+        """
+
+        input_urls = self._parms['input_urls']
+
+        for input_name, download_url in input_urls.items():
+            file_name = ''.join([input_name,
+                                 settings.ABI_INPUT_FILENAME_EXTENSION])
+            staged_file = os.path.join(self._stage_dir, file_name)
+
+            # Download the source data
+            transfer.download_file_url(download_url, staged_file)
+
+            if sensor.geos_sensor_info(input_name).band == 'C02':
+                self._nc_filename['red'] = os.path.basename(staged_file)
+            elif sensor.geos_sensor_info(input_name).band == 'C03':
+                self._nc_filename['nir'] = os.path.basename(staged_file)
+
+            work_file = os.path.join(self._work_dir, file_name)
+
+            # Copy the staged data to the work directory
+            shutil.copyfile(staged_file, work_file)
+            print('WORKFILE: {}'.format(work_file))
+            print('OS PATH: {}'.format(os.path.exists(work_file)))
+            os.unlink(staged_file)
+
+    def convert_to_raw_binary(self):
+        """Converts the GOES-ABI(NOAA-CLASS) input data to our internal raw binary
+           format
+        """
+
+        options = self._parms['options']
+
+        cmd = ['convert_goes_to_espa']
+        for band, nc_filename in self._nc_filename.items():
+            cmd.append('--{0}={1}'.format(band.lower(), nc_filename))
+
+        if not options['include_source_data']:
+            cmd.append('--del_src_files')
+
+        # Turn the list into a string
+        cmd = ' '.join(cmd)
+        self._logger.info(' '.join(['CONVERT GOES TO ESPA COMMAND:', cmd]))
+
+        output = ''
+        try:
+            output = utilities.execute_cmd(cmd)
+        finally:
+            if len(output) > 0:
+                self._logger.info(output)
+
+    def generate_spectral_indices(self):
+        """Generates the requested spectral indices
+        """
+
+        options = self._parms['options']
+
+        cmd = None
+        if options['include_toa_ndvi']:
+            cmd = ['spectral_indices.py', '--xml', self._xml_filename]
+
+            # Add the specified index options
+            if options['include_toa_ndvi']:
+                cmd.append('--toa_ndvi')
+
+            cmd = ' '.join(cmd)
+
+        # Only if required
+        if cmd is not None:
+
+            self._logger.info(' '.join(['SPECTRAL INDICES COMMAND:', cmd]))
+
+            output = ''
+            try:
+                output = utilities.execute_cmd(cmd)
+            finally:
+                if len(output) > 0:
+                    self._logger.info(output)
+
+    def build_science_products(self):
+        """Build the science products requested by the user
+        """
+
+        # Nothing to do if the user did not specify anything to build
+        if not self._build_products:
+            return
+
+        self._logger.info('[AbiProcessor] Building Science Products')
+
+        # Change to the working directory
+        current_directory = os.getcwd()
+        os.chdir(self._work_dir)
+
+        try:
+            self.convert_to_raw_binary()
+
+            self.generate_spectral_indices()
+
+        finally:
+            # Change back to the previous directory
+            os.chdir(current_directory)
+
+    def cleanup_work_dir(self):
+        """Cleanup all the intermediate non-products and the science
+           products not requested
+        """
+
+        options = self._parms['options']
+
+        l1_source_files = [
+            'OR_*.nc'
+        ]
+
+        # Change to the working directory
+        current_directory = os.getcwd()
+        os.chdir(self._work_dir)
+        try:
+            non_products = []
+
+            # Add level 1 source files if not requested
+            if not options['include_source_data']:
+                for item in l1_source_files:
+                    non_products.extend(glob.glob(item))
+
+            if len(non_products) > 0:
+                cmd = ' '.join(['rm', '-rf'] + non_products)
+                self._logger.info(' '.join(['REMOVING INTERMEDIATE DATA'
+                                            ' COMMAND:', cmd]))
+
+                output = ''
+                try:
+                    output = utilities.execute_cmd(cmd)
+                finally:
+                    if len(output) > 0:
+                        self._logger.info(output)
+
+            self.remove_products_from_xml()
+
+        finally:
+            # Change back to the previous directory
+            os.chdir(current_directory)
+
+    def generate_statistics(self):
+        """Generates statistics if required for the processor
+        """
+
+        options = self._parms['options']
+
+        # Nothing to do if the user did not specify anything to build
+        if not self._build_products or not options['include_statistics']:
+            return
+
+        # Generate the stats for each stat'able' science product
+
+        # Hold the wild card strings in a type based dictionary
+        files_to_search_for = dict()
+
+        # MODIS files
+        # The types must match the types in settings.py
+        files_to_search_for['TOA'] = ['*_toa_band[2-3].img']
+        files_to_search_for['INDEX'] = ['*NDVI.img']
+
+        # Generate the stats for each file
+        statistics.generate_statistics(self._work_dir,
+                                       files_to_search_for)
+
+    def get_product_name(self):
+        """Build the product name from the product information and current
+           time
+        """
+
+        if self._product_name is None:
+            input_urls = self._parms['input_urls']
+            product_ids = input_urls.keys()
+
+            # Get the current time information
+            ts = datetime.datetime.today()
+
+            # Extract stuff from the product information
+            product_prefixes = list(set(sensor.info(p).product_prefix for p in product_ids))
+            if len(product_prefixes) != 1:
+                raise ValueError('BAD! THESE MUST MATCH')
+            product_prefix = product_prefixes.pop()
+
+            product_name = ('{0}-SC{1}{2}{3}{4}{5}{6}'
+                            .format(product_prefix,
+                                    str(ts.year).zfill(4),
+                                    str(ts.month).zfill(2),
+                                    str(ts.day).zfill(2),
+                                    str(ts.hour).zfill(2),
+                                    str(ts.minute).zfill(2),
+                                    str(ts.second).zfill(2)))
+
+            self._product_name = product_name
+
+        return self._product_name
+
+
+class AbiCMIPProcessor(AbiProcessor):
+    def __init__(self, cfg, parms):
+        print('ABI'*30)
+        super(AbiCMIPProcessor, self).__init__(cfg, parms)
+
+
 class PlotProcessor(ProductProcessor):
     """Implements Plot processing
     """
@@ -2731,41 +2972,50 @@ def get_instance(cfg, parms):
        product.
     """
 
-    product_id = parms['product_id']
+    uuid, input_urls, ptype = parms['uuid'], parms['input_urls'], parms['product_type']
 
-    if product_id == 'plot':
+    if ptype == 'plot':
         return PlotProcessor(cfg, parms)
 
-    if sensor.is_lt4(product_id):
-        return Landsat4TMProcessor(cfg, parms)
-    elif sensor.is_lt04(product_id):
-        return LandsatTMProcessor(cfg, parms)
-    elif sensor.is_lt5(product_id):
-        return LandsatTMProcessor(cfg, parms)
-    elif sensor.is_lt05(product_id):
-        return LandsatTMProcessor(cfg, parms)
-    elif sensor.is_le7(product_id):
-        return LandsatETMProcessor(cfg, parms)
-    elif sensor.is_le07(product_id):
-        return LandsatETMProcessor(cfg, parms)
-    elif sensor.is_lo8(product_id):
-        return LandsatOLIProcessor(cfg, parms)
-    elif sensor.is_lo08(product_id):
-        return LandsatOLIProcessor(cfg, parms)
-    elif sensor.is_lt8(product_id):
-        raise NotImplementedError('A processor for [{}] has not been'
-                                  ' implemented'.format(product_id))
-    elif sensor.is_lt08(product_id):
-        raise NotImplementedError('A processor for [{}] has not been'
-                                  ' implemented'.format(product_id))
-    elif sensor.is_lc8(product_id):
-        return LandsatOLITIRSProcessor(cfg, parms)
-    elif sensor.is_lc08(product_id):
-        return LandsatOLITIRSProcessor(cfg, parms)
-    elif sensor.is_terra(product_id):
-        return ModisTERRAProcessor(cfg, parms)
-    elif sensor.is_aqua(product_id):
-        return ModisAQUAProcessor(cfg, parms)
-    else:
-        raise NotImplementedError('A processor for [{}] has not been'
-                                  ' implemented'.format(product_id))
+    if ptype in ('landsat', 'modis'):
+        product_id = input_urls.keys()[0]
+
+        if sensor.is_lt4(product_id):
+            return Landsat4TMProcessor(cfg, parms)
+        elif sensor.is_lt04(product_id):
+            return LandsatTMProcessor(cfg, parms)
+        elif sensor.is_lt5(product_id):
+            return LandsatTMProcessor(cfg, parms)
+        elif sensor.is_lt05(product_id):
+            return LandsatTMProcessor(cfg, parms)
+        elif sensor.is_le7(product_id):
+            return LandsatETMProcessor(cfg, parms)
+        elif sensor.is_le07(product_id):
+            return LandsatETMProcessor(cfg, parms)
+        elif sensor.is_lo8(product_id):
+            return LandsatOLIProcessor(cfg, parms)
+        elif sensor.is_lo08(product_id):
+            return LandsatOLIProcessor(cfg, parms)
+        elif sensor.is_lt8(product_id):
+            raise NotImplementedError('A processor for [{}] has not been'
+                                      ' implemented'.format(product_id))
+        elif sensor.is_lt08(product_id):
+            raise NotImplementedError('A processor for [{}] has not been'
+                                      ' implemented'.format(product_id))
+        elif sensor.is_lc8(product_id):
+            return LandsatOLITIRSProcessor(cfg, parms)
+        elif sensor.is_lc08(product_id):
+            return LandsatOLITIRSProcessor(cfg, parms)
+        elif sensor.is_terra(product_id):
+            return ModisTERRAProcessor(cfg, parms)
+        elif sensor.is_aqua(product_id):
+            return ModisAQUAProcessor(cfg, parms)
+
+    elif ptype in ('abi'):
+        product_ids = input_urls.keys()
+
+        if all(sensor.is_abi(p) for p in product_ids):
+            return AbiCMIPProcessor(cfg, parms)
+
+    raise NotImplementedError('A processor for [{}] has not been'
+                              ' implemented'.format(input_urls))

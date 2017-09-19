@@ -5,21 +5,24 @@ LANDSAT_INPUT_FILENAME_EXTENSION = '.tar.gz'
 # Filename extension for Modis based input products
 MODIS_INPUT_FILENAME_EXTENSION = '.hdf'
 
+# Filename extension for Abi based input products
+ABI_INPUT_FILENAME_EXTENSION = '.nc'
+
 # Path to the completed orders
 ESPA_REMOTE_CACHE_DIRECTORY = '/data2/science_lsrd/LSRD/orders'
 ESPA_LOCAL_CACHE_DIRECTORY = ''
 
 # Number of seconds to sleep when errors are encountered before attempting the
 # task again
-DEFAULT_SLEEP_SECONDS = 2
+DEFAULT_SLEEP_SECONDS = 0
 
 # Maximum number of times to attempt packaging, delivery, and distribution
-MAX_PACKAGING_ATTEMPTS = 3
-MAX_DELIVERY_ATTEMPTS = 3
-MAX_DISTRIBUTION_ATTEMPTS = 5
+MAX_PACKAGING_ATTEMPTS = 1
+MAX_DELIVERY_ATTEMPTS = 1
+MAX_DISTRIBUTION_ATTEMPTS = 1
 
 # Maximum number of times to attempt setting the scene error
-MAX_SET_SCENE_ERROR_ATTEMPTS = 5
+MAX_SET_SCENE_ERROR_ATTEMPTS = 1
 
 # Specify the checksum tool and filename extension
 ESPA_CHECKSUM_TOOL = 'md5sum'

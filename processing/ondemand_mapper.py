@@ -174,6 +174,7 @@ def process(proc_cfg, developer_sleep_mode=False):
             line = line[line.find('{'):]
             line = line.strip()
 
+        print('--mapper: {}'.format(line))
         # Reset these for each line
         (server, order_id, product_id) = (None, None, None)
 
@@ -189,10 +190,10 @@ def process(proc_cfg, developer_sleep_mode=False):
             if not parameters.test_for_parameter(parms, 'options'):
                 raise ValueError('Error missing JSON [options] record')
 
-            # TODO scene will be replaced with product_id someday
             (order_id, product_id, product_type, options) = \
-                (parms['orderid'], parms['scene'], parms['product_type'],
+                (parms['orderid'], str(parms['uuid']), parms['product_type'],
                  parms['options'])
+            input_urls = parms['input_urls']
 
             if product_id != 'plot':
                 # Developer mode is always false unless you are a developer
@@ -236,7 +237,7 @@ def process(proc_cfg, developer_sleep_mode=False):
 
             if product_id != 'plot':
                 # Make sure we can process the sensor
-                tmp_info = sensor.info(product_id)
+                tmp_info = [sensor.info(s) for s in input_urls.keys()]
                 del tmp_info
 
                 # Make sure we have a valid output format
@@ -334,7 +335,7 @@ PROC_CFG_FILENAME = 'processing.conf'
 def main():
     """Some parameter and logging setup, then call the process routine
     """
-
+    print('--mapper--')
     # Create a command line argument parser
     description = 'Main mapper for a request'
     parser = ArgumentParser(description=description)

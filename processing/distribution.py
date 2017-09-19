@@ -85,6 +85,8 @@ def package_product(immutability, source_directory, destination_directory,
 
         # Grab the files to tar and gzip
         product_files = glob.glob("*")
+        print('OUTPUT PACKAGE: {}'.format(product_full_path))
+        print('BUNDLE FILES: {}'.format(product_files))
 
         # Execute tar with zipping, the full/path/*.tar.gz name is returned
         product_full_path = utilities.tar_files(product_full_path,

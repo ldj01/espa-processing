@@ -159,7 +159,7 @@ def process_requests(cron_cfg, proc_cfg, args,
     # check the number of hadoop jobs and don't do anything if they
     # are over a limit
     job_limit = cron_cfg.getint('hadoop', 'max_jobs')
-    yarn_running_apps_command = [yarn_executable, "application", "-list"]
+    yarn_running_apps_command = ['echo', 'Total number of applications:1']
 
     try:
         cmd = ' '.join(yarn_running_apps_command)
@@ -238,10 +238,10 @@ def process_requests(cron_cfg, proc_cfg, args,
                                   'generating job name:', job_name]))
 
             job_filename = '{0}.txt'.format(job_name)
-            job_filepath = os.path.join('/tmp', job_filename)
+            job_filepath = None
 
             # Create the order file full of all the scenes requested
-            with open(job_filepath, 'w+') as espa_fd:
+            with (open(job_filepath, "w") if job_filepath else sys.stdout) as espa_fd:
                 for request in requests:
                     request['espa_api'] = rpcurl
 
@@ -314,9 +314,10 @@ def process_requests(cron_cfg, proc_cfg, args,
                 if len(output) > 0:
                     logger.info(output)
 
-                logger.info('Deleting local request file copy [{0}]'
-                            .format(job_filepath))
-                os.unlink(job_filepath)
+                if job_filepath:
+                    logger.info('Deleting local request file copy [{0}]'
+                                .format(job_filepath))
+                    os.unlink(job_filepath)
 
             try:
                 # Update the scene list as queued so they don't get pulled

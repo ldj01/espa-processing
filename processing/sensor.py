@@ -29,7 +29,8 @@ SensorInfo = namedtuple('SensorInfo', ['product_prefix',
                                        'horizontal',
                                        'vertical',
                                        'path',
-                                       'row'])
+                                       'row',
+                                       'band'])
 
 
 """Supported Sensor Codes
@@ -50,6 +51,8 @@ LO08_SENSOR_CODE = 'LO08'
 
 TERRA_SENSOR_CODE = 'MOD'
 AQUA_SENSOR_CODE = 'MYD'
+
+ABI_SENSOR_CODE = 'OR_ABI-L2-CMIP'
 
 
 """Default pixel sizes based on the input products
@@ -74,7 +77,9 @@ DEFAULT_PIXEL_SIZE = {
         'LT5': 30,
         'LT05': 30,
         'LT4': 30,
-        'LT04': 30
+        'LT04': 30,
+        'ABIC02': 500,
+        'ABIC03': 1000,
     },
     'dd': {
         '09A1': 0.00449155,
@@ -95,7 +100,9 @@ DEFAULT_PIXEL_SIZE = {
         'LT5': 0.0002695,
         'LT05': 0.0002695,
         'LT4': 0.0002695,
-        'LT04': 0.0002695
+        'LT04': 0.0002695,
+        'ABIC02': 0.00449155,
+        'ABIC03': 0.0089831,
         }
 }
 
@@ -142,7 +149,8 @@ def landsat_collection_sensor_info(product_id):
                       sensor_name=sensor_name,
                       default_pixel_size=default_pixel_size,
                       horizontal=0, vertical=0,
-                      path=path, row=row)
+                      path=path, row=row,
+                      band=None)
 
 
 def landsat_pre_collection_sensor_info(product_id):
@@ -189,7 +197,8 @@ def landsat_pre_collection_sensor_info(product_id):
                       sensor_name=sensor_name,
                       default_pixel_size=default_pixel_size,
                       horizontal=0, vertical=0,
-                      path=path, row=row)
+                      path=path, row=row,
+                      band=None)
 
 
 def modis_sensor_info(product_id):
@@ -239,7 +248,53 @@ def modis_sensor_info(product_id):
                       sensor_name=sensor_name,
                       default_pixel_size=default_pixel_size,
                       horizontal=horizontal, vertical=vertical,
-                      path=0, row=0)
+                      path=0, row=0,
+                      band=None)
+
+
+def geos_sensor_info(product_id):
+    """Determine information from Abi Product ID
+
+    Args:
+        product_id (str): The Abi Product ID
+    """
+
+    parts = product_id.strip().split('_')
+
+    short_name = ''.join([parts[2], parts[1].split('-')[0]])
+
+    date_YYYYDDDHHMMSSF = parts[3][1:15]
+    datetime_acquired = datetime.datetime.strptime(date_YYYYDDDHHMMSSF, '%Y%j%H%M%S%f')
+
+    year = datetime_acquired.year
+    doy = datetime_acquired.timetuple().tm_yday
+    hour = datetime_acquired.hour
+    minute = datetime_acquired.minute
+
+    channel_num = parts[1][-3:]
+
+    # Determine the product prefix
+    product_prefix = ('{0:>06}{1:>04}{2:>03}{3:>02}{4:>02}'
+                      .format(short_name, year, doy, hour, minute))
+
+    # Determine the default pixel sizes
+    _product_code = parts[1].split('-')[0] + channel_num
+
+    meters = DEFAULT_PIXEL_SIZE['meters'][_product_code]
+    dd = DEFAULT_PIXEL_SIZE['dd'][_product_code]
+
+    default_pixel_size = {'meters': meters, 'dd': dd}
+
+    # Sensor string is used in plotting
+    sensor_name = 'ABI'
+
+    return SensorInfo(product_prefix=product_prefix,
+                      date_acquired=datetime_acquired,
+                      sensor_name=sensor_name,
+                      default_pixel_size=default_pixel_size,
+                      horizontal=None, vertical=None,
+                      path=None, row=None,
+                      band=channel_num)
 
 
 """Map Landsat regular expressions for supported products to the correct
@@ -353,6 +408,18 @@ MODIS_REGEXP_MAPPING = {
 }
 
 
+"""Map ABI regular expressions for supported products to the correct
+   Product ID parser
+
+   Example Product ID Format:
+       OR_ABI-L2-CMIPC-M3C02_G16_s20171721702192_e20171721704565_c20171721705067 
+"""
+ABI_REGEXP_MAPPING = {
+    'goes16_cmip': (r'^or_abi-l2-cmip\w{1}-m\d{1}c\d{2}_g16_s\d{14}_e\d{14}_c\d{14}',
+                    geos_sensor_info),
+}
+
+
 def is_lt4(a):
     return a.upper().startswith(LT4_SENSOR_CODE)
 
@@ -445,6 +512,10 @@ def is_modis(a):
     return any([is_terra(a), is_aqua(a)])
 
 
+def is_abi(a):
+    return a.startswith(ABI_SENSOR_CODE)
+
+
 class ProductNotImplemented(NotImplementedError):
     """Thrown when trying to instantiate an unsupported product
     """
@@ -454,6 +525,7 @@ class ProductNotImplemented(NotImplementedError):
 LANDSAT_COLLECTION_ID_LENGTH = 40
 LANDSAT_HISTORICAL_ID_LENGTH = 21
 MODIS_COLLECTION_ID_LENGTH = 41
+GOES_CMIP_ID_LENGTH = 73
 
 
 class sensor_memoize(object):
@@ -486,6 +558,8 @@ class sensor_memoize(object):
             product_id = temp_id[:LANDSAT_HISTORICAL_ID_LENGTH]
         elif is_modis(temp_id):
             product_id = temp_id[:MODIS_COLLECTION_ID_LENGTH]
+        elif is_abi(temp_id):
+            product_id = temp_id[:GOES_CMIP_ID_LENGTH]
         else:
             raise ProductNotImplemented('[{0}] is not a supported product'
                                         .format(temp_id))
@@ -520,6 +594,9 @@ def info(product_id):
 
     elif is_modis(product_id):
         mapping = MODIS_REGEXP_MAPPING
+
+    elif is_abi(product_id):
+        mapping = ABI_REGEXP_MAPPING
 
     test_id = product_id.lower()
 
