@@ -5,3 +5,7 @@ cat espa-*.log \
 	&& curl some-api:4004/production-api/v0/reset-status \
 	&& curl some-api:4004/production-api/v0/handle-orders
 
+# If you want a shell:
+#/bin/bash
+
+ls ./espa-jbrinkmann*/*.tar.gz && (echo "YES!"; /bin/bash; ) || echo 'nope!'

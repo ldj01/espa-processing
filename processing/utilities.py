@@ -198,12 +198,12 @@ def tar_files(tarred_full_path, file_list, gzip=False):
     output = ''
     try:
         output = execute_cmd(cmd)
-    except Exception:
+    except Exception as e:
         msg = "Error encountered tar'ing file(s): Stdout/Stderr:"
         if len(output) > 0:
             msg = ' '.join([msg, output])
         else:
-            msg = ' '.join([msg, 'NO STDOUT/STDERR'])
+            msg = ' '.join([msg, str(e)])
         # Raise and retain the callstack
         raise Exception(msg)
 

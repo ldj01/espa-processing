@@ -314,7 +314,7 @@ class CustomizationProcessor(ProductProcessor):
         # Call the base class parameter validation
         super(CustomizationProcessor, self).validate_parameters()
 
-        product_id = self._parms['product_id']
+        product_id = min(self._parms['input_urls'].keys())
         options = self._parms['options']
 
         self._logger.info('Validating [CustomizationProcessor] parameters')
@@ -708,6 +708,7 @@ class LandsatProcessor(CDRProcessor):
                              'include_sr_savi',
                              'include_sr_thermal',
                              'include_sr_toa',
+                             'include_toa_ndvi',
                              'include_statistics']
 
         for parameter in required_includes:
@@ -1647,6 +1648,8 @@ class AbiProcessor(CDRProcessor):
     def __init__(self, cfg, parms):
         super(AbiProcessor, self).__init__(cfg, parms)
         self._nc_filename = {'red': None, 'nir': None}
+        self.fname_band_to_drop = {'red': ('C02_G16', '_G16'), 'nir': ('C03_G16', '_G16')}
+        self.fname_xml_length = 54
 
     def validate_parameters(self):
         """ Validate required parameters
@@ -1660,6 +1663,7 @@ class AbiProcessor(CDRProcessor):
 
         required_includes = ['include_customized_source_data',
                              'include_source_data',
+                             'include_toa_ndvi',
                              'include_statistics']
 
         for parameter in required_includes:
@@ -1699,8 +1703,6 @@ class AbiProcessor(CDRProcessor):
 
             # Copy the staged data to the work directory
             shutil.copyfile(staged_file, work_file)
-            print('WORKFILE: {}'.format(work_file))
-            print('OS PATH: {}'.format(os.path.exists(work_file)))
             os.unlink(staged_file)
 
     def convert_to_raw_binary(self):
@@ -1710,9 +1712,14 @@ class AbiProcessor(CDRProcessor):
 
         options = self._parms['options']
 
+        # TODO: for toa-ndvi, should we upsample the NIR data to 500m here?
         cmd = ['convert_goes_to_espa']
         for band, nc_filename in self._nc_filename.items():
             cmd.append('--{0}={1}'.format(band.lower(), nc_filename))
+            
+        # Update the xml filename to be correct (bands combine to single XML file)
+        self._xml_filename = '.'.join([nc_filename.replace(*self.fname_band_to_drop[band]
+                                                          )[:self.fname_xml_length], 'xml'])
 
         if not options['include_source_data']:
             cmd.append('--del_src_files')
@@ -1786,9 +1793,7 @@ class AbiProcessor(CDRProcessor):
 
         options = self._parms['options']
 
-        l1_source_files = [
-            'OR_*.nc'
-        ]
+        l1_source_files = ['OR_*.nc']
 
         # Change to the working directory
         current_directory = os.getcwd()
@@ -1819,6 +1824,58 @@ class AbiProcessor(CDRProcessor):
             # Change back to the previous directory
             os.chdir(current_directory)
 
+    def remove_products_from_xml(self):
+        """Remove the specified products from the XML file
+
+        The file is read into memory, processed, and written back out with out
+        the specified products.
+        """
+
+        # Nothing to do if the user did not specify anything to build
+        if not self._build_products:
+            return
+
+        options = self._parms['options']
+
+        # Map order options to the products in the XML files
+        order2product = {
+            'source_data': ['goes_conus', 'goes_full_disk'],
+            'include_toa_ndvi': 'toa_ndvi',
+            'keep_intermediate_data': 'intermediate_data'
+        }
+
+        # If nothing to do just return
+        if self._xml_filename is None:
+            return
+
+        # Remove generated products that were not requested
+        products_to_remove = []
+        if not options['include_customized_source_data']:
+            products_to_remove.extend(
+                order2product['source_data'])
+        if not options['include_toa_ndvi']:
+            products_to_remove.append(
+                order2product['include_toa_ndvi'])
+        if not options['keep_intermediate_data']:
+            products_to_remove.append(
+                order2product['keep_intermediate_data'])
+
+        if products_to_remove is not None:
+            # Create and load the metadata object
+            espa_metadata = Metadata(xml_filename=self._xml_filename)
+
+            # Search for and remove the items
+            for band in espa_metadata.xml_object.bands.band:
+                if band.attrib['product'] in products_to_remove:
+                    self.remove_band_from_xml(band)
+
+            # Validate the XML
+            espa_metadata.validate()
+
+            # Write it to the XML file
+            espa_metadata.write(xml_filename=self._xml_filename)
+
+
     def generate_statistics(self):
         """Generates statistics if required for the processor
         """
@@ -1837,7 +1894,7 @@ class AbiProcessor(CDRProcessor):
         # MODIS files
         # The types must match the types in settings.py
         files_to_search_for['TOA'] = ['*_toa_band[2-3].img']
-        files_to_search_for['INDEX'] = ['*NDVI.img']
+        files_to_search_for['INDEX'] = ['*ndvi.img']
 
         # Generate the stats for each file
         statistics.generate_statistics(self._work_dir,
@@ -1877,7 +1934,6 @@ class AbiProcessor(CDRProcessor):
 
 class AbiCMIPProcessor(AbiProcessor):
     def __init__(self, cfg, parms):
-        print('ABI'*30)
         super(AbiCMIPProcessor, self).__init__(cfg, parms)
 
 
