@@ -17,7 +17,7 @@ import processor
 
 
 APP_NAME = 'ESPA-Processing'
-VERSION = '2.13.0'
+VERSION = '2.23.0.1'
 TEMPLATE_FILENAME = '/usr/local/share/espa/order_template.json'
 
 
