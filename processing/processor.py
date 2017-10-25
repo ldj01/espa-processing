@@ -696,7 +696,7 @@ class LandsatProcessor(CDRProcessor):
                              'include_pixel_qa',
                              'include_customized_source_data',
                              'include_dswe',
-                             'include_lst',
+                             'include_st',
                              'include_source_data',
                              'include_sr',
                              'include_sr_evi',
@@ -731,7 +731,7 @@ class LandsatProcessor(CDRProcessor):
                 not options['include_sr_msavi'] and
                 not options['include_sr_evi'] and
                 not options['include_dswe'] and
-                not options['include_lst']):
+                not options['include_st']):
 
             self._logger.info('***NO SCIENCE PRODUCTS CHOSEN***')
             self._build_products = False
@@ -824,7 +824,7 @@ class LandsatProcessor(CDRProcessor):
         options = self._parms['options']
 
         cmd = None
-        if options['include_dswe'] or options['include_lst']:
+        if options['include_dswe'] or options['include_st']:
 
             cmd = ['build_elevation_band.py',
                    '--xml', self._xml_filename]
@@ -965,7 +965,7 @@ class LandsatProcessor(CDRProcessor):
         if (options['include_sr_toa'] or
                 options['include_sr_thermal'] or
                 options['include_dswe'] or
-                options['include_lst'] or
+                options['include_st'] or
                 options['include_cfmask'] or
                 options['include_pixel_qa']):
 
@@ -1109,7 +1109,7 @@ class LandsatProcessor(CDRProcessor):
         options = self._parms['options']
 
         cmd = None
-        if options['include_lst']:
+        if options['include_st']:
 
             cmd = ['land_surface_temperature.py',
                    '--xml', self._xml_filename,
@@ -1378,7 +1378,7 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
         if (options['include_sr_toa'] or
                 options['include_sr_thermal'] or
                 options['include_dswe'] or
-                options['include_lst'] or
+                options['include_st'] or
                 options['include_cfmask'] or
                 options['include_pixel_qa'] or
                 options['include_sr'] or

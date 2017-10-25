@@ -157,11 +157,11 @@ def build_command_line_parser():
                           default=False,
                           help='Include Customized Source Data')
 
-    products.add_argument('--include-land-surface-temperature',
+    products.add_argument('--include-surface-temperature',
                           action='store_true',
-                          dest='include_land_surface_temperature',
+                          dest='include_st',
                           default=False,
-                          help='Include Land Surface Temperature')
+                          help='Include Surface Temperature')
 
     products.add_argument('--include-surface-reflectance',
                           action='store_true',
@@ -801,7 +801,7 @@ def update_template(args, template):
     order['options']['include_pixel_qa'] = args.include_pixel_qa
     order['options']['include_customized_source_data'] = (
         args.include_customized_source_data)
-    order['options']['include_lst'] = args.include_land_surface_temperature
+    order['options']['include_st'] = args.include_st
     order['options']['include_sr'] = args.include_sr
     order['options']['include_sr_evi'] = args.include_sr_evi
     order['options']['include_sr_msavi'] = args.include_sr_msavi
