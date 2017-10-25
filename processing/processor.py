@@ -1243,9 +1243,21 @@ class LandsatProcessor(CDRProcessor):
                                         '*_msavi.img']
         files_to_search_for['LANDSAT_LST'] = ['*_lst.img']
 
-        # Generate the stats for each file
-        statistics.generate_statistics(self._work_dir,
-                                       files_to_search_for)
+        # Build a command line arguments list
+        cmd = ['statistics.py',
+               '--work_directory', self._work_dir,
+               "--files_to_search_for '{}'".format(json.dumps(files_to_search_for))]
+
+        # Turn the list into a string
+        cmd = ' '.join(cmd)
+        self._logger.info(' '.join(['SUMMARY LANDSAT STATISTICS COMMAND:', cmd]))
+
+        output = ''
+        try:
+            output = utilities.execute_cmd(cmd)
+        finally:
+            if len(output) > 0:
+                self._logger.info(output)
 
     def get_product_name(self):
         """Build the product name from the product information and current
@@ -1579,9 +1591,22 @@ class ModisProcessor(CDRProcessor):
                                       '*LST_Night_6km.img']
         files_to_search_for['EMIS'] = ['*Emis_*.img']
 
-        # Generate the stats for each file
-        statistics.generate_statistics(self._work_dir,
-                                       files_to_search_for)
+        # Build a command line arguments list
+        cmd = ['statistics.py',
+               '--work_directory', self._work_dir,
+               "--files_to_search_for '{}'".format(json.dumps(files_to_search_for))]
+
+        # Turn the list into a string
+        cmd = ' '.join(cmd)
+        self._logger.info(' '.join(['SUMMARY MODIS STATISTICS COMMAND:', cmd]))
+
+        output = ''
+        try:
+            output = utilities.execute_cmd(cmd)
+        finally:
+            if len(output) > 0:
+                self._logger.info(output)
+
 
     def get_product_name(self):
         """Build the product name from the product information and current
