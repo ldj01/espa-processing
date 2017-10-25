@@ -1987,7 +1987,8 @@ class PlotProcessor(ProductProcessor):
                                               'L[C,O]08*_toa_band5.stats'])]
 
         # Only Landsat TOA (L8 B9)
-        _toa_cirrus_info = [SearchInfo(L8_NAME, ['L[C,O]8*_toa_band9.stats'])]
+        _toa_cirrus_info = [SearchInfo(L8_NAME, ['L[C,O]8*_toa_band9.stats',
+                                                 'L[C,O]08*_toa_band9.stats'])]
 
         # Only MODIS band 20 files
         _emis_20_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_20.stats']),
