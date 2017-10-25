@@ -89,7 +89,7 @@ BAND_TYPE_STAT_RANGES = {
     },
     # This is for Landsat LST.  The data range is 1500 to 3730.  With scaling
     # to K it becomes 150 to 373.
-    'LANDSAT_LST': {
+    'LANDSAT_ST': {
         'UPPER_BOUND': 373,
         'LOWER_BOUND': 150
     },
@@ -100,7 +100,7 @@ BAND_TYPE_STAT_RANGES = {
 }
 
 MODIS_LST_SCALE = 0.02
-LANDSAT_LST_SCALE = 0.1
+LANDSAT_ST_SCALE = 0.1
 
 
 '''

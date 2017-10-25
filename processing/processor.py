@@ -1090,7 +1090,7 @@ class LandsatProcessor(CDRProcessor):
                 self._logger.info(output)
 
     def generate_surface_temperature(self):
-        """Generates the Land Surface Temperature product
+        """Generates the Surface Temperature product
         """
 
         options = self._parms['options']
@@ -1241,7 +1241,7 @@ class LandsatProcessor(CDRProcessor):
                                         '*_ndmi.img', '*_ndvi.img',
                                         '*_evi.img', '*_savi.img',
                                         '*_msavi.img']
-        files_to_search_for['LANDSAT_LST'] = ['*_lst.img']
+        files_to_search_for['LANDSAT_ST'] = ['*_st.img']
 
         # Build a command line arguments list
         cmd = ['statistics.py',
@@ -1872,14 +1872,14 @@ class PlotProcessor(ProductProcessor):
         # MODIS and Landsat LST Day files
         _lst_day_info = [SearchInfo(TERRA_NAME, ['MOD*LST_Day_*.stats']),
                          SearchInfo(AQUA_NAME, ['MYD*LST_Day_*.stats']),
-                         SearchInfo(L4_NAME, ['LT4*_lst.stats',
-                                              'LT04*_lst.stats']),
-                         SearchInfo(L5_NAME, ['LT5*_lst.stats',
-                                              'LT05*_lst.stats']),
-                         SearchInfo(L7_NAME, ['LE7*_lst.stats',
-                                              'LE07*_lst.stats']),
-                         SearchInfo(L8_NAME, ['L[C,O]8*_lst.stats',
-                                              'L[C,O]08*_lst.stats'])]
+                         SearchInfo(L4_NAME, ['LT4*_st.stats',
+                                              'LT04*_st.stats']),
+                         SearchInfo(L5_NAME, ['LT5*_st.stats',
+                                              'LT05*_st.stats']),
+                         SearchInfo(L7_NAME, ['LE7*_st.stats',
+                                              'LE07*_st.stats']),
+                         SearchInfo(L8_NAME, ['L[C,O]8*_st.stats',
+                                              'L[C,O]08*_st.stats'])]
 
         # Only MODIS Night files
         _lst_night_info = [SearchInfo(TERRA_NAME, ['MOD*LST_Night_*.stats']),
