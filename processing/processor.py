@@ -1102,7 +1102,7 @@ class LandsatProcessor(CDRProcessor):
             if len(output) > 0:
                 self._logger.info(output)
 
-    def generate_land_surface_temperature(self):
+    def generate_surface_temperature(self):
         """Generates the Land Surface Temperature product
         """
 
@@ -1111,7 +1111,7 @@ class LandsatProcessor(CDRProcessor):
         cmd = None
         if options['include_st']:
 
-            cmd = ['land_surface_temperature.py',
+            cmd = ['surface_temperature.py',
                    '--xml', self._xml_filename,
                    '--keep-intermediate-data']
 
@@ -1120,7 +1120,7 @@ class LandsatProcessor(CDRProcessor):
         # Only if required
         if cmd is not None:
 
-            self._logger.info(' '.join(['LST COMMAND:', cmd]))
+            self._logger.info(' '.join(['ST COMMAND:', cmd]))
 
             output = ''
             try:
@@ -1164,7 +1164,7 @@ class LandsatProcessor(CDRProcessor):
 
             self.generate_surface_water_extent()
 
-            self.generate_land_surface_temperature()
+            self.generate_surface_temperature()
 
         finally:
             # Change back to the previous directory
