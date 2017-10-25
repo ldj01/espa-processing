@@ -537,21 +537,8 @@ class CDRProcessor(CustomizationProcessor):
             products_to_remove.append(
                 order2product['keep_intermediate_data'])
 
-        if (self.is_collection_data and
-               ((not options['include_sr'] and
-                 not options['include_sr_toa'] and
-                 not options['include_sr_thermal'] and
-                 not options['include_sr_nbr'] and
-                 not options['include_sr_nbr2'] and
-                 not options['include_sr_ndvi'] and
-                 not options['include_sr_ndmi'] and
-                 not options['include_sr_savi'] and
-                 not options['include_sr_msavi'] and
-                 not options['include_sr_evi'] and
-                 not options['include_dswe'] and
-                 not options['include_lst']) and
-                (options['include_pixel_qa'] or
-                 options['include_customized_source_data']))):
+        # Business logic to keep the Angle bands only for collection TOA Reflectance products
+        if (self.is_collection_data and not options['include_sr_toa']):
 
             products_to_remove.append(
                 order2product['angle_bands'])
