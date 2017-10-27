@@ -10,6 +10,8 @@ import errno
 import datetime
 import commands
 import random
+import resource
+from collections import defaultdict
 
 
 def date_from_year_doy(year, doy):
@@ -30,6 +32,42 @@ def date_from_year_doy(year, doy):
                         .format(doy, year))
     else:
         return d
+
+
+def peak_memory_usage(this=False):
+    """ Get the peak memory usage of all children processes (Linux-specific KB->Byte implementation)
+
+    Args:
+        this (bool): Flag to instead get usage of this calling process (not including children)
+
+    Returns:
+        usage (float): Usage in bytes
+    """
+    who = resource.RUSAGE_CHILDREN
+    if this is True:
+        # NOTE: RUSAGE_BOTH also exists, but not available everywhere
+        who = resource.RUSAGE_SELF
+    info = resource.getrusage(who)
+    usage = info.ru_maxrss / 1024.0
+    return usage
+
+
+def current_disk_usage(pathname):
+    """ Get the total disk usage of a filesystem path
+
+    Args:
+        pathname (str): Relative/Absolute path to a filesystem resource
+
+    Returns:
+        usage: (int): Usage in bytes
+    """
+    dirs_dict = defaultdict(int)
+    for root, dirs, files in os.walk(pathname, topdown=False):
+        size = sum(os.path.getsize(os.path.join(root, name))
+                   if os.path.exists(os.path.join(root, name)) else 0 for name in files)
+        subdir_size = sum(dirs_dict[os.path.join(root, d)] for d in dirs)
+        my_size = dirs_dict[root] = size + subdir_size
+    return dirs_dict[pathname]
 
 
 def execute_cmd(cmd):
