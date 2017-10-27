@@ -48,7 +48,7 @@ def peak_memory_usage(this=False):
         # NOTE: RUSAGE_BOTH also exists, but not available everywhere
         who = resource.RUSAGE_SELF
     info = resource.getrusage(who)
-    usage = info.ru_maxrss / 1024.0
+    usage = info.ru_maxrss * 1024
     return usage
 
 
