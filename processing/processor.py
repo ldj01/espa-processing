@@ -86,6 +86,9 @@ class ProductProcessor(object):
         self._work_dir = None
         self._output_dir = None
 
+        # Ship resource report
+        self._include_resource_report = self._cfg.get('processing', 'include_resource_report')
+
     def validate_parameters(self):
         """Validates the parameters required for the processor
         """
@@ -144,6 +147,20 @@ class ProductProcessor(object):
                           .format(json.dumps(parms, sort_keys=True)))
 
         del parms
+
+    def snapshot_resources(self):
+        """ Delivers (to logger) a current resource snapshot in JSON format
+        """
+
+        # Likely to be turned off duing operations
+        if not self._include_resource_report:
+            return
+
+        resources = dict(current_workdir_size=utilities.current_disk_usage(self._work_dir),
+                         peak_memory_usage=utilities.peak_memory_usage(),
+                         entity={k: self._parms.get(k) for k in ('scene', 'orderid')})
+        self._logger.info('*** RESOURCE SNAPSHOT {} ***'
+                          .format(json.dumps(resources, sort_keys=True)))
 
     def initialize_processing_directory(self):
         """Initializes the processing directory
@@ -629,6 +646,9 @@ class CDRProcessor(CustomizationProcessor):
         # Build science products
         self.build_science_products()
 
+        # [[ Science-Resource Snapshot ]]
+        self.snapshot_resources()
+
         # Remove science products and intermediate data not requested
         self.cleanup_work_dir()
 
@@ -647,6 +667,9 @@ class CDRProcessor(CustomizationProcessor):
         # Package and deliver product
         (destination_product_file, destination_cksum_file) = \
             self.distribute_product()
+
+        # [[ Formatting-Resource Snapshot ]]
+        self.snapshot_resources()
 
         return (destination_product_file, destination_cksum_file)
 
