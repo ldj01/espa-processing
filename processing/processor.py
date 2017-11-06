@@ -1267,7 +1267,7 @@ class LandsatProcessor(CDRProcessor):
         files_to_search_for['LANDSAT_ST'] = ['*_st.img']
 
         # Build a command line arguments list
-        cmd = ['statistics.py',
+        cmd = ['espa_statistics.py',
                '--work_directory', self._work_dir,
                "--files_to_search_for '{}'".format(json.dumps(files_to_search_for))]
 
@@ -1615,7 +1615,7 @@ class ModisProcessor(CDRProcessor):
         files_to_search_for['EMIS'] = ['*Emis_*.img']
 
         # Build a command line arguments list
-        cmd = ['statistics.py',
+        cmd = ['espa_statistics.py',
                '--work_directory', self._work_dir,
                "--files_to_search_for '{}'".format(json.dumps(files_to_search_for))]
 
@@ -2034,7 +2034,7 @@ class PlotProcessor(ProductProcessor):
         will be generated.
         """
         # Build a command line arguments list
-        cmd = ['plotting.py',
+        cmd = ['espa_plotting.py',
                "--band_type '{}'".format(band_type),
                "--search_list '{}'".format(json.dumps(search_list))]
 
