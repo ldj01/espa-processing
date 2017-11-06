@@ -17,11 +17,6 @@ import copy
 import subprocess
 from cStringIO import StringIO
 from collections import defaultdict, namedtuple
-from matplotlib import pyplot as mpl_plot
-from matplotlib import dates as mpl_dates
-from matplotlib import lines as mpl_lines
-from matplotlib.ticker import MaxNLocator
-import numpy as np
 
 
 from espa import Metadata
