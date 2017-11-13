@@ -31,7 +31,6 @@ import initialization
 import parameters
 import landsat_metadata
 import staging
-import statistics
 import transfer
 import distribution
 import product_formatting
