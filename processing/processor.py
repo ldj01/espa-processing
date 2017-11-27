@@ -17,11 +17,6 @@ import copy
 import subprocess
 from cStringIO import StringIO
 from collections import defaultdict, namedtuple
-from matplotlib import pyplot as mpl_plot
-from matplotlib import dates as mpl_dates
-from matplotlib import lines as mpl_lines
-from matplotlib.ticker import MaxNLocator
-import numpy as np
 
 
 from espa import Metadata
@@ -36,7 +31,6 @@ import initialization
 import parameters
 import landsat_metadata
 import staging
-import statistics
 import transfer
 import distribution
 import product_formatting
@@ -85,6 +79,9 @@ class ProductProcessor(object):
         self._stage_dir = None
         self._work_dir = None
         self._output_dir = None
+
+        # Ship resource report
+        self._include_resource_report = self._cfg.get('processing', 'include_resource_report')
 
     def validate_parameters(self):
         """Validates the parameters required for the processor
@@ -144,6 +141,20 @@ class ProductProcessor(object):
                           .format(json.dumps(parms, sort_keys=True)))
 
         del parms
+
+    def snapshot_resources(self):
+        """ Delivers (to logger) a current resource snapshot in JSON format
+        """
+
+        # Likely to be turned off duing operations
+        if not self._include_resource_report:
+            return
+
+        resources = dict(current_workdir_size=utilities.current_disk_usage(self._work_dir),
+                         peak_memory_usage=utilities.peak_memory_usage(),
+                         entity={k: self._parms.get(k) for k in ('scene', 'orderid')})
+        self._logger.info('*** RESOURCE SNAPSHOT {} ***'
+                          .format(json.dumps(resources, sort_keys=True)))
 
     def initialize_processing_directory(self):
         """Initializes the processing directory
@@ -537,21 +548,8 @@ class CDRProcessor(CustomizationProcessor):
             products_to_remove.append(
                 order2product['keep_intermediate_data'])
 
-        if (self.is_collection_data and
-               ((not options['include_sr'] and
-                 not options['include_sr_toa'] and
-                 not options['include_sr_thermal'] and
-                 not options['include_sr_nbr'] and
-                 not options['include_sr_nbr2'] and
-                 not options['include_sr_ndvi'] and
-                 not options['include_sr_ndmi'] and
-                 not options['include_sr_savi'] and
-                 not options['include_sr_msavi'] and
-                 not options['include_sr_evi'] and
-                 not options['include_dswe'] and
-                 not options['include_lst']) and
-                (options['include_pixel_qa'] or
-                 options['include_customized_source_data']))):
+        # Business logic to keep the Angle bands only for collection TOA Reflectance products
+        if (self.is_collection_data and not options['include_sr_toa']):
 
             products_to_remove.append(
                 order2product['angle_bands'])
@@ -642,6 +640,9 @@ class CDRProcessor(CustomizationProcessor):
         # Build science products
         self.build_science_products()
 
+        # [[ Science-Resource Snapshot ]]
+        self.snapshot_resources()
+
         # Remove science products and intermediate data not requested
         self.cleanup_work_dir()
 
@@ -660,6 +661,9 @@ class CDRProcessor(CustomizationProcessor):
         # Package and deliver product
         (destination_product_file, destination_cksum_file) = \
             self.distribute_product()
+
+        # [[ Formatting-Resource Snapshot ]]
+        self.snapshot_resources()
 
         return (destination_product_file, destination_cksum_file)
 
@@ -696,7 +700,7 @@ class LandsatProcessor(CDRProcessor):
                              'include_pixel_qa',
                              'include_customized_source_data',
                              'include_dswe',
-                             'include_lst',
+                             'include_st',
                              'include_source_data',
                              'include_sr',
                              'include_sr_evi',
@@ -731,7 +735,7 @@ class LandsatProcessor(CDRProcessor):
                 not options['include_sr_msavi'] and
                 not options['include_sr_evi'] and
                 not options['include_dswe'] and
-                not options['include_lst']):
+                not options['include_st']):
 
             self._logger.info('***NO SCIENCE PRODUCTS CHOSEN***')
             self._build_products = False
@@ -824,7 +828,7 @@ class LandsatProcessor(CDRProcessor):
         options = self._parms['options']
 
         cmd = None
-        if options['include_dswe'] or options['include_lst']:
+        if options['include_dswe'] or options['include_st']:
 
             cmd = ['build_elevation_band.py',
                    '--xml', self._xml_filename]
@@ -965,7 +969,7 @@ class LandsatProcessor(CDRProcessor):
         if (options['include_sr_toa'] or
                 options['include_sr_thermal'] or
                 options['include_dswe'] or
-                options['include_lst'] or
+                options['include_st'] or
                 options['include_cfmask'] or
                 options['include_pixel_qa']):
 
@@ -1102,16 +1106,16 @@ class LandsatProcessor(CDRProcessor):
             if len(output) > 0:
                 self._logger.info(output)
 
-    def generate_land_surface_temperature(self):
-        """Generates the Land Surface Temperature product
+    def generate_surface_temperature(self):
+        """Generates the Surface Temperature product
         """
 
         options = self._parms['options']
 
         cmd = None
-        if options['include_lst']:
+        if options['include_st']:
 
-            cmd = ['land_surface_temperature.py',
+            cmd = ['surface_temperature.py',
                    '--xml', self._xml_filename,
                    '--keep-intermediate-data']
 
@@ -1120,7 +1124,7 @@ class LandsatProcessor(CDRProcessor):
         # Only if required
         if cmd is not None:
 
-            self._logger.info(' '.join(['LST COMMAND:', cmd]))
+            self._logger.info(' '.join(['ST COMMAND:', cmd]))
 
             output = ''
             try:
@@ -1164,7 +1168,7 @@ class LandsatProcessor(CDRProcessor):
 
             self.generate_surface_water_extent()
 
-            self.generate_land_surface_temperature()
+            self.generate_surface_temperature()
 
         finally:
             # Change back to the previous directory
@@ -1254,11 +1258,23 @@ class LandsatProcessor(CDRProcessor):
                                         '*_ndmi.img', '*_ndvi.img',
                                         '*_evi.img', '*_savi.img',
                                         '*_msavi.img']
-        files_to_search_for['LANDSAT_LST'] = ['*_lst.img']
+        files_to_search_for['LANDSAT_ST'] = ['*_st.img']
 
-        # Generate the stats for each file
-        statistics.generate_statistics(self._work_dir,
-                                       files_to_search_for)
+        # Build a command line arguments list
+        cmd = ['espa_statistics.py',
+               '--work_directory', self._work_dir,
+               "--files_to_search_for '{}'".format(json.dumps(files_to_search_for))]
+
+        # Turn the list into a string
+        cmd = ' '.join(cmd)
+        self._logger.info(' '.join(['SUMMARY LANDSAT STATISTICS COMMAND:', cmd]))
+
+        output = ''
+        try:
+            output = utilities.execute_cmd(cmd)
+        finally:
+            if len(output) > 0:
+                self._logger.info(output)
 
     def get_product_name(self):
         """Build the product name from the product information and current
@@ -1378,7 +1394,7 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
         if (options['include_sr_toa'] or
                 options['include_sr_thermal'] or
                 options['include_dswe'] or
-                options['include_lst'] or
+                options['include_st'] or
                 options['include_cfmask'] or
                 options['include_pixel_qa'] or
                 options['include_sr'] or
@@ -1592,9 +1608,22 @@ class ModisProcessor(CDRProcessor):
                                       '*LST_Night_6km.img']
         files_to_search_for['EMIS'] = ['*Emis_*.img']
 
-        # Generate the stats for each file
-        statistics.generate_statistics(self._work_dir,
-                                       files_to_search_for)
+        # Build a command line arguments list
+        cmd = ['espa_statistics.py',
+               '--work_directory', self._work_dir,
+               "--files_to_search_for '{}'".format(json.dumps(files_to_search_for))]
+
+        # Turn the list into a string
+        cmd = ' '.join(cmd)
+        self._logger.info(' '.join(['SUMMARY MODIS STATISTICS COMMAND:', cmd]))
+
+        output = ''
+        try:
+            output = utilities.execute_cmd(cmd)
+        finally:
+            if len(output) > 0:
+                self._logger.info(output)
+
 
     def get_product_name(self):
         """Build the product name from the product information and current
@@ -1645,176 +1674,6 @@ class PlotProcessor(ProductProcessor):
     """
 
     def __init__(self, cfg, parms):
-
-        # Setup the default colors
-        self._sensor_colors = dict()
-        self._sensor_colors['Terra'] = '#664400'   # Some Brown kinda like dirt
-        self._sensor_colors['Aqua'] = '#00cccc'    # Some cyan like blue color
-        self._sensor_colors['L4'] = '#cc3333'     # A nice Red
-        self._sensor_colors['L5'] = '#0066cc'     # A nice Blue
-        self._sensor_colors['L7'] = '#00cc33'     # An ok Green
-        self._sensor_colors['L8'] = '#ffbb00'      # An ok Yellow
-        self._sensor_colors['L8-TIRS1'] = '#ffbb00'  # An ok Yellow
-        self._sensor_colors['L8-TIRS2'] = '#664400'  # Some Brown like dirt
-        self._bg_color = settings.PLOT_BG_COLOR
-
-        # Setup the default marker
-        self._marker = settings.PLOT_MARKER
-        self._marker_size = float(settings.PLOT_MARKER_SIZE)
-        self._marker_edge_width = float(settings.PLOT_MARKER_EDGE_WIDTH)
-
-        # Specify a base number of days to expand the plot date range. This
-        # helps keep data points from being placed on the plot border lines
-        self._time_delta_5_days = datetime.timedelta(days=5)
-
-        # --------------------------------------------------------------------
-        # Define the data ranges and output ranges for the plotting
-        # DATA_(MAX/MIN) must match the (UPPER/LOWER)_BOUND in settings.py
-        # The toplevel keys are used as search strings into the band_type
-        # displayed names, so they need to match unique(enough) portions of
-        # those strings
-        # --------------------------------------------------------------------
-        #          DATA_MAX: The maximum value represented in the data.
-        #          DATA_MIN: The minimum value represented in the data.
-        #         SCALE_MAX: The DATA_MAX is scaled to this value.
-        #         SCALE_MIN: The DATA_MIN is scaled to this value.
-        #       DISPLAY_MAX: The maximum value to display on the plot.
-        #       DISPLAY_MIN: The minimum value to display on the plot.
-        #    MAX_N_LOCATORS: The maximum number of spaces between Y-axis tick
-        #                    marks.  This should be adjusted so that the tick
-        #                    marks fall on values that display nicely.  Due to
-        #                    having some buffer added to the display minimum
-        #                    and maximum values, the value chosen for this
-        #                    parameter should include the space between the
-        #                    top and the top tick mark as well as the bottom
-        #                    and bottom tick mark. (i.e. Add two)
-        # --------------------------------------------------------------------
-        br_sr = settings.BAND_TYPE_STAT_RANGES['SR']
-        br_toa = settings.BAND_TYPE_STAT_RANGES['TOA']
-        br_bt = settings.BAND_TYPE_STAT_RANGES['BT']
-        br_index = settings.BAND_TYPE_STAT_RANGES['INDEX']
-        br_lst = settings.BAND_TYPE_STAT_RANGES['LST']
-        br_landsat_lst = settings.BAND_TYPE_STAT_RANGES['LANDSAT_LST']
-        br_emis = settings.BAND_TYPE_STAT_RANGES['EMIS']
-        self._band_type_data_ranges = {
-            'SR': {
-                'DATA_MAX': float(br_sr['UPPER_BOUND']),
-                'DATA_MIN': float(br_sr['LOWER_BOUND']),
-                'SCALE_MAX': 1.0,
-                'SCALE_MIN': 0.0,
-                'DISPLAY_MAX': 1.0,
-                'DISPLAY_MIN': 0.0,
-                'MAX_N_LOCATORS': 12
-            },
-            'TOA': {
-                'DATA_MAX': float(br_toa['UPPER_BOUND']),
-                'DATA_MIN': float(br_toa['LOWER_BOUND']),
-                'SCALE_MAX': 1.0,
-                'SCALE_MIN': 0.0,
-                'DISPLAY_MAX': 1.0,
-                'DISPLAY_MIN': 0.0,
-                'MAX_N_LOCATORS': 12
-            },
-            'BT': {
-                'DATA_MAX': float(br_bt['UPPER_BOUND']),
-                'DATA_MIN': float(br_bt['LOWER_BOUND']),
-                'SCALE_MAX': 1.0,
-                'SCALE_MIN': 0.0,
-                'DISPLAY_MAX': 1.0,
-                'DISPLAY_MIN': 0.0,
-                'MAX_N_LOCATORS': 12
-            },
-            'NDVI': {
-                'DATA_MAX': float(br_index['UPPER_BOUND']),
-                'DATA_MIN': float(br_index['LOWER_BOUND']),
-                'SCALE_MAX': 1.0,
-                'SCALE_MIN': -0.1,
-                'DISPLAY_MAX': 1.0,
-                'DISPLAY_MIN': -0.1,
-                'MAX_N_LOCATORS': 13
-            },
-            'EVI': {
-                'DATA_MAX': float(br_index['UPPER_BOUND']),
-                'DATA_MIN': float(br_index['LOWER_BOUND']),
-                'SCALE_MAX': 1.0,
-                'SCALE_MIN': -0.1,
-                'DISPLAY_MAX': 1.0,
-                'DISPLAY_MIN': -0.1,
-                'MAX_N_LOCATORS': 13
-            },
-            'SAVI': {
-                'DATA_MAX': float(br_index['UPPER_BOUND']),
-                'DATA_MIN': float(br_index['LOWER_BOUND']),
-                'SCALE_MAX': 1.0,
-                'SCALE_MIN': -0.1,
-                'DISPLAY_MAX': 1.0,
-                'DISPLAY_MIN': -0.1,
-                'MAX_N_LOCATORS': 13
-            },
-            'MSAVI': {
-                'DATA_MAX': float(br_index['UPPER_BOUND']),
-                'DATA_MIN': float(br_index['LOWER_BOUND']),
-                'SCALE_MAX': 1.0,
-                'SCALE_MIN': -0.1,
-                'DISPLAY_MAX': 1.0,
-                'DISPLAY_MIN': -0.1,
-                'MAX_N_LOCATORS': 13
-            },
-            'NBR': {
-                'DATA_MAX': float(br_index['UPPER_BOUND']),
-                'DATA_MIN': float(br_index['LOWER_BOUND']),
-                'SCALE_MAX': 1.0,
-                'SCALE_MIN': -0.1,
-                'DISPLAY_MAX': 1.0,
-                'DISPLAY_MIN': -0.1,
-                'MAX_N_LOCATORS': 13
-            },
-            'NBR2': {
-                'DATA_MAX': float(br_index['UPPER_BOUND']),
-                'DATA_MIN': float(br_index['LOWER_BOUND']),
-                'SCALE_MAX': 1.0,
-                'SCALE_MIN': -0.1,
-                'DISPLAY_MAX': 1.0,
-                'DISPLAY_MIN': -0.1,
-                'MAX_N_LOCATORS': 13
-            },
-            'NDMI': {
-                'DATA_MAX': float(br_index['UPPER_BOUND']),
-                'DATA_MIN': float(br_index['LOWER_BOUND']),
-                'SCALE_MAX': 1.0,
-                'SCALE_MIN': -0.1,
-                'DISPLAY_MAX': 1.0,
-                'DISPLAY_MIN': -0.1,
-                'MAX_N_LOCATORS': 13
-            },
-            'LST': {
-                'DATA_MAX': float(br_lst['UPPER_BOUND']),
-                'DATA_MIN': float(br_lst['LOWER_BOUND']),
-                'SCALE_MAX': 1.0,
-                'SCALE_MIN': 0.0,
-                'DISPLAY_MAX': 1.0,
-                'DISPLAY_MIN': 0.0,
-                'MAX_N_LOCATORS': 12
-            },
-            'LANDSAT_LST': {
-                'DATA_MAX': float(br_landsat_lst['UPPER_BOUND']),
-                'DATA_MIN': float(br_landsat_lst['LOWER_BOUND']),
-                'SCALE_MAX': 1.0,
-                'SCALE_MIN': 0.0,
-                'DISPLAY_MAX': 1.0,
-                'DISPLAY_MIN': 0.0,
-                'MAX_N_LOCATORS': 12
-            },
-            'Emis': {
-                'DATA_MAX': float(br_emis['UPPER_BOUND']),
-                'DATA_MIN': float(br_emis['LOWER_BOUND']),
-                'SCALE_MAX': 1.0,
-                'SCALE_MIN': 0.0,
-                'DISPLAY_MAX': 1.0,
-                'DISPLAY_MIN': 0.0,
-                'MAX_N_LOCATORS': 12
-            }
-        }
 
         # --------------------------------------------------------------------
         # Define the configuration for searching for files and some of the
@@ -2000,7 +1859,8 @@ class PlotProcessor(ProductProcessor):
                                               'L[C,O]08*_toa_band5.stats'])]
 
         # Only Landsat TOA (L8 B9)
-        _toa_cirrus_info = [SearchInfo(L8_NAME, ['L[C,O]8*_toa_band9.stats'])]
+        _toa_cirrus_info = [SearchInfo(L8_NAME, ['L[C,O]8*_toa_band9.stats',
+                                                 'L[C,O]08*_toa_band9.stats'])]
 
         # Only MODIS band 20 files
         _emis_20_info = [SearchInfo(TERRA_NAME, ['MOD*Emis_20.stats']),
@@ -2029,14 +1889,14 @@ class PlotProcessor(ProductProcessor):
         # MODIS and Landsat LST Day files
         _lst_day_info = [SearchInfo(TERRA_NAME, ['MOD*LST_Day_*.stats']),
                          SearchInfo(AQUA_NAME, ['MYD*LST_Day_*.stats']),
-                         SearchInfo(L4_NAME, ['LT4*_lst.stats',
-                                              'LT04*_lst.stats']),
-                         SearchInfo(L5_NAME, ['LT5*_lst.stats',
-                                              'LT05*_lst.stats']),
-                         SearchInfo(L7_NAME, ['LE7*_lst.stats',
-                                              'LE07*_lst.stats']),
-                         SearchInfo(L8_NAME, ['L[C,O]8*_lst.stats',
-                                              'L[C,O]08*_lst.stats'])]
+                         SearchInfo(L4_NAME, ['LT4*_st.stats',
+                                              'LT04*_st.stats']),
+                         SearchInfo(L5_NAME, ['LT5*_st.stats',
+                                              'LT05*_st.stats']),
+                         SearchInfo(L7_NAME, ['LE7*_st.stats',
+                                              'LE07*_st.stats']),
+                         SearchInfo(L8_NAME, ['L[C,O]8*_st.stats',
+                                              'L[C,O]08*_st.stats'])]
 
         # Only MODIS Night files
         _lst_night_info = [SearchInfo(TERRA_NAME, ['MOD*LST_Night_*.stats']),
@@ -2159,466 +2019,6 @@ class PlotProcessor(ProductProcessor):
         # Call the base class parameter validation
         super(PlotProcessor, self).validate_parameters()
 
-        self._logger.info('Validating [PlotProcessor] parameters')
-
-        options = self._parms['options']
-
-        # Override the colors if they were specified
-        if parameters.test_for_parameter(options, 'terra_color'):
-            self._sensor_colors['Terra'] = options['terra_color']
-        else:
-            options['terra_color'] = self._sensor_colors['Terra']
-        if parameters.test_for_parameter(options, 'aqua_color'):
-            self._sensor_colors['Aqua'] = options['aqua_color']
-        else:
-            options['aqua_color'] = self._sensor_colors['Aqua']
-        if parameters.test_for_parameter(options, 'l4_color'):
-            self._sensor_colors['L4'] = options['l4_color']
-        else:
-            options['l4_color'] = self._sensor_colors['L4']
-        if parameters.test_for_parameter(options, 'l5_color'):
-            self._sensor_colors['L5'] = options['l5_color']
-        else:
-            options['l5_color'] = self._sensor_colors['L5']
-        if parameters.test_for_parameter(options, 'l7_color'):
-            self._sensor_colors['L7'] = options['l7_color']
-        else:
-            options['l7_color'] = self._sensor_colors['L7']
-        if parameters.test_for_parameter(options, 'l8_color'):
-            self._sensor_colors['L8'] = options['l8_color']
-        else:
-            options['l8_color'] = self._sensor_colors['L8']
-        if parameters.test_for_parameter(options, 'l8_tirs1_color'):
-            self._sensor_colors['L8-TIRS1'] = options['l8_tirs1_color']
-        else:
-            options['l8_tirs1_color'] = self._sensor_colors['L8-TIRS1']
-        if parameters.test_for_parameter(options, 'l8_tirs2_color'):
-            self._sensor_colors['L8-TIRS2'] = options['l8_tirs2_color']
-        else:
-            options['l8_tirs2_color'] = self._sensor_colors['L8-TIRS2']
-        if parameters.test_for_parameter(options, 'bg_color'):
-            self._bg_color = options['bg_color']
-        else:
-            options['bg_color'] = self._bg_color
-
-        # Override the marker if it was specified
-        if parameters.test_for_parameter(options, 'marker'):
-            self._marker = options['marker']
-        else:
-            options['marker'] = self._marker
-        if parameters.test_for_parameter(options, 'marker_size'):
-            self._marker_size = options['marker_size']
-        else:
-            options['marker_size'] = self._marker_size
-        if parameters.test_for_parameter(options, 'marker_edge_width'):
-            self._marker_edge_width = options['marker_edge_width']
-        else:
-            options['marker_edge_width'] = self._marker_edge_width
-
-    def read_statistics(self, statistics_file):
-        """Read the file contents and return as a list of key values
-        """
-
-        with open(statistics_file, 'r') as statistics_fd:
-            for line in statistics_fd:
-                line_lower = line.strip().lower()
-                parts = line_lower.split('=')
-                yield parts
-
-    def get_sensor_string_from_filename(self, filename):
-        """Determine the year, month, day_of_month, and sensor from the
-           scene name
-        """
-
-        sensor_name = sensor.info(filename).sensor_name
-        sensor_string = sensor_name
-
-        if sensor.is_landsat8(filename):
-            # We plot both TIRS bands in the thermal plot so they need to
-            # be separatly identified
-            if 'toa_band10' in filename:
-                sensor_string = '{}-TIRS1'.format(sensor_name)
-            elif 'toa_band11' in filename:
-                sensor_string = '{}-TIRS2'.format(sensor_name)
-        else:
-            sensor_string = sensor_name
-
-        return sensor_string
-
-    def combine_sensor_stats(self, stats_name, stats_files):
-        """Combines all the stat files for one sensor into one csv file
-        """
-
-        stats = dict()
-
-        # Fix the output filename
-        out_filename = stats_name.replace(' ', '_').lower()
-        out_filename = ''.join([out_filename, '_stats.csv'])
-
-        # Read each file into a dictionary
-        for stats_file in stats_files:
-            stats[stats_file] = \
-                dict((key, value) for (key, value)
-                     in self.read_statistics(stats_file))
-
-        stat_data = list()
-        # Process through and create records
-        for filename, obj in stats.items():
-            self._logger.debug(filename)
-
-            # Figure out the date information for the stats record
-            date = sensor.info(filename).date_acquired
-            day_of_year = date.timetuple().tm_yday
-
-            line = ','.join([date.isoformat(), '{0:03}'.format(day_of_year),
-                             obj['minimum'], obj['maximum'],
-                             obj['mean'], obj['stddev'], obj['valid']])
-            self._logger.debug(line)
-
-            stat_data.append(line)
-
-        # Create an empty string buffer to hold the output
-        temp_buffer = StringIO()
-
-        # Write the file header
-        temp_buffer.write('DATE,DOY,MINIMUM,MAXIMUM,MEAN,STDDEV,VALID')
-
-        # Sort the stats into the buffer
-        for line in sorted(stat_data):
-            temp_buffer.write('\n')
-            temp_buffer.write(line)
-
-        # Flush and save the buffer as a string
-        temp_buffer.flush()
-        data = temp_buffer.getvalue()
-        temp_buffer.close()
-
-        # Create the output file
-        with open(out_filename, 'w') as output_fd:
-            output_fd.write(data)
-
-    def scale_data_to_range(self, in_high, in_low, out_high, out_low, data):
-        """Scale the values in the data array to the specified output range
-        """
-
-        # Figure out the ranges
-        in_range = in_high - in_low
-        out_range = out_high - out_low
-
-        return out_high - ((out_range * (in_high - data)) / in_range)
-
-    def generate_plot(self, plot_name, subjects, band_type, stats,
-                      plot_type='Value'):
-        """Builds a plot and then generates a png formatted image of the plot
-        """
-
-        # Test for a valid plot_type parameter
-        # For us 'Range' mean min, max, and mean
-        if plot_type not in ('Range', 'Value', 'StdDev'):
-            raise ValueError('Error plot_type={} must be one of'
-                             ' (Range, Value, StdDev)'.format(plot_type))
-
-        # Create the subplot objects
-        fig = mpl_plot.figure()
-
-        # Adjust the figure size
-        fig.set_size_inches(11, 8.5)
-
-        min_plot = mpl_plot.subplot(111, axisbg=self._bg_color)
-
-        # Determine which ranges to use for scaling the data before plotting
-        use_data_range = ''
-        for range_type in self._band_type_data_ranges:
-            if band_type.startswith(range_type):
-                use_data_range = range_type
-                break
-        self._logger.info('Using use_data_range [{}] for band_type [{}]'
-                          .format(use_data_range, band_type))
-
-        # Make sure the band_type has been coded (help the developer)
-        if use_data_range == '':
-            raise ValueError('Error unable to determine [use_data_range]')
-
-        data_max = self._band_type_data_ranges[use_data_range]['DATA_MAX']
-        data_min = self._band_type_data_ranges[use_data_range]['DATA_MIN']
-        scale_max = self._band_type_data_ranges[use_data_range]['SCALE_MAX']
-        scale_min = self._band_type_data_ranges[use_data_range]['SCALE_MIN']
-        display_max = \
-            self._band_type_data_ranges[use_data_range]['DISPLAY_MAX']
-        display_min = \
-            self._band_type_data_ranges[use_data_range]['DISPLAY_MIN']
-        max_n_locators = \
-            self._band_type_data_ranges[use_data_range]['MAX_N_LOCATORS']
-
-        # --------------------------------------------------------------------
-        # Build a dictionary of sensors which contains lists of the values,
-        # while determining the minimum and maximum values to be displayed
-        # --------------------------------------------------------------------
-
-        # I won't be here to resolve this
-        plot_date_min = datetime.date(9998, 12, 31)
-        # Doubt if we have any this old
-        plot_date_max = datetime.date(1900, 01, 01)
-
-        sensor_dict = defaultdict(list)
-
-        if plot_type == 'Range':
-            lower_subject = 'mean'  # Since Range force to the mean
-        else:
-            lower_subject = subjects[0].lower()
-
-        # Convert the list of stats read from the file into a list of stats
-        # organized by the sensor and contains a python date element
-        for filename, obj in stats.items():
-            self._logger.debug(filename)
-
-            date = sensor.info(filename).date_acquired
-            sensor_string = self.get_sensor_string_from_filename(filename)
-            min_value = float(obj['minimum'])
-            max_value = float(obj['maximum'])
-            mean = float(obj['mean'])
-            stddev = float(obj['stddev'])
-
-            # Date must be first in the list for later sorting to work
-            sensor_dict[sensor_string].append((date, min_value, max_value,
-                                               mean, stddev))
-
-            # While we are here figure out...
-            # The min and max range for the X-Axis value
-            if date < plot_date_min:
-                plot_date_min = date
-            if date > plot_date_max:
-                plot_date_max = date
-
-        # Process through the sensor organized dictionary in sorted order
-        sorted_sensors = sorted(sensor_dict.keys())
-        proxy_artists = list()
-        for sensor_name in sorted_sensors:
-
-            dates = list()
-            min_values = np.empty(0, dtype=np.float)
-            max_values = np.empty(0, dtype=np.float)
-            mean_values = np.empty(0, dtype=np.float)
-            stddev_values = np.empty(0, dtype=np.float)
-
-            # Collect all for a specific sensor
-            # Sorted only works because we have date first in the list
-            for (date, min_value, max_value, mean,
-                 stddev) in sorted(sensor_dict[sensor_name]):
-                dates.append(date)
-                min_values = np.append(min_values, min_value)
-                max_values = np.append(max_values, max_value)
-                mean_values = np.append(mean_values, mean)
-                stddev_values = np.append(stddev_values, stddev)
-
-            if plot_type == 'StdDev':
-                # The standard deviation scaling is with respect to the mean
-                upper_stddev_values = self.scale_data_to_range(data_max,
-                                 data_min, scale_max, scale_min,
-                                 mean_values + stddev_values)
-                lower_stddev_values = self.scale_data_to_range(data_max,
-                                 data_min, scale_max, scale_min,
-                                 mean_values - stddev_values)
-
-
-            # These operate on and come out as numpy arrays
-            min_values = self.scale_data_to_range(data_max, data_min,
-                                                  scale_max, scale_min,
-                                                  min_values)
-            max_values = self.scale_data_to_range(data_max, data_min,
-                                                  scale_max, scale_min,
-                                                  max_values)
-            mean_values = self.scale_data_to_range(data_max, data_min,
-                                                   scale_max, scale_min,
-                                                   mean_values)
-
-            # Draw the min to max line for these dates
-            if plot_type == 'Range':
-                min_plot.vlines(dates, min_values, max_values,
-                                colors=self._sensor_colors[sensor_name],
-                                linestyles='solid', linewidths=1)
-
-            # Draw the standard deviation lines for these dates
-            if plot_type == 'StdDev':
-                min_plot.vlines(dates, lower_stddev_values, upper_stddev_values,
-                                colors=self._sensor_colors[sensor_name],
-                                linestyles='solid', linewidths=1)
-
-            # Plot the lists of dates and values for the subject
-            values = list()
-            if lower_subject == 'minimum':
-                values = min_values
-            if lower_subject == 'maximum':
-                values = max_values
-            if lower_subject == 'mean':
-                values = mean_values
-            if lower_subject == 'stddev':
-                values = stddev_values
-
-            # Process through the data and plot segments of the data
-            # (i.e. skip drawing lines between same date items)
-            data_count = len(dates)
-            x_data = list()
-            y_data = list()
-            for index in range(data_count):
-                x_data.append(dates[index])
-                y_data.append(values[index])
-
-                if index < (data_count - 1):
-                    if dates[index] == dates[index+1]:
-                        # Draw the markers for this segment of the dates
-                        min_plot.plot(x_data, y_data, label=sensor_name,
-                                      marker=self._marker,
-                                      color=self._sensor_colors[sensor_name],
-                                      linestyle='-',
-                                      markersize=self._marker_size,
-                                      markeredgewidth=self._marker_edge_width)
-                        x_data = list()
-                        y_data = list()
-
-            if len(x_data) > 0:
-                # Draw the markers for the final segment of the dates
-                min_plot.plot(x_data, y_data, label=sensor_name,
-                              marker=self._marker,
-                              color=self._sensor_colors[sensor_name],
-                              linestyle='-',
-                              markersize=self._marker_size,
-                              markeredgewidth=self._marker_edge_width)
-
-            # Generate a proxy artist for the legend
-            proxy_artists.append(mpl_lines.Line2D([], [],
-                                 color=self._sensor_colors[sensor_name],
-                                 marker=self._marker,
-                                 markersize=self._marker_size,
-                                 markeredgewidth=self._marker_edge_width))
-
-            # Cleanup the x and y data memory
-            del x_data
-            del y_data
-
-        # Adjust the y range to help move them from the edge of the plot
-        plot_y_min = display_min - 0.025
-        plot_y_max = display_max + 0.025
-
-        # Adjust the day range to help move them from the edge of the plot
-        date_diff = plot_date_max - plot_date_min
-        self._logger.debug(date_diff.days)
-        for increment in range(0, int(date_diff.days/365) + 1):
-            # Add 5 days to each end of the range for each year
-            # With a minimum of 5 days added to each end of the range
-            plot_date_min -= self._time_delta_5_days
-            plot_date_max += self._time_delta_5_days
-        self._logger.debug(plot_date_min)
-        self._logger.debug(plot_date_max)
-        self._logger.debug((plot_date_max - plot_date_min).days)
-
-        # Configuration for the dates
-        auto_date_locator = mpl_dates.AutoDateLocator()
-
-        days_spanned = (plot_date_max - plot_date_min).days
-        if days_spanned > 10 and days_spanned < 30:
-            # I don't know why, but setting them to 9 works for us
-            # Some other values also work, but as far as I am concerned the
-            # AutoDateLocator is BROKEN!!!!!
-            auto_date_locator = mpl_dates.AutoDateLocator(minticks=9,
-                                                          maxticks=9)
-        auto_date_formatter = mpl_dates.AutoDateFormatter(auto_date_locator)
-
-        # X Axis details
-        min_plot.xaxis.set_major_locator(auto_date_locator)
-        min_plot.xaxis.set_major_formatter(auto_date_formatter)
-
-        # X Axis - Limits - Determine the date range of the to-be-displayed
-        #                   data
-        min_plot.set_xlim(plot_date_min, plot_date_max)
-
-        # X Axis - Label - Will always be 'Date'
-        mpl_plot.xlabel('Date')
-
-        # Y Axis details
-        major_locator = MaxNLocator(max_n_locators)
-        min_plot.yaxis.set_major_locator(major_locator)
-
-        # Y Axis - Limits
-        min_plot.set_ylim(plot_y_min, plot_y_max)
-
-        # Y Axis - Label
-        # We are going to make the Y Axis Label the title for now (See Title)
-        # mpl_plot.ylabel(' '.join(subjects))
-
-        # Plot - Title
-        plot_name = ' '.join([plot_name, '-'] + subjects)
-        # mpl_plot.title(plot_name)
-        # The Title gets covered up by the legend so use the Y Axis Label
-        mpl_plot.ylabel(plot_name)
-
-        # Configure the legend
-        legend = mpl_plot.legend(proxy_artists, sorted_sensors,
-                                 bbox_to_anchor=(0.0, 1.01, 1.0, 0.5),
-                                 loc=3, ncol=6, mode='expand',
-                                 borderaxespad=0.0, numpoints=1,
-                                 prop={'size': 12})
-
-        # Change the legend background color to match the plot background color
-        frame = legend.get_frame()
-        frame.set_facecolor(self._bg_color)
-
-        # Fix the filename and save the plot
-        filename = plot_name.replace('- ', '').lower()
-        filename = filename.replace(' ', '_')
-        filename = ''.join([filename, '_plot'])
-
-        # Adjust the margins to be a little better
-        mpl_plot.subplots_adjust(left=0.1, right=0.92, top=0.9, bottom=0.1)
-
-        mpl_plot.grid(which='both', axis='y', linestyle='-')
-
-        # Save the plot to a file
-        mpl_plot.savefig('%s.png' % filename, dpi=100)
-
-        # Close the plot so we can open another one
-        mpl_plot.close()
-
-    def generate_plots(self, plot_name, stats_files, band_type):
-        """Gather all the information needed for plotting from the files and
-           generate a plot for each statistic
-        """
-
-        stats = dict()
-
-        # Read each file into a dictionary
-        for stats_file in stats_files:
-            self._logger.debug(stats_file)
-            stats[stats_file] = \
-                dict((key, value) for(key, value)
-                     in self.read_statistics(stats_file))
-            if stats[stats_file]['valid'] == 'no':
-                # Remove it so we do not have it in the plot
-                self._logger.warning('[{}] Data is not valid:'
-                                     ' Will not be used for plot generation'
-                                     .format(stats_file))
-                del stats[stats_file]
-
-        # Check if we have enough stuff to plot or not
-        if len(stats) < 2:
-            self._logger.warning('Not enough points to plot [{}]'
-                                 ' skipping plotting'.format(plot_name))
-            return
-
-        plot_subjects = ['Minimum', 'Maximum', 'Mean']
-        self.generate_plot(plot_name, plot_subjects, band_type, stats,
-                           'Range')
-
-        plot_subjects = ['Minimum']
-        self.generate_plot(plot_name, plot_subjects, band_type, stats)
-
-        plot_subjects = ['Maximum']
-        self.generate_plot(plot_name, plot_subjects, band_type, stats)
-
-        plot_subjects = ['Mean', 'StdDev']
-        self.generate_plot(plot_name, plot_subjects, band_type, stats,
-                           'StdDev')
-
     def process_band_type(self, (search_list, band_type)):
         """A generic processing routine which finds the files to process based
            on the provided search criteria
@@ -2627,50 +2027,21 @@ class PlotProcessor(ProductProcessor):
         filenames.  If no files are found, no plots or combined statistics
         will be generated.
         """
+        # Build a command line arguments list
+        cmd = ['espa_plotting.py',
+               "--band_type '{}'".format(band_type),
+               "--search_list '{}'".format(json.dumps(search_list))]
 
-        multi_sensor_files = list()
-        single_sensor_name = ''
-        sensor_count = 0  # How many sensors were found....
-        for (sensor_name, filter_list) in search_list:
-            single_sensor_files = list()
-            for filter_item in filter_list:
-                single_sensor_files.extend(glob.glob(filter_item))
-            if single_sensor_files and single_sensor_files is not None:
-                if len(single_sensor_files) > 0:
-                    sensor_count += 1  # We found another sensor
-                    single_sensor_name = sensor_name
-                    # We don't want to put "landsat_lst" in the .csv filenames
-                    # because they already have "landsat_#", but the band_type
-                    # can't be just "LST" because that name is taken by MODIS.
-                    if band_type == 'LANDSAT_LST':
-                        filename_band_type = 'LST'
-                    else:
-                        filename_band_type = band_type
-                    self.combine_sensor_stats(' '.join([sensor_name,
-                                                        filename_band_type]),
-                                              single_sensor_files)
-                    multi_sensor_files.extend(single_sensor_files)
+        # Turn the list into a string
+        cmd = ' '.join(cmd)
+        self._logger.info(' '.join(['SUMMARY STATISTICS AND PLOTTING COMMAND:', cmd]))
 
-            # Cleanup the memory for this
-            del single_sensor_files
-
-        # We always use the multi sensor variable here because it will only
-        # have the single sensor in it, if that is the case
-        if sensor_count > 1:
-            self.generate_plots('Multi Sensor {}'.format(band_type),
-                                multi_sensor_files, band_type)
-        elif sensor_count == 1 and len(multi_sensor_files) > 1:
-            self.generate_plots(' '.join([single_sensor_name, band_type]),
-                                multi_sensor_files, band_type)
-        # Else do not plot
-
-        # Remove the processed files
-        if sensor_count > 0:
-            for filename in multi_sensor_files:
-                if os.path.exists(filename):
-                    os.unlink(filename)
-
-        del multi_sensor_files
+        output = ''
+        try:
+            output = utilities.execute_cmd(cmd)
+        finally:
+            if len(output) > 0:
+                self._logger.info(output)
 
     def process_stats(self):
         """Process the stat results to plots

@@ -28,7 +28,6 @@ SCRIPT_IMPORTS = \
     sensor.py \
     settings.py \
     staging.py \
-    statistics.py \
     transfer.py \
     utilities.py
 

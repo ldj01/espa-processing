@@ -53,7 +53,7 @@ GEOGRAPHIC_PROJ4_STRING = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 
 # Band type data ranges.  They are intended to be used for removing outliers
 # from the data before statistics generation
-# Must match DATA_MAX_Y and DATA_MIN_Y values in plotting.py
+# Must match DATA_MAX_Y and DATA_MIN_Y values in espa_plotting.py
 # The types must match the types in cdr_ecv.py and modis.py
 # Note: These are also defined in such away that the fill values are also
 #       excluded.
@@ -89,7 +89,7 @@ BAND_TYPE_STAT_RANGES = {
     },
     # This is for Landsat LST.  The data range is 1500 to 3730.  With scaling
     # to K it becomes 150 to 373.
-    'LANDSAT_LST': {
+    'LANDSAT_ST': {
         'UPPER_BOUND': 373,
         'LOWER_BOUND': 150
     },
@@ -100,7 +100,7 @@ BAND_TYPE_STAT_RANGES = {
 }
 
 MODIS_LST_SCALE = 0.02
-LANDSAT_LST_SCALE = 0.1
+LANDSAT_ST_SCALE = 0.1
 
 
 '''
