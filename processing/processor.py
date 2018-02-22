@@ -513,7 +513,6 @@ class CDRProcessor(CustomizationProcessor):
             'include_sr': 'sr_refl',
             'include_sr_toa': 'toa_refl',
             'include_sr_thermal': 'toa_bt',
-            'include_cfmask': 'cfmask',
             'angle_bands': 'angle_bands',
             'keep_intermediate_data': 'intermediate_data'
         }
@@ -536,14 +535,6 @@ class CDRProcessor(CustomizationProcessor):
         if not options['include_sr_thermal']:
             products_to_remove.append(
                 order2product['include_sr_thermal'])
-        if not options['include_cfmask']:
-            # Business logic to keep the CFmask bands for pre-collection
-            # Surface Reflectance products
-            if self.is_pre_collection_data and options['include_sr']:
-                pass
-            else:
-                products_to_remove.append(
-                    order2product['include_cfmask'])
         if not options['keep_intermediate_data']:
             products_to_remove.append(
                 order2product['keep_intermediate_data'])
@@ -696,8 +687,7 @@ class LandsatProcessor(CDRProcessor):
 
         # Force these parameters to false if not provided
         # They are the required includes for product generation
-        required_includes = ['include_cfmask',
-                             'include_pixel_qa',
+        required_includes = ['include_pixel_qa',
                              'include_customized_source_data',
                              'include_dswe',
                              'include_st',
@@ -725,7 +715,6 @@ class LandsatProcessor(CDRProcessor):
                 not options['include_sr'] and
                 not options['include_sr_toa'] and
                 not options['include_sr_thermal'] and
-                not options['include_cfmask'] and
                 not options['include_pixel_qa'] and
                 not options['include_sr_nbr'] and
                 not options['include_sr_nbr2'] and
@@ -970,7 +959,6 @@ class LandsatProcessor(CDRProcessor):
                 options['include_sr_thermal'] or
                 options['include_dswe'] or
                 options['include_st'] or
-                options['include_cfmask'] or
                 options['include_pixel_qa']):
 
             execute_do_ledaps = True
@@ -998,31 +986,6 @@ class LandsatProcessor(CDRProcessor):
         if cmd is not None:
 
             self._logger.info(' '.join(['SURFACE REFLECTANCE COMMAND:', cmd]))
-
-            output = ''
-            try:
-                output = utilities.execute_cmd(cmd)
-            finally:
-                if len(output) > 0:
-                    self._logger.info(output)
-
-    def generate_cloud_masking(self):
-        """Generates cloud mask products
-        """
-
-        options = self._parms['options']
-        cmd = None
-        # Includes pre-collection business logic "Include CFMASK with SR"
-        if (options['include_cfmask'] or
-                (self.is_pre_collection_data and options['include_sr'])):
-
-            cmd = ' '.join(['cloud_masking.py', '--verbose',
-                            '--xml', self._xml_filename])
-
-        # Only if required
-        if cmd is not None:
-
-            self._logger.info(' '.join(['CLOUD MASKING COMMAND:', cmd]))
 
             output = ''
             try:
@@ -1161,8 +1124,6 @@ class LandsatProcessor(CDRProcessor):
             self.generate_dilated_cloud()
 
             self.generate_cfmask_water_detection()
-
-            self.generate_cloud_masking()
 
             self.generate_spectral_indices()
 
@@ -1395,7 +1356,6 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
                 options['include_sr_thermal'] or
                 options['include_dswe'] or
                 options['include_st'] or
-                options['include_cfmask'] or
                 options['include_pixel_qa'] or
                 options['include_sr'] or
                 self.is_collection_data):
@@ -1438,20 +1398,9 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
             raise Exception('include_sr_thermal is an unavailable product'
                             ' option for OLI-Only data')
 
-        if options['include_cfmask'] is True:
-            raise Exception('include_cfmask is an unavailable product option'
-                            ' for OLI-Only data')
-
         if options['include_dswe'] is True:
             raise Exception('include_dswe is an unavailable product option'
                             ' for OLI-Only data')
-
-    def generate_cloud_masking(self):
-        """Cloud Masking processing requires both OLI and TIRS bands
-
-        So OLI only processing can not produce cloud mask products.
-        """
-        pass
 
     def generate_spectral_indices(self):
         """Spectral Indices processing requires surface reflectance products
