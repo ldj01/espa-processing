@@ -139,12 +139,6 @@ def build_command_line_parser():
     # ------------------------------------------------------------------------
     products = parser.add_argument_group('products')
 
-    products.add_argument('--include-cfmask',
-                          action='store_true',
-                          dest='include_cfmask',
-                          default=False,
-                          help='Include CFMask Products')
-
     products.add_argument('--include-pixel-qa',
                           action='store_true',
                           dest='include_pixel_qa',
@@ -797,7 +791,6 @@ def update_template(args, template):
     order['options']['output_format'] = args.output_format
 
     # Products ---------------------------------------------------------------
-    order['options']['include_cfmask'] = args.include_cfmask
     order['options']['include_pixel_qa'] = args.include_pixel_qa
     order['options']['include_customized_source_data'] = (
         args.include_customized_source_data)
