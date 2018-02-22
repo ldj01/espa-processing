@@ -1207,18 +1207,6 @@ class LandsatTMProcessor(LandsatProcessor):
         super(LandsatTMProcessor, self).__init__(cfg, parms)
 
 
-class Landsat4TMProcessor(LandsatTMProcessor):
-    """Implements L4 TM specific processing
-
-    Note:
-        Today all processing is inherited from the LandsatProcessors because
-        the TM and ETM processors are identical.
-    """
-
-    def __init__(self, cfg, parms):
-        super(Landsat4TMProcessor, self).__init__(cfg, parms)
-
-
 class LandsatETMProcessor(LandsatProcessor):
     """Implements ETM specific processing
 
@@ -1949,30 +1937,17 @@ def get_instance(cfg, parms):
     if product_id == 'plot':
         return PlotProcessor(cfg, parms)
 
-    if sensor.is_lt4(product_id):
-        return Landsat4TMProcessor(cfg, parms)
-    elif sensor.is_lt04(product_id):
+    if sensor.is_landsat4(product_id):
         return LandsatTMProcessor(cfg, parms)
-    elif sensor.is_lt5(product_id):
+    elif sensor.is_landsat5(product_id):
         return LandsatTMProcessor(cfg, parms)
-    elif sensor.is_lt05(product_id):
-        return LandsatTMProcessor(cfg, parms)
-    elif sensor.is_le7(product_id):
+    elif sensor.is_landsat7(product_id):
         return LandsatETMProcessor(cfg, parms)
-    elif sensor.is_le07(product_id):
-        return LandsatETMProcessor(cfg, parms)
-    elif sensor.is_lo8(product_id):
-        return LandsatOLIProcessor(cfg, parms)
     elif sensor.is_lo08(product_id):
         return LandsatOLIProcessor(cfg, parms)
-    elif sensor.is_lt8(product_id):
-        raise NotImplementedError('A processor for [{}] has not been'
-                                  ' implemented'.format(product_id))
     elif sensor.is_lt08(product_id):
         raise NotImplementedError('A processor for [{}] has not been'
                                   ' implemented'.format(product_id))
-    elif sensor.is_lc8(product_id):
-        return LandsatOLITIRSProcessor(cfg, parms)
     elif sensor.is_lc08(product_id):
         return LandsatOLITIRSProcessor(cfg, parms)
     elif sensor.is_terra(product_id):
