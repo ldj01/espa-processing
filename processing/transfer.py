@@ -12,6 +12,7 @@ import urllib2
 import requests
 import random
 from time import sleep
+import fnmatch
 
 import settings
 import utilities
@@ -447,3 +448,138 @@ def transfer_file(source_host, source_file,
     # As a last resort try SCP
     scp_transfer_file(source_host, source_file,
                       destination_host, destination_file)
+
+
+ERROR = 1
+SUCCESS = 0
+
+URL = 'http://losrlost02.cr.usgs.gov:7480'
+
+
+def retrieve_aux_data(order_id):
+    if order_id[2] == '8':
+        retrieve_l8_aux_data(order_id)
+    else:
+        retrieve_l47_aux_data(order_id)
+
+
+def retrieve_l8_aux_data(order_id):
+    logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
+
+    # Determine the auxiliary directory to store the data.
+    auxdir = os.environ.get('L8_AUX_DIR')
+    if auxdir is None:
+        msg = 'L8_AUX_DIR environment variable not set... exiting'
+        logger.error(msg)
+        return ERROR
+
+    # determine the directory for the output auxiliary data files to be
+    # processed.  create the directory if it doesn't exist.
+    outputDir = '{}/LDCMLUT'.format(auxdir)
+    os.makedirs(outputDir, 0777)
+
+    file_list = ['AERO_LUT_V3.0-URBANCLEAN-V2.0.ASCII',
+                 'ANGLE_NEW.hdf',
+                 'RES_LUT_V3.0-URBANCLEAN-V2.0.hdf',
+                 'TRANS_LUT_V3.0-URBANCLEAN-V2.0.ASCII',
+                 'gascoef-ldcm.ASC',
+                 'l8geom.hdf',
+                 'tauray-ldcm.ASC']
+
+    for file in file_list:
+        # Skip files that already exist.
+        skip_file = False
+        for myfile in os.listdir(outputDir):
+            if fnmatch.fnmatch (myfile, file):
+                msg = '{} already exists. Skip.'.format(file)
+                logger.info(msg)
+                skip_file = True
+                break
+
+        if skip_file:
+            continue
+
+        # Download the file.
+        url = '{}/LDCMLUT/{}'.format(URL, file)
+        dest_file = '{}/{}'.format(outputDir, file)
+        download_file_url(url, dest_file)
+
+    # Get the LADS files.
+    # Pull the date from the order ID to determine which auxiliary
+    # file should be used for input.  Example: LC80410272013181LGN00
+    # uses L8ANC2013181.hdf_fused.
+    aux_file = 'L8ANC' + order_id[9:16] + '.hdf_fused'
+    aux_year = aux_file[5:9]
+
+    outputDir = '{}/LADS/{}'.format(auxdir, aux_year)
+    os.makedirs(outputDir, 0777)
+
+    # Download the file.
+    url = '{}/LADS/{}'.format(URL, aux_file)
+    dest_file = '{}/{}'.format(outputDir, aux_file)
+    download_file_url(url, dest_file)
+
+    # Get the files in the main L8 dir.
+    aux_file = 'ratiomapndwiexp.hdf'
+
+    # Download the file.
+    url = '{}/L8STUFF/{}'.format(URL, aux_file)
+    dest_file = '{}/{}'.format(auxdir, aux_file)
+    download_file_url(url, dest_file)
+
+    aux_file = 'CMGDEM.hdf'
+
+    # Download the file.
+    url = '{}/CMGDEM/{}'.format(URL, aux_file)
+    dest_file = '{}/{}'.format(auxdir, aux_file)
+    download_file_url(url, dest_file)
+
+    return SUCCESS
+
+
+def retrieve_l47_aux_data(order_id):
+    logger = EspaLogging.get_logger(settings.PROCESSING_LOGGER)
+
+    # Determine the auxiliary directory to store the data.
+    auxdir = os.environ.get('LEDAPS_AUX_DIR')
+    if auxdir is None:
+        msg = 'LEDAPS_AUX_DIR environment variable not set... exiting'
+        logger.error(msg)
+        return ERROR
+
+    # Get the NCEP REANALYSIS file.
+    # Pull the date from the order ID to determine which auxiliary
+    # file should be used for input.
+    aux_file = 'REANALYSIS_' + order_id[9:16] + '.hdf'
+    aux_year = order_id[9:13]
+
+    # Create the auxiliary directory.
+    outputDir = '{}/REANALYSIS/RE_{}'.format(auxdir, aux_year)
+    os.makedirs(outputDir, 0777)
+
+    # Download the file.
+    url = '{}/REANALYSIS/{}'.format(URL, aux_file)
+    dest_file = '{}/{}'.format(outputDir, aux_file)
+    download_file_url(url, dest_file)
+
+    # Get the TOMS file.
+    aux_file = 'TOMS_' + order_id[9:16] + '.hdf'
+
+    # Create the auxiliary directory.
+    outputDir = '{}/EP_TOMS/ozone_{}'.format(auxdir, aux_year)
+    os.makedirs(outputDir, 0777)
+
+    # Download the file.
+    url = '{}/EP_TOMS/{}'.format(URL, aux_file)
+    dest_file = '{}/{}'.format(outputDir, aux_file)
+    download_file_url(url, dest_file)
+
+    # Get the files in the main auxiliary directory.
+    aux_file = 'CMGDEM.hdf'
+
+    # Download the file.
+    url = '{}/CMGDEM/{}'.format(URL, aux_file)
+    dest_file = '{}/{}'.format(auxdir, aux_file)
+    download_file_url(url, dest_file)
+
+    return SUCCESS

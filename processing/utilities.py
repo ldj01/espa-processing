@@ -129,7 +129,11 @@ def get_cache_hostname(host_names):
             result (bool): True if the host was reachable and False if not.
         """
 
-        cmd = 'ping -q -c 1 {}'.format(hostname)
+        # Remove any "http" or port numbers from the hostname before
+        # trying to ping it.
+        bare_host = hostname.replace('http://', '')
+        bare_host = bare_host.rsplit(':', 1)[0]
+        cmd = 'ping -q -c 1 {}'.format(bare_host)
 
         try:
             execute_cmd(cmd)

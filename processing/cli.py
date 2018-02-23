@@ -14,6 +14,7 @@ import utilities as util
 import config_utils as config
 from logging_tools import EspaLogging
 import processor
+import transfer
 
 
 APP_NAME = 'ESPA-Processing'
@@ -135,6 +136,22 @@ def build_command_line_parser():
                           dest='bridge_mode',
                           default=False,
                           help='Specify bridge processing mode')
+
+    specific.add_argument('--destination_username',
+                          action='store',
+                          dest='destination_username',
+                          required=False,
+                          default=None,
+                          metavar='TEXT',
+                          help='S3 access key')
+
+    specific.add_argument('--destination_pw',
+                          action='store',
+                          dest='destination_pw',
+                          default=None,
+                          required=False,
+                          metavar='TEXT',
+                          help='S3 secret key')
 
     # ------------------------------------------------------------------------
     products = parser.add_argument_group('products')
@@ -815,6 +832,8 @@ def update_template(args, template):
         args.include_brightness_temperature)
     order['options']['include_dswe'] = args.include_surface_water_extent
     order['options']['include_statistics'] = args.include_statistics
+    order['options']['destination_username'] = args.destination_username
+    order['options']['destination_pw'] = args.destination_pw
 
     # Customization ----------------------------------------------------------
     order['options']['resample_method'] = args.resample_method
@@ -967,6 +986,9 @@ def main():
         template = load_template(filename=TEMPLATE_FILENAME)
 
         order = update_template(args=args, template=template)
+
+        # Retrieve all of the required auxiliary data.
+        transfer.retrieve_aux_data(args.order_id)
 
         # Change to the processing directory
         current_directory = os.getcwd()

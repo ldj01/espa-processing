@@ -11,6 +11,7 @@ import sys
 import shutil
 import glob
 from time import sleep
+import boto3
 
 import settings
 import utilities
@@ -251,6 +252,53 @@ def transfer_product(immutability, destination_host, destination_directory,
         raise
 
     return (cksum_value, destination_product_file, destination_cksum_file)
+
+
+def transfer_product_s3(destination_host, destination_directory,
+                        destination_username, destination_pw,
+                        product_filename, cksum_filename):
+    '''
+    Description:
+      Transfer the product and associated checksum to the specified directory
+      in the S3 bucket.
+
+    Note:
+      It is assumed S3 write access is available.
+    '''
+
+    # Remove any pre-existing files.
+    # Grab the first part of the filename, which is not unique.
+    # Ceph (and S3) can't use wildcards in object lists, so need to retrieve
+    # a list of objects with a given prefix, then delete those objects.
+    remote_filename_parts = os.path.basename(product_filename).split('-')
+    remote_filename_parts[-1] = ''  # Remove the last element of the list.
+    remote_prefix = '-'.join(remote_filename_parts)  # Join with '-'
+    s3client = boto3.client('s3',
+                        endpoint_url=destination_host,
+                        aws_access_key_id=destination_username,
+                        aws_secret_access_key=destination_pw)
+    bucket_name = destination_directory
+    kwargs = {'Bucket': bucket_name,
+              'Prefix': remote_prefix,
+              'MaxKeys': 100000}
+    object_list = s3client.list_objects_v2(**kwargs)
+
+    if object_list.get('Contents') != None:
+        for item in object_list['Contents']:
+            s3client.delete_object(Bucket=bucket_name, Key=item['Key'])
+
+    # Transfer the files.
+    s3resource = boto3.resource('s3',
+                                endpoint_url=destination_host,
+                                aws_access_key_id=destination_username,
+                                aws_secret_access_key=destination_pw)
+    bucket = s3resource.Bucket(bucket_name)
+    bucket.upload_file(Filename=product_filename,
+                       Key=os.path.basename(product_filename),
+                       ExtraArgs={'ACL': 'public-read'})
+    bucket.upload_file(Filename=cksum_filename,
+                       Key=os.path.basename(cksum_filename),
+                       ExtraArgs={'ACL': 'public-read'})
 
 
 def distribute_statistics_remote(immutability, product_id, source_path,
@@ -545,12 +593,10 @@ def distribute_product_remote(immutability, product_name, source_path,
             sub_attempt = 0
             while True:
                 try:
-                    (remote_cksum_value, product_file, cksum_file) = \
-                        transfer_product(immutability, destination_host,
-                                         cache_path,
-                                         opts['destination_username'],
-                                         opts['destination_pw'],
-                                         product_full_path, cksum_full_path)
+                    transfer_product_s3(destination_host, cache_path,
+                                        opts['destination_username'],
+                                        opts['destination_pw'],
+                                        product_full_path, cksum_full_path)
                 except Exception:
                     logger.exception("An exception occurred processing %s"
                                      % product_name)
@@ -562,18 +608,12 @@ def distribute_product_remote(immutability, product_name, source_path,
                         raise
                 break
 
-            # Checksum validation
-            if local_cksum_value.split()[0] != remote_cksum_value.split()[0]:
-                raise ESPAException("Failed checksum validation between"
-                                    " %s and %s:%s"
-                                    % (product_full_path,
-                                       destination_host,
-                                       product_file))
-
             # Always log where we placed the files
-            logger.info("Delivered product to %s at location %s"
-                        " and cksum location %s" % (destination_host,
-                                                    product_file, cksum_file))
+            product_file = os.path.basename(product_full_path)
+            cksum_file = os.path.basename(cksum_full_path)
+            logger.info("Delivered product to %s bucket %s as %s and "
+                        "cksum %s" % (destination_host, cache_path,
+                                      product_file, cksum_file))
         except Exception:
             if attempt < max_number_of_attempts:
                 sleep(sleep_seconds)  # sleep before trying again
@@ -774,9 +814,13 @@ def distribute_product(immutability, product_name, source_path,
                                      package_path)
 
     else:  # remote
-        # Use the remote cache path
-        cache_path = os.path.join(settings.ESPA_REMOTE_CACHE_DIRECTORY,
-                                  parms['orderid'])
+        # Set the S3 bucket to use based on the satellite mission.
+        if (parms['orderid'][2] == '8'):
+            cache_path = 'C01_OLI_TIRS_A1_L2'
+        elif (parms['orderid'][2] == '7'):
+            cache_path = 'C01_ETM_A1_L2'
+        else:
+            cache_path = 'C01_TM_A1_L2'
 
         (product_file, cksum_file) = \
             distribute_product_remote(immutability,
