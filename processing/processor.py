@@ -984,6 +984,9 @@ class LandsatProcessor(CDRProcessor):
 
         options = self._parms['options']
 
+        if not options['include_dswe']:
+            return
+
         cmd = ['surface_water_extent.py',
                '--xml', self._xml_filename,
                '--verbose']
