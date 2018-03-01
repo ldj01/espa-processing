@@ -725,6 +725,21 @@ class LandsatProcessor(CDRProcessor):
         else:
             self._build_products = True
 
+        # Always generate TOA and BT (for cfmask_based_water_detection)
+        # Also, generate SR input if needed, but do not deliver it in output
+        self.requires_sr_input = any(
+                options[x] for x in [
+                    'include_sr',
+                    'include_sr_nbr',
+                    'include_sr_nbr2',
+                    'include_sr_ndvi',
+                    'include_sr_ndmi',
+                    'include_sr_savi',
+                    'include_sr_msavi',
+                    'include_sr_evi',
+                    'include_dswe'
+            ])
+
     def stage_input_data(self):
         """Stages the input data required for the processor
         """
@@ -910,7 +925,9 @@ class LandsatProcessor(CDRProcessor):
 
         cmd = ['surface_reflectance.py', '--xml', self._xml_filename]
 
-        # Always generate TOA and BT (for cfmask_based_water_detection)
+        if not self.requires_sr_input:
+            cmd.extend(['--process_sr', 'False'])
+
         return ' '.join(cmd)
 
     def generate_sr_products(self):
@@ -1252,7 +1269,9 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
         cmd = ['surface_reflectance.py', '--xml', self._xml_filename,
                '--write_toa']
 
-        # Always generate TOA and BT (for cfmask_based_water_detection)
+        if not self.requires_sr_input:
+            cmd.extend(['--process_sr', 'False'])
+
         return ' '.join(cmd)
 
 
