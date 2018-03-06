@@ -34,13 +34,6 @@ SensorInfo = namedtuple('SensorInfo', ['product_prefix',
 
 """Supported Sensor Codes
 """
-LT4_SENSOR_CODE = 'LT4'
-LT5_SENSOR_CODE = 'LT5'
-LE7_SENSOR_CODE = 'LE7'
-LT8_SENSOR_CODE = 'LT8'
-LC8_SENSOR_CODE = 'LC8'
-LO8_SENSOR_CODE = 'LO8'
-
 LT04_SENSOR_CODE = 'LT04'
 LT05_SENSOR_CODE = 'LT05'
 LE07_SENSOR_CODE = 'LE07'
@@ -100,11 +93,11 @@ DEFAULT_PIXEL_SIZE = {
 }
 
 
-def landsat_collection_sensor_info(product_id):
-    """Determine information from collection Product ID
+def landsat_sensor_info(product_id):
+    """Determine information from Product ID
 
     Args:
-        product_id (str): The collection Product ID
+        product_id (str): The Product ID
     """
 
     (sensor_code, proc_level, path_row, date_acq, proc_date,
@@ -128,60 +121,13 @@ def landsat_collection_sensor_info(product_id):
 
     # Sensor string is used in plotting
     sensor_name = None
-    if is_lt04(product_id):
+    if is_landsat4(product_id):
         sensor_name = 'L4'
-    elif is_lt05(product_id):
+    elif is_landsat5(product_id):
         sensor_name = 'L5'
-    elif is_le07(product_id):
+    elif is_landsat7(product_id):
         sensor_name = 'L7'
-    elif is_lc08(product_id) or is_lo08(product_id) or is_lt08(product_id):
-        sensor_name = 'L8'
-
-    return SensorInfo(product_prefix=product_prefix,
-                      date_acquired=date_acquired,
-                      sensor_name=sensor_name,
-                      default_pixel_size=default_pixel_size,
-                      horizontal=0, vertical=0,
-                      path=path, row=row)
-
-
-def landsat_pre_collection_sensor_info(product_id):
-    """Determine information from pre collection Product ID
-
-    Args:
-        product_id (str): The pre collection Product ID
-    """
-
-    sensor_code = product_id[:3]
-
-    path = product_id[3:6]
-    row = product_id[6:9]
-
-    date_YYYYDDD = product_id[9:16]
-    date_acquired = datetime.datetime.strptime(date_YYYYDDD, '%Y%j').date()
-
-    year = date_acquired.year
-    doy = date_acquired.timetuple().tm_yday
-
-    # Determine the product prefix
-    product_prefix = ('{0}{1:>03}{2:>03}{3:>04}{4:>03}'
-                      .format(sensor_code, path, row, year, doy))
-
-    # Determine the default pixel sizes
-    meters = DEFAULT_PIXEL_SIZE['meters'][sensor_code]
-    dd = DEFAULT_PIXEL_SIZE['dd'][sensor_code]
-
-    default_pixel_size = {'meters': meters, 'dd': dd}
-
-    # Sensor string is used in plotting
-    sensor_name = None
-    if is_lt4(product_id):
-        sensor_name = 'L4'
-    elif is_lt5(product_id):
-        sensor_name = 'L5'
-    elif is_le7(product_id):
-        sensor_name = 'L7'
-    elif is_lc8(product_id) or is_lo8(product_id) or is_lt8(product_id):
+    elif is_landsat8(product_id):
         sensor_name = 'L8'
 
     return SensorInfo(product_prefix=product_prefix,
@@ -250,43 +196,19 @@ def modis_sensor_info(product_id):
 """
 LANDSAT_COLLECTION_REGEXP_MAPPING = {
     'lt04': (r'^lt04_[a-z0-9]{4}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
-             landsat_collection_sensor_info),
+             landsat_sensor_info),
 
     'lt05': (r'^lt05_[a-z0-9]{4}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
-             landsat_collection_sensor_info),
+             landsat_sensor_info),
 
     'le07': (r'^le07_[a-z0-9]{4}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
-             landsat_collection_sensor_info),
+             landsat_sensor_info),
 
     'lc08': (r'^lc08_[a-z0-9]{4}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
-             landsat_collection_sensor_info),
+             landsat_sensor_info),
 
     'lo08': (r'^lo08_[a-z0-9]{4}_\d{6}_\d{8}_\d{8}_\d{2}_[a-z0-9]{2}$',
-             landsat_collection_sensor_info)
-}
-
-
-"""Map Landsat regular expressions for supported products to the correct
-   Product ID parser.
-
-   Example Product ID Format:
-       LE72181092013069PFS00
-"""
-LANDSAT_HISTORICAL_REGEXP_MAPPING = {
-    'lt4': (r'^lt4\d{3}\d{3}\d{4}\d{3}[a-z]{3}[a-z0-9]{2}$',
-            landsat_pre_collection_sensor_info),
-
-    'lt5': (r'^lt5\d{3}\d{3}\d{4}\d{3}[a-z]{3}[a-z0-9]{2}$',
-            landsat_pre_collection_sensor_info),
-
-    'le7': (r'^le7\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
-            landsat_pre_collection_sensor_info),
-
-    'lc8': (r'^lc8\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
-            landsat_pre_collection_sensor_info),
-
-    'lo8': (r'^lo8\d{3}\d{3}\d{4}\d{3}\w{3}.{2}$',
-            landsat_pre_collection_sensor_info)
+             landsat_sensor_info)
 }
 
 
@@ -353,39 +275,15 @@ MODIS_REGEXP_MAPPING = {
 }
 
 
-def is_lt4(a):
-    return a.upper().startswith(LT4_SENSOR_CODE)
-
-
-def is_lt5(a):
-    return a.upper().startswith(LT5_SENSOR_CODE)
-
-
-def is_le7(a):
-    return a.upper().startswith(LE7_SENSOR_CODE)
-
-
-def is_lt8(a):
-    return a.upper().startswith(LT8_SENSOR_CODE)
-
-
-def is_lc8(a):
-    return a.upper().startswith(LC8_SENSOR_CODE)
-
-
-def is_lo8(a):
-    return a.upper().startswith(LO8_SENSOR_CODE)
-
-
-def is_lt04(a):
+def is_landsat4(a):
     return a.upper().startswith(LT04_SENSOR_CODE)
 
 
-def is_lt05(a):
+def is_landsat5(a):
     return a.upper().startswith(LT05_SENSOR_CODE)
 
 
-def is_le07(a):
+def is_landsat7(a):
     return a.upper().startswith(LE07_SENSOR_CODE)
 
 
@@ -401,36 +299,12 @@ def is_lo08(a):
     return a.upper().startswith(LO08_SENSOR_CODE)
 
 
-def is_landsat4(a):
-    return any([is_lt4(a), is_lt04(a)])
-
-
-def is_landsat5(a):
-    return any([is_lt5(a), is_lt05(a)])
-
-
-def is_landsat7(a):
-    return any([is_le7(a), is_le07(a)])
-
-
 def is_landsat8(a):
-    return any([is_lc8(a), is_lo8(a), is_lt8(a),
-                is_lc08(a), is_lo08(a), is_lt08(a)])
-
-
-def is_landsat_pre_collection(a):
-    return any([is_lc8(a), is_le7(a), is_lt5(a),
-                is_lt4(a), is_lo8(a), is_lt8(a)])
-
-
-def is_landsat_collection(a):
-    return any([is_lc08(a), is_le07(a), is_lt05(a),
-                is_lt04(a), is_lo08(a), is_lt08(a)])
+    return any([is_lc08(a), is_lo08(a), is_lt08(a)])
 
 
 def is_landsat(a):
-    return any([is_landsat_collection(a),
-                is_landsat_pre_collection(a)])
+    return any([is_landsat8(a), is_landsat7(a), is_landsat5(a), is_landsat4(a)])
 
 
 def is_terra(a):
@@ -452,7 +326,6 @@ class ProductNotImplemented(NotImplementedError):
 
 
 LANDSAT_COLLECTION_ID_LENGTH = 40
-LANDSAT_HISTORICAL_ID_LENGTH = 21
 MODIS_COLLECTION_ID_LENGTH = 41
 
 
@@ -480,10 +353,8 @@ class sensor_memoize(object):
         product_id = None
 
         # Only usethe Product ID
-        if is_landsat_collection(temp_id):
+        if is_landsat(temp_id):
             product_id = temp_id[:LANDSAT_COLLECTION_ID_LENGTH]
-        elif is_landsat_pre_collection(temp_id):
-            product_id = temp_id[:LANDSAT_HISTORICAL_ID_LENGTH]
         elif is_modis(temp_id):
             product_id = temp_id[:MODIS_COLLECTION_ID_LENGTH]
         else:
@@ -512,11 +383,8 @@ def info(product_id):
 
     # We only support an explicit set of Product ID formats, so that
     # processing breaks if it is changed
-    if is_landsat_collection(product_id):
+    if is_landsat(product_id):
         mapping = LANDSAT_COLLECTION_REGEXP_MAPPING
-
-    elif is_landsat_pre_collection(product_id):
-        mapping = LANDSAT_HISTORICAL_REGEXP_MAPPING
 
     elif is_modis(product_id):
         mapping = MODIS_REGEXP_MAPPING

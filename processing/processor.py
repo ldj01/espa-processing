@@ -513,7 +513,6 @@ class CDRProcessor(CustomizationProcessor):
             'include_sr': 'sr_refl',
             'include_sr_toa': 'toa_refl',
             'include_sr_thermal': 'toa_bt',
-            'include_cfmask': 'cfmask',
             'angle_bands': 'angle_bands',
             'keep_intermediate_data': 'intermediate_data'
         }
@@ -533,26 +532,15 @@ class CDRProcessor(CustomizationProcessor):
         if not options['include_sr_toa']:
             products_to_remove.append(
                 order2product['include_sr_toa'])
+            products_to_remove.append(
+                order2product['angle_bands'])
         if not options['include_sr_thermal']:
             products_to_remove.append(
                 order2product['include_sr_thermal'])
-        if not options['include_cfmask']:
-            # Business logic to keep the CFmask bands for pre-collection
-            # Surface Reflectance products
-            if self.is_pre_collection_data and options['include_sr']:
-                pass
-            else:
-                products_to_remove.append(
-                    order2product['include_cfmask'])
         if not options['keep_intermediate_data']:
             products_to_remove.append(
                 order2product['keep_intermediate_data'])
 
-        # Business logic to keep the Angle bands only for collection TOA Reflectance products
-        if (self.is_collection_data and not options['include_sr_toa']):
-
-            products_to_remove.append(
-                order2product['angle_bands'])
 
         # Always remove the elevation data
         products_to_remove.append('elevation')
@@ -678,9 +666,6 @@ class LandsatProcessor(CDRProcessor):
 
         product_id = self._parms['product_id']
 
-        self.is_collection_data = sensor.is_landsat_collection(product_id)
-        self.is_pre_collection_data = sensor.is_landsat_pre_collection(product_id)
-
         self._metadata_filename = None
 
     def validate_parameters(self):
@@ -696,8 +681,7 @@ class LandsatProcessor(CDRProcessor):
 
         # Force these parameters to false if not provided
         # They are the required includes for product generation
-        required_includes = ['include_cfmask',
-                             'include_pixel_qa',
+        required_includes = ['include_pixel_qa',
                              'include_customized_source_data',
                              'include_dswe',
                              'include_st',
@@ -725,7 +709,6 @@ class LandsatProcessor(CDRProcessor):
                 not options['include_sr'] and
                 not options['include_sr_toa'] and
                 not options['include_sr_thermal'] and
-                not options['include_cfmask'] and
                 not options['include_pixel_qa'] and
                 not options['include_sr_nbr'] and
                 not options['include_sr_nbr2'] and
@@ -741,6 +724,21 @@ class LandsatProcessor(CDRProcessor):
             self._build_products = False
         else:
             self._build_products = True
+
+        # Always generate TOA and BT (for cfmask_based_water_detection)
+        # Also, generate SR input if needed, but do not deliver it in output
+        self.requires_sr_input = any(
+                options[x] for x in [
+                    'include_sr',
+                    'include_sr_nbr',
+                    'include_sr_nbr2',
+                    'include_sr_ndvi',
+                    'include_sr_ndmi',
+                    'include_sr_savi',
+                    'include_sr_msavi',
+                    'include_sr_evi',
+                    'include_dswe'
+            ])
 
     def stage_input_data(self):
         """Stages the input data required for the processor
@@ -792,11 +790,6 @@ class LandsatProcessor(CDRProcessor):
     def clip_band_misalignment(self):
         """Clips the bands to matching fill extents
         """
-
-        # Pre collection formatted data does not include the quality band
-        # so we can't process using clipping
-        if self.is_pre_collection_data:
-            return
 
         # Build a command line arguments list
         cmd = ['clip_band_misalignment',
@@ -861,9 +854,6 @@ class LandsatProcessor(CDRProcessor):
         """Generates the initial pixel QA band from the Level-1 QA band
         """
 
-        if self.is_pre_collection_data:
-            return
-
         cmd = ['generate_pixel_qa',
                '--xml', self._xml_filename]
 
@@ -883,9 +873,6 @@ class LandsatProcessor(CDRProcessor):
         """Adds cloud dilation to the pixel QA band based on original
            cfmask cloud dilation
         """
-
-        if self.is_pre_collection_data:
-            return
 
         cmd = ['dilate_pixel_qa',
                '--xml', self._xml_filename,
@@ -907,9 +894,6 @@ class LandsatProcessor(CDRProcessor):
     def generate_cfmask_water_detection(self):
         """Adds CFmask based water detection to the class based QA band
         """
-
-        if self.is_pre_collection_data:
-            return
 
         cmd = ['cfmask_water_detection',
                '--xml', self._xml_filename]
@@ -941,52 +925,10 @@ class LandsatProcessor(CDRProcessor):
 
         cmd = ['surface_reflectance.py', '--xml', self._xml_filename]
 
-        execute_do_ledaps = False
-
-        # Check to see if SR is required
-        if (options['include_sr'] or
-                options['include_sr_nbr'] or
-                options['include_sr_nbr2'] or
-                options['include_sr_ndvi'] or
-                options['include_sr_ndmi'] or
-                options['include_sr_savi'] or
-                options['include_sr_msavi'] or
-                options['include_sr_evi'] or
-                options['include_dswe']):
-
-            cmd.extend(['--process_sr', 'True'])
-            execute_do_ledaps = True
-        else:
-            # If we do not need the SR data, then don't waste the time
-            # generating it
+        if not self.requires_sr_input:
             cmd.extend(['--process_sr', 'False'])
 
-        # Pre collection business logic "Include CFMASK with SR"
-        if self.is_pre_collection_data and options['include_sr']:
-            execute_do_ledaps = True
-
-        # Check to see if Thermal or TOA is required
-        if (options['include_sr_toa'] or
-                options['include_sr_thermal'] or
-                options['include_dswe'] or
-                options['include_st'] or
-                options['include_cfmask'] or
-                options['include_pixel_qa']):
-
-            execute_do_ledaps = True
-
-        # Always generate TOA and BT for collection processing
-        # It is required by the cfmask_based_water_detection
-        if self.is_collection_data:
-            execute_do_ledaps = True
-
-        # Only return a string if we will need to run SR processing
-        if not execute_do_ledaps:
-            cmd = None
-        else:
-            cmd = ' '.join(cmd)
-
-        return cmd
+        return ' '.join(cmd)
 
     def generate_sr_products(self):
         """Generates surface reflectance products
@@ -998,31 +940,6 @@ class LandsatProcessor(CDRProcessor):
         if cmd is not None:
 
             self._logger.info(' '.join(['SURFACE REFLECTANCE COMMAND:', cmd]))
-
-            output = ''
-            try:
-                output = utilities.execute_cmd(cmd)
-            finally:
-                if len(output) > 0:
-                    self._logger.info(output)
-
-    def generate_cloud_masking(self):
-        """Generates cloud mask products
-        """
-
-        options = self._parms['options']
-        cmd = None
-        # Includes pre-collection business logic "Include CFMASK with SR"
-        if (options['include_cfmask'] or
-                (self.is_pre_collection_data and options['include_sr'])):
-
-            cmd = ' '.join(['cloud_masking.py', '--verbose',
-                            '--xml', self._xml_filename])
-
-        # Only if required
-        if cmd is not None:
-
-            self._logger.info(' '.join(['CLOUD MASKING COMMAND:', cmd]))
 
             output = ''
             try:
@@ -1080,15 +997,11 @@ class LandsatProcessor(CDRProcessor):
 
     def generate_surface_water_extent(self):
         """Generates the Dynamic Surface Water Extent product
-
-        Note:
-            Only for collection based processing.
-            For LT04, LT05, LE07, and LC08.
         """
 
         options = self._parms['options']
 
-        if (self.is_pre_collection_data or not options['include_dswe']):
+        if not options['include_dswe']:
             return
 
         cmd = ['surface_water_extent.py',
@@ -1161,8 +1074,6 @@ class LandsatProcessor(CDRProcessor):
             self.generate_dilated_cloud()
 
             self.generate_cfmask_water_detection()
-
-            self.generate_cloud_masking()
 
             self.generate_spectral_indices()
 
@@ -1316,18 +1227,6 @@ class LandsatTMProcessor(LandsatProcessor):
         super(LandsatTMProcessor, self).__init__(cfg, parms)
 
 
-class Landsat4TMProcessor(LandsatTMProcessor):
-    """Implements L4 TM specific processing
-
-    Note:
-        Today all processing is inherited from the LandsatProcessors because
-        the TM and ETM processors are identical.
-    """
-
-    def __init__(self, cfg, parms):
-        super(Landsat4TMProcessor, self).__init__(cfg, parms)
-
-
 class LandsatETMProcessor(LandsatProcessor):
     """Implements ETM specific processing
 
@@ -1367,49 +1266,13 @@ class LandsatOLITIRSProcessor(LandsatProcessor):
 
         options = self._parms['options']
 
-        cmd = ['surface_reflectance.py', '--xml', self._xml_filename]
+        cmd = ['surface_reflectance.py', '--xml', self._xml_filename,
+               '--write_toa']
 
-        execute_do_l8_sr = False
-
-        # Check to see if SR is required
-        if (options['include_sr'] or
-                options['include_sr_nbr'] or
-                options['include_sr_nbr2'] or
-                options['include_sr_ndvi'] or
-                options['include_sr_ndmi'] or
-                options['include_sr_savi'] or
-                options['include_sr_msavi'] or
-                options['include_sr_evi'] or
-                options['include_dswe']):
-
-            cmd.extend(['--process_sr', 'True'])
-            execute_do_l8_sr = True
-        else:
-            # If we do not need the SR data, then don't waste the time
-            # generating it
+        if not self.requires_sr_input:
             cmd.extend(['--process_sr', 'False'])
 
-        # Check to see if Thermal or TOA is required
-        # Includes pre collection business logic "Include CFMASK with SR"
-        if (options['include_sr_toa'] or
-                options['include_sr_thermal'] or
-                options['include_dswe'] or
-                options['include_st'] or
-                options['include_cfmask'] or
-                options['include_pixel_qa'] or
-                options['include_sr'] or
-                self.is_collection_data):
-
-            cmd.append('--write_toa')
-            execute_do_l8_sr = True
-
-        # Only return a string if we will need to run SR processing
-        if not execute_do_l8_sr:
-            cmd = None
-        else:
-            cmd = ' '.join(cmd)
-
-        return cmd
+        return ' '.join(cmd)
 
 
 class LandsatOLIProcessor(LandsatOLITIRSProcessor):
@@ -1438,20 +1301,9 @@ class LandsatOLIProcessor(LandsatOLITIRSProcessor):
             raise Exception('include_sr_thermal is an unavailable product'
                             ' option for OLI-Only data')
 
-        if options['include_cfmask'] is True:
-            raise Exception('include_cfmask is an unavailable product option'
-                            ' for OLI-Only data')
-
         if options['include_dswe'] is True:
             raise Exception('include_dswe is an unavailable product option'
                             ' for OLI-Only data')
-
-    def generate_cloud_masking(self):
-        """Cloud Masking processing requires both OLI and TIRS bands
-
-        So OLI only processing can not produce cloud mask products.
-        """
-        pass
 
     def generate_spectral_indices(self):
         """Spectral Indices processing requires surface reflectance products
@@ -2107,30 +1959,17 @@ def get_instance(cfg, parms):
     if product_id == 'plot':
         return PlotProcessor(cfg, parms)
 
-    if sensor.is_lt4(product_id):
-        return Landsat4TMProcessor(cfg, parms)
-    elif sensor.is_lt04(product_id):
+    if sensor.is_landsat4(product_id):
         return LandsatTMProcessor(cfg, parms)
-    elif sensor.is_lt5(product_id):
+    elif sensor.is_landsat5(product_id):
         return LandsatTMProcessor(cfg, parms)
-    elif sensor.is_lt05(product_id):
-        return LandsatTMProcessor(cfg, parms)
-    elif sensor.is_le7(product_id):
+    elif sensor.is_landsat7(product_id):
         return LandsatETMProcessor(cfg, parms)
-    elif sensor.is_le07(product_id):
-        return LandsatETMProcessor(cfg, parms)
-    elif sensor.is_lo8(product_id):
-        return LandsatOLIProcessor(cfg, parms)
     elif sensor.is_lo08(product_id):
         return LandsatOLIProcessor(cfg, parms)
-    elif sensor.is_lt8(product_id):
-        raise NotImplementedError('A processor for [{}] has not been'
-                                  ' implemented'.format(product_id))
     elif sensor.is_lt08(product_id):
         raise NotImplementedError('A processor for [{}] has not been'
                                   ' implemented'.format(product_id))
-    elif sensor.is_lc8(product_id):
-        return LandsatOLITIRSProcessor(cfg, parms)
     elif sensor.is_lc08(product_id):
         return LandsatOLITIRSProcessor(cfg, parms)
     elif sensor.is_terra(product_id):
